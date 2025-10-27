@@ -11,4 +11,17 @@ This document outlines the rules for brand voice, spelling, grammar, and formatt
 
 ## Brand Voice
 
-{{brand_voice_traits}}
+{{voice_trait_1_full}}
+
+---
+
+## Style Rules
+
+{{preview_rules}}
+
+---
+
+## Before → After 
+See the {{brand_name}} brand voice in action.
+
+{{before_after_samples}}

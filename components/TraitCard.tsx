@@ -12,7 +12,7 @@ export default function TraitCard({ traitName }: TraitCardProps) {
       <div className="flex items-start justify-between mb-1">
         <h3 className="font-bold text-lg">{traitName}</h3>
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-200">
-              Sample description
+              Sample
             </span>
       </div>
       <p className="italic text-gray-600 mb-4">{trait.definition}</p>

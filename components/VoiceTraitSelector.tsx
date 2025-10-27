@@ -9,7 +9,15 @@ import { Plus, X } from "lucide-react"
 
 const predefinedTraitNames = Object.keys(TRAITS) as TraitName[]
 
-export default function VoiceTraitSelector({ onChange }: { onChange?: (traits: string[]) => void }) {
+export default function VoiceTraitSelector({ 
+  onChange, 
+  suggestedTraits = [],
+  showSuggestions = true
+}: { 
+  onChange?: (traits: string[]) => void
+  suggestedTraits?: string[]
+  showSuggestions?: boolean
+}) {
   const [selectedTraits, setSelectedTraits] = useState<MixedTrait[]>([])
   const [customTraits, setCustomTraits] = useState<CustomTrait[]>([])
   const [customTraitInput, setCustomTraitInput] = useState("")
@@ -122,34 +130,34 @@ export default function VoiceTraitSelector({ onChange }: { onChange?: (traits: s
       {/* Predefined trait pills */}
       <div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {predefinedTraitNames.map((name) => (
-            <button
-              key={name}
-              onClick={() => togglePredefinedTrait(name)}
-              disabled={isPredefinedTraitDisabled(name)}
-              type="button"
-              className={`rounded-full px-4 py-2 text-sm border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                isPredefinedTraitSelected(name)
-                  ? "bg-black text-white border-black hover:bg-gray-800 focus:ring-gray-400"
-                  : isPredefinedTraitDisabled(name)
-                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-blue-300 active:scale-95"
-              }`}
-              title={isPredefinedTraitSelected(name) ? "Click to remove" : "Click to select"}
-            >
-              {name}
-            </button>
-          ))}
+          {predefinedTraitNames.map((name) => {
+            const isSuggested = suggestedTraits.includes(name)
+            return (
+              <button
+                key={name}
+                onClick={() => togglePredefinedTrait(name)}
+                disabled={isPredefinedTraitDisabled(name)}
+                type="button"
+                className={`rounded-full px-4 py-2 text-sm border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                  isPredefinedTraitSelected(name)
+                    ? "bg-black text-white border-black hover:bg-gray-800 focus:ring-gray-400"
+                    : isPredefinedTraitDisabled(name)
+                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                    : isSuggested && showSuggestions
+                    ? "bg-white text-gray-700 border-blue-400 border-2 hover:bg-gray-50 hover:border-blue-500 focus:ring-blue-300 active:scale-95"
+                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-blue-300 active:scale-95"
+                }`}
+                title={isPredefinedTraitSelected(name) ? "Click to remove" : isSuggested ? "Suggested for your brand" : "Click to select"}
+              >
+                {name}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* Custom traits section */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-700">Or add your own</h3>
-          <span className="text-xs text-gray-500">{selectedTraits.length}/3 selected</span>
-        </div>
-        
         {/* Custom trait pills */}
         {customTraits.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
@@ -181,7 +189,7 @@ export default function VoiceTraitSelector({ onChange }: { onChange?: (traits: s
 
         {/* Add custom trait input */}
         {showCustomInput ? (
-          <div className="space-y-2">
+          <div className="space-y-2 mb-3">
             <div className="flex gap-2">
               <Input
                 value={customTraitInput}
@@ -226,12 +234,17 @@ export default function VoiceTraitSelector({ onChange }: { onChange?: (traits: s
             variant="outline"
             size="sm"
             type="button"
-            className="w-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150 disabled:hover:scale-100"
+            className="w-full mb-3 hover:scale-[1.02] active:scale-[0.98] transition-transform duration-150 disabled:hover:scale-100"
           >
             <Plus size={16} className="mr-2" />
             Add Custom Trait
           </Button>
         )}
+
+        {/* Counter */}
+        <div className="flex justify-end">
+          <span className="text-xs text-gray-500">{selectedTraits.length}/3 selected</span>
+        </div>
       </div>
 
       {/* Live rule panels */}

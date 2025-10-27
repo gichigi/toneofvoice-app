@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { generateWithOpenAI, generateAudienceSummary, extractDomainTermsAndLexicon } from "@/lib/openai"
+import { generateWithOpenAI, generateAudienceSummary, extractDomainTermsAndLexicon, generateTraitSuggestions } from "@/lib/openai"
 import Logger from "@/lib/logger"
 import { validateUrl } from "@/lib/url-validation"
 import * as cheerio from "cheerio"
@@ -189,6 +189,28 @@ Important: Make the description rich and detailed (300-450 chars) while staying 
             keywords = combined.join('\n')
           }
 
+          // Generate trait suggestions
+          Logger.info("About to generate trait suggestions...")
+          let suggestedTraits: string[] = []
+          try {
+            Logger.info("Generating trait suggestions for:", { brandName: brandDetails.name, audience: audienceStr })
+            const traitsResult = await generateTraitSuggestions({
+              name: brandDetails.name,
+              description: brandDetails.description,
+              audience: audienceStr
+            })
+            
+            Logger.info("Trait suggestions result:", { success: traitsResult.success, content: traitsResult.content })
+            
+            if (traitsResult.success && traitsResult.content) {
+              const parsed = JSON.parse(traitsResult.content)
+              suggestedTraits = Array.isArray(parsed) ? parsed : []
+              Logger.info("Parsed suggested traits:", suggestedTraits)
+            }
+          } catch (error) {
+            Logger.error("Failed to generate trait suggestions:", error)
+          }
+
           Logger.info("Successfully generated brand details from description")
           
           return NextResponse.json({
@@ -196,7 +218,8 @@ Important: Make the description rich and detailed (300-450 chars) while staying 
             brandName: brandDetails.name,
             brandDetailsText: brandDetails.description,
             audience: audienceStr,
-            keywords
+            keywords,
+            suggestedTraits
           })
         } else {
           throw new Error("Failed to generate brand details")
@@ -419,13 +442,18 @@ ${summary}
     //   
     //   extractDomainTermsAndLexicon({
     
-    // Only run keywords extraction for testing
-    const keywordsResult = await extractDomainTermsAndLexicon({ 
+    // Generate both audience and keywords for trait suggestions
+    const [audienceResult, keywordsResult] = await Promise.all([
+      generateAudienceSummary({ 
+        name: brandName || 'Brand', 
+        description: brandDetailsText 
+      }).catch(err => ({ success: false, error: err.message })),
+      
+      extractDomainTermsAndLexicon({ 
         name: brandName || 'Brand', 
         description: brandDetailsText 
       }).catch(err => ({ success: false, error: err.message }))
-    
-    const audienceResult = { success: false, error: "Disabled for testing" }
+    ])
 
     // Process audience with error handling
     let audience = ''
@@ -446,13 +474,36 @@ ${summary}
       keywords = combined.join('\n')
     }
 
+    // Generate trait suggestions
+    Logger.info("About to generate trait suggestions...")
+    let suggestedTraits: string[] = []
+    try {
+      Logger.info("Generating trait suggestions for:", { brandName, audience })
+      const traitsResult = await generateTraitSuggestions({
+        name: brandName,
+        description: brandDetailsText,
+        audience: audience
+      })
+      
+      Logger.info("Trait suggestions result:", { success: traitsResult.success, content: traitsResult.content })
+      
+      if (traitsResult.success && traitsResult.content) {
+        const parsed = JSON.parse(traitsResult.content)
+        suggestedTraits = Array.isArray(parsed) ? parsed : []
+        Logger.info("Parsed suggested traits:", suggestedTraits)
+      }
+    } catch (error) {
+      Logger.error("Failed to generate trait suggestions:", error)
+    }
+
     Logger.info("Successfully extracted brand information")
     return NextResponse.json({
       success: true,
       brandDetailsText,
       brandName,
       audience,
-      keywords
+      keywords,
+      suggestedTraits
     })
   } catch (error) {
     Logger.error(

@@ -16,9 +16,11 @@ export function StyleGuideHeader({ brandName, guideType, date, showPreviewBadge 
     <div className="p-8 border-b bg-gray-50">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-2">
-          <div className="text-base text-gray-500 tracking-wide font-semibold">
-            {guideType === 'complete' ? 'The Complete Style Guide' : 'Core Style Guide'}
-          </div>
+          {!showPreviewBadge && (
+            <div className="text-base text-gray-500 tracking-wide font-semibold">
+              {guideType === 'complete' ? 'The Complete Style Guide' : 'Core Style Guide'}
+            </div>
+          )}
           {showPreviewBadge && (
             <span className="inline-flex items-center rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white">
               Preview

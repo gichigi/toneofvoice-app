@@ -359,6 +359,10 @@ export default function LandingPage() {
           localStorage.setItem("brandKeywords", data.keywords)
         }
         
+        if (data.suggestedTraits) {
+          localStorage.setItem("suggestedTraits", JSON.stringify(data.suggestedTraits))
+        }
+        
         localStorage.setItem("brandDetails", JSON.stringify(brandDetails))
         console.log(`[USER_JOURNEY] Brand details saved to localStorage:`, {
           hasName: !!brandDetails.name,
@@ -525,7 +529,7 @@ export default function LandingPage() {
                         </>
                       ) : (
                         <>
-                          <span>Get started</span> 
+                          <span>Get sample</span> 
                           <ArrowRight className="ml-2 h-5 w-5" />
                         </>
                       )}

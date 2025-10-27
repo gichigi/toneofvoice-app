@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, CreditCard, Loader2, CheckCircle } from "lucide-react"
+import { ArrowLeft, CreditCard, Loader2, CheckCircle, Download, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { track } from "@vercel/analytics"
 import {
@@ -15,32 +15,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { renderStyleGuideTemplate } from "@/lib/template-processor"
-import styled from "styled-components"
+import { generateFile, FileFormat } from "@/lib/file-generator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Logo from "@/components/Logo"
 import { StyleGuideHeader } from "@/components/StyleGuideHeader"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 
-// Add fade-out effect before paywall
-const ContentWithFadeout = styled.div`
-  position: relative;
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 500px;
-    background: linear-gradient(
-      to bottom,
-      rgba(255,255,255,0) 0%,
-      rgba(255,255,255,0) 40%,
-      rgba(255,255,255,1) 100%
-    );
-    pointer-events: none;
-  }
-`;
+// (MiniPaywallBanner removed)
 
 // Process preview content to remove duplicate title/subtitle but keep How to Use section
 const processPreviewContent = (content: string, brandName: string = "") => {
@@ -153,6 +134,7 @@ export default function PreviewPage() {
   const [fadeIn, setFadeIn] = useState(false)
   const [brandDetails, setBrandDetails] = useState<any>(null)
   const [shouldRedirect, setShouldRedirect] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   useEffect(() => {
     // Load brand details with error handling
@@ -313,6 +295,60 @@ export default function PreviewPage() {
     }
   };
 
+  // Download functionality (same as full-access page)
+  const handleDownload = async (format: string) => {
+    if (!previewContent || !brandDetails) return
+
+    setIsDownloading(true)
+
+    try {
+      if (format === "pdf") {
+        // Use html2pdf for PDF generation (same as full-access)
+        const element = document.getElementById('pdf-export-content')
+        if (!element) {
+          throw new Error('PDF content not found')
+        }
+        
+        // @ts-ignore
+        const html2pdf = (await import('html2pdf.js')).default
+        const opt = {
+          margin: 0.5,
+          filename: `${brandDetails.name.replace(/\s+/g, '-').toLowerCase()}-style-guide-preview.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        }
+        
+        await html2pdf().set(opt).from(element).save()
+      } else {
+        // Keep existing method for other formats
+        const file = await generateFile(format as FileFormat, previewContent, brandDetails.name)
+        const url = window.URL.createObjectURL(file)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `${brandDetails.name.replace(/\s+/g, '-').toLowerCase()}-style-guide-preview.${format}`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      }
+
+      toast({
+        title: "Download started",
+        description: `Your style guide preview is downloading in ${format.toUpperCase()} format.`,
+      })
+    } catch (error) {
+      console.error("Error generating file:", error)
+      toast({
+        title: "Download failed",
+        description: "Could not generate the file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   // If no preview content yet, show loading state
   if (!previewContent) {
     return (
@@ -324,15 +360,47 @@ export default function PreviewPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-950/95 dark:border-gray-800">
+    <>
+      {/* (Mini paywall CSS removed) */}
+      <div className="bg-gray-50 dark:bg-gray-900">
+      {/* Sticky Header with CTAs */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-950/95 dark:border-gray-800 shadow-sm">
         <div className="max-w-5xl mx-auto px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Logo size="md" linkToHome={true} />
-            <span className="inline-flex items-center rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white">
-              Preview
-            </span>
+          </div>
+          
+          {/* CTAs in header */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDownload("pdf")}
+              disabled={isDownloading}
+              className="text-sm"
+            >
+              {isDownloading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Download Preview
+            </Button>
+            
+            <Button
+              size="sm"
+              onClick={() => {
+                track('Header CTA Clicked', { 
+                  location: 'sticky-header',
+                  action: 'get-full-access'
+                });
+                setPaymentDialogOpen(true);
+              }}
+              className="text-sm bg-gray-900 hover:bg-gray-800 text-white"
+            >
+              <CreditCard className="mr-2 h-4 w-4" />
+              Unlock Style Guide
+            </Button>
           </div>
         </div>
       </header>
@@ -499,64 +567,89 @@ export default function PreviewPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Download modal removed; immediate PDF download */}
+
       {/* Main Content */}
-      <main className={`flex-1 py-8 transition-opacity duration-500 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}>
+      <main className={`pt-24 pb-8 transition-opacity duration-500 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}>
         <div className="max-w-5xl mx-auto">
           <div className="mb-6 px-8">
           <Link
             href="/brand-details"
-              className="inline-flex items-center gap-2 text-sm sm:text-base font-medium px-4 py-2 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="h-5 w-5" /> Back to details
+            <ArrowLeft className="h-4 w-4" /> Back
           </Link>
         </div>
 
           <div className="bg-white rounded-2xl border shadow-lg overflow-hidden">
-            <StyleGuideHeader 
-              brandName={brandDetails?.name || 'Your Brand'} 
-              guideType="core"
-            />
-            <div className="p-8 bg-white">
-              <div className="max-w-2xl mx-auto space-y-12">
-                <ContentWithFadeout>
-                  <MarkdownRenderer 
-                    className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base"
-                    content={previewContent || ""}
-                  />
-                </ContentWithFadeout>
-
-                {/* Add paywall banner */}
-                  <div className="my-6 mb-20 p-6 sm:p-8 bg-blue-50 border border-blue-100 rounded-lg shadow-sm text-center">
-                    <div className="max-w-md mx-auto">
-                      <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mx-auto mb-4 shadow-sm">
-                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                        Unlock Your Style Guide
-                  </h3>
-                      <p className="text-sm sm:text-base text-gray-600 mb-4 leading-relaxed">
-                        Get access to all writing rules, detailed examples, and professional formats to create a consistent brand voice.
-                  </p>
+            <div id="pdf-export-content">
+              <StyleGuideHeader 
+                brandName={brandDetails?.name || 'Your Brand'} 
+                guideType="core"
+                showPreviewBadge={true}
+              />
+              <div className="p-8 bg-white">
+                <div className="max-w-2xl mx-auto space-y-12">
+                  <div className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base">
+                    <MarkdownRenderer 
+                      content={previewContent || ""}
+                    />
+                  </div>
                   
-                  <Button
-                    onClick={() => {
-                      // Track paywall button click
-                      track('Paywall Clicked', { 
-                        location: 'preview-page',
-                        action: 'unlock-style-guide'
-                      });
-                      setPaymentDialogOpen(true);
-                    }}
-                        className="w-full sm:w-auto text-base sm:text-lg py-3 sm:py-4 px-6 sm:px-8 bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md transition-all duration-200"
-                  >
-                        <CreditCard className="h-4 w-4 mr-2" /> 
-                        Unlock Style Guide
-                  </Button>
-                      <p className="text-xs text-green-600 mt-4">
-                        ✓ Instant access ✓ 30-day guarantee ✓ No subscriptions
-                      </p>
+                  {/* Professional PDF Footer */}
+                  <div className="mt-12 pt-8 border-t border-gray-200">
+                    <div className="text-center space-y-3">
+                      <div className="text-sm text-gray-600">
+                        <div className="font-medium text-gray-800">AI Style Guide Preview</div>
+                        <div>Generated by aistyleguide.com</div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <div>Questions? Contact: support@aistyleguide.com</div>
+                        <div>Get the complete guide: aistyleguide.com</div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        © 2025 AI Style Guide. All rights reserved.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Final paywall banner - outside PDF content */}
+            <div className="p-8 bg-white">
+              <div className="max-w-2xl mx-auto">
+                <div className="my-6 mb-20 p-6 sm:p-8 bg-blue-50 border border-blue-100 rounded-lg shadow-sm text-center">
+                  <div className="max-w-md mx-auto">
+                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mx-auto mb-4 shadow-sm">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                      Unlock Your Complete Style Guide
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4 leading-relaxed">
+                      Get access to all writing rules, detailed examples, and professional formats to create a consistent brand voice.
+                    </p>
+                    
+                    <Button
+                      onClick={() => {
+                        // Track paywall button click
+                        track('Paywall Clicked', { 
+                          location: 'preview-page',
+                          action: 'unlock-style-guide'
+                        });
+                        setPaymentDialogOpen(true);
+                      }}
+                      className="w-full sm:w-auto text-base sm:text-lg py-3 sm:py-4 px-6 sm:px-8 bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" /> 
+                      Unlock Style Guide
+                    </Button>
+                    <p className="text-xs text-green-600 mt-4">
+                      ✓ Instant access ✓ 30-day guarantee ✓ No subscriptions
+                    </p>
                   </div>
                 </div>
               </div>
@@ -564,7 +657,8 @@ export default function PreviewPage() {
           </div>
         </div>
       </main>
-    </div>
+      </div>
+    </>
   )
 }
 

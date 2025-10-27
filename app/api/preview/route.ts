@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { renderStyleGuideTemplate } from "@/lib/template-processor"
+import { renderPreviewStyleGuide } from "@/lib/template-processor"
 
 // Simplified validation function
 function validateBrandDetails(details: any) {
@@ -50,11 +50,9 @@ export async function POST(request: Request) {
       traits: selectedTraits || brandDetails.traits || []
     }
     
-    // Generate preview with AI content on server-side
-    const preview = await renderStyleGuideTemplate({
-      brandDetails: enhancedBrandDetails,
-      useAIContent: true,
-      templateType: 'preview'
+    // Generate preview with AI content using new preview-specific function
+    const preview = await renderPreviewStyleGuide({
+      brandDetails: enhancedBrandDetails
     })
     
     const duration = Date.now() - startTime

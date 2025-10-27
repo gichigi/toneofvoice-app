@@ -63,6 +63,8 @@ export default function BrandDetailsPage() {
   const urlAudience = searchParams.get("audience") || ""
   const [guideType, setGuideType] = useState(urlGuideType || "core")
   const [selectedTraits, setSelectedTraits] = useState<string[]>([])
+  const [suggestedTraits, setSuggestedTraits] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(true)
   const [paymentComplete, setPaymentComplete] = useState(false)
   const [fadeIn, setFadeIn] = useState(false)
   const [showCharCount, setShowCharCount] = useState(false)
@@ -195,6 +197,17 @@ export default function BrandDetailsPage() {
             .map(k => k.trim())
             .filter(Boolean)
           setKeywordTags(parsed)
+        }
+
+        // Load suggested traits if present (from extraction)
+        const savedSuggestedTraits = localStorage.getItem("suggestedTraits")
+        if (savedSuggestedTraits) {
+          try {
+            const parsed = JSON.parse(savedSuggestedTraits)
+            setSuggestedTraits(Array.isArray(parsed) ? parsed : [])
+          } catch (e) {
+            console.error("Error parsing suggested traits:", e)
+          }
         }
 
         // Update localStorage with the validated details
@@ -691,15 +704,15 @@ export default function BrandDetailsPage() {
                       >
                         <SelectTrigger id="readingLevel" className="w-full [&>span]:text-left [&>span]:justify-start">
                           <SelectValue placeholder="Select reading level">
-                            {brandDetails.readingLevel === "6-8" && "Grade 6-8"}
-                            {brandDetails.readingLevel === "10-12" && "Grade 10-12"}
-                            {brandDetails.readingLevel === "13+" && "Grade 13+"}
+                            {brandDetails.readingLevel === "6-8" && "General Public"}
+                            {brandDetails.readingLevel === "10-12" && "Professional"}
+                            {brandDetails.readingLevel === "13+" && "Technical/Academic"}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="6-8">Grade 6-8 (General Public)</SelectItem>
-                          <SelectItem value="10-12">Grade 10-12 (Professional)</SelectItem>
-                          <SelectItem value="13+">Grade 13+ (Technical/Academic)</SelectItem>
+                          <SelectItem value="6-8">General Public</SelectItem>
+                          <SelectItem value="10-12">Professional</SelectItem>
+                          <SelectItem value="13+">Technical/Academic</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -708,11 +721,31 @@ export default function BrandDetailsPage() {
                 {/* Voice Trait Selector */}
                 <div className="mt-8">
                   <Label className="text-base font-medium">Brand voice traits</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Pick 3 traits that define the brand personality.
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-1">
+                    <p className="text-sm text-muted-foreground">
+                      Pick 3 traits that define your brand.
+                    </p>
+                    {suggestedTraits.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSuggestions(!showSuggestions)}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs border-2 transition-all duration-200 hover:scale-105 active:scale-95 self-start sm:self-auto ${
+                          showSuggestions
+                            ? "bg-transparent text-gray-700 border-blue-400"
+                            : "bg-gray-100 text-gray-500 border-gray-300"
+                        }`}
+                        title={showSuggestions ? "Hide AI suggestions" : "Show AI suggestions"}
+                      >
+                        AI suggestions
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-4">
-                    <VoiceTraitSelector onChange={setSelectedTraits} />
+                    <VoiceTraitSelector 
+                      onChange={setSelectedTraits} 
+                      suggestedTraits={suggestedTraits}
+                      showSuggestions={showSuggestions}
+                    />
                   </div>
                 </div>
 

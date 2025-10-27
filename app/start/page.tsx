@@ -71,6 +71,10 @@ export default function StartPage() {
             // Preload keywords into localStorage for brand-details
             try { localStorage.setItem('brandKeywords', data.keywords) } catch {}
           }
+          if (data.suggestedTraits) {
+            // Preload suggested traits into localStorage for brand-details
+            try { localStorage.setItem('suggestedTraits', JSON.stringify(data.suggestedTraits)) } catch {}
+          }
           router.push(`/brand-details?${params.toString()}`)
         }, 800)
       } else {

@@ -1,4 +1,63 @@
-import { generateBrandVoiceTraits, generateWithOpenAI, generateFullCoreStyleGuide, generateCompleteStyleGuide, generateAudienceSummary } from "./openai"
+import { generateBrandVoiceTraits, generateBrandVoiceTraitsPreview, generatePreviewRules, generateBeforeAfterSamples, generateWithOpenAI, generateFullCoreStyleGuide, generateCompleteStyleGuide, generateAudienceSummary } from "./openai"
+
+// Configuration for preview limits - easy to adjust for A/B testing
+export const PREVIEW_CONFIG = {
+  VISIBLE_TRAITS_FULL: 1,     // number of traits shown with full descriptions
+  VISIBLE_TRAITS_NAMES: 2,    // number of additional trait names shown
+  VISIBLE_RULES: 3,           // number of style rules shown
+  VISIBLE_BEFORE_AFTER: 3,    // number of before/after samples shown
+}
+
+// Auto-retry utility with logging
+const logGenerationMetrics = (operationName: string, success: boolean, attemptCount: number, error?: any) => {
+  const logData = {
+    operation: operationName,
+    success,
+    attempts: attemptCount,
+    timestamp: new Date().toISOString(),
+    error: error ? {
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 3).join('\n') // First 3 lines only
+    } : null
+  };
+  
+  if (success) {
+    console.log(`[AI_GENERATION_SUCCESS] ${JSON.stringify(logData)}`);
+  } else {
+    console.error(`[AI_GENERATION_FAILURE] ${JSON.stringify(logData)}`);
+  }
+};
+
+const withRetry = async <T>(
+  operation: () => Promise<T>,
+  maxAttempts: number = 3,
+  operationName: string
+): Promise<T | null> => {
+  let lastError: any = null;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[${operationName}] Attempt ${attempt}/${maxAttempts}`);
+      const result = await operation();
+      
+      // Log success
+      logGenerationMetrics(operationName, true, attempt);
+      return result;
+    } catch (error) {
+      lastError = error;
+      console.error(`[${operationName}] Attempt ${attempt} failed:`, error);
+      
+      if (attempt < maxAttempts) {
+        // Brief delay before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+  }
+  
+  // Log final failure
+  logGenerationMetrics(operationName, false, maxAttempts, lastError);
+  return null;
+};
 
 // Function to load a template file via API
 export async function loadTemplate(templateName: string): Promise<string> {
@@ -68,8 +127,10 @@ function formatMarkdownContent(content: string | undefined): string {
   // Remove any leftover H3/H4 for rule names
   //formatted2 = formatted2.replace(/^#{3,4}\s*([^\n]+)$/gm, '<strong>$1</strong>');
 
-  // Step 1.7: Prevent line breaks for dashes, slashes, and quotes within lines
-  formatted2 = formatted2.replace(/([\w\d])\s*([\-\/"'])\s*([\w\d])/g, '$1$2$3');
+  // Step 1.7: Prevent wraps around spaced dashes/slashes; leave quotes untouched
+  // Convert patterns like "foo - bar" or "foo / bar" to use non-breaking spaces
+  // so they don't wrap awkwardly, without altering hyphenated words or quoted text.
+  formatted2 = formatted2.replace(/(\w)\s+([\-\/])\s+(\w)/g, '$1\u00A0$2\u00A0$3');
 
   // Step 1.8: Fix broken parentheses across line breaks
   formatted2 = formatted2.replace(/\(\s*\n\s*/g, '(').replace(/\s*\n\s*\)/g, ')');
@@ -123,16 +184,21 @@ function formatMarkdownContent(content: string | undefined): string {
   
   formatted2 = newLines.join('\n');
 
-  // Step 6: Fix spacing for Right/Wrong examples
+  // Step 6: Fix spacing for examples (no Right/Wrong text)
   formatted2 = formatted2
-    // Normalize spacing after ✅ and ❌
-    .replace(/(✅|❌)\s*([Rr]ight|[Ww]rong):\s*/g, '$1 $2: ')
+    // Normalize spacing after ✅ and ❌ (no Right/Wrong text expected)
+    .replace(/(✅|❌)\s*/g, '$1 ')
     // Ensure each example is on its own line
     .replace(/(✅[^\n]+)\s+(❌)/g, '$1\n$2')
     // Add newline after each example if not present
     .replace(/(✅[^\n]+|❌[^\n]+)(?!\n)/g, '$1\n')
     // Ensure examples are grouped together with single line spacing
     .replace(/(✅[^\n]+)\n\n(❌)/g, '$1\n$2')
+    // Join orphan trailing letters on the next line BEFORE adding italics
+    // Example: "✅ Financial Data Analysis Tool\ns" => "✅ Financial Data Analysis Tools"
+    .replace(/^(✅|❌)\s+([^\n]+)\n([a-z]{1,3})(?=\n)/gm, '$1 $2$3')
+    // Wrap example text in italics for UI rendering (after joins)
+    .replace(/^(✅|❌)\s+(.+)$/gm, '$1 *$2*')
 
   // Step 7: Fix spacing for lists and arrows
   formatted2 = formatted2
@@ -205,18 +271,14 @@ function validateMarkdownContent(content: string | undefined): boolean {
   
   // For rules, check for example structure
   if (cleanedContent.toLowerCase().includes('rule')) {
-    // Accept any of these as valid right/wrong lines:
-    // - **Right**: ...
-    // - **Wrong**: ...
-    // ✅ Right: ...
-    // ❌ Wrong: ...
-    // Right: ...
-    // Wrong: ...
-    const hasRight = cleanedContent.match(/(^|\n)(-\s*)?(\*\*|✅)?\s*Right:?/)
-    const hasWrong = cleanedContent.match(/(^|\n)(-\s*)?(\*\*|❌)?\s*Wrong:?/)
+    // Accept any of these as valid example lines:
+    // ✅ *example text*
+    // ❌ *example text*
+    const hasCorrect = cleanedContent.match(/(^|\n)✅/)
+    const hasIncorrect = cleanedContent.match(/(^|\n)❌/)
     const hasRuleHeader = cleanedContent.match(/^###\s.+/m)
-    if (!hasRight || !hasWrong || !hasRuleHeader) {
-      console.warn('Rule content missing required right/wrong structure')
+    if (!hasCorrect || !hasIncorrect || !hasRuleHeader) {
+      console.warn('Rule content missing required example structure')
       return false
     }
     return true
@@ -640,5 +702,163 @@ export async function renderStyleGuideTemplate({
     // Remove 'General Guidelines' section for preview only
     result = result.replace(/## General Guidelines[\s\S]*?(?=\n## |$)/, '');
   }
+  return await prepareMarkdownContent(result);
+}
+
+// Render preview-specific style guide with limited content
+export async function renderPreviewStyleGuide({
+  brandDetails,
+  fullTraitCount = PREVIEW_CONFIG.VISIBLE_TRAITS_FULL,
+  nameTraitCount = PREVIEW_CONFIG.VISIBLE_TRAITS_NAMES,
+  rulesCount = PREVIEW_CONFIG.VISIBLE_RULES,
+  beforeAfterCount = PREVIEW_CONFIG.VISIBLE_BEFORE_AFTER
+}: {
+  brandDetails: any,
+  fullTraitCount?: number,
+  nameTraitCount?: number,
+  rulesCount?: number,
+  beforeAfterCount?: number
+}): Promise<string> {
+  console.log(`[renderPreviewStyleGuide] Called with:`, {
+    fullTraitCount,
+    nameTraitCount,
+    rulesCount,
+    beforeAfterCount,
+    hasBrandDetails: !!brandDetails,
+    brandName: brandDetails?.name || 'not set'
+  })
+  
+  // Load preview template
+  console.log(`[renderPreviewStyleGuide] Loading preview template...`)
+  const template = await loadTemplate("core_template_preview");
+  console.log(`[renderPreviewStyleGuide] Template loaded successfully (${template.length} chars)`)
+
+  // Format date
+  const currentDate = new Date();
+  const formattedDate = currentDate.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  // Extract brand name
+  let brandName = brandDetails.name || 'Your Brand';
+
+  // Replace basic placeholders
+  let result = template
+    .replace(/{{DD MONTH YYYY}}/g, formattedDate)
+    .replace(/{{brand_name}}/g, brandName)
+    .replace(/{{brand_description}}/g, brandDetails.description || brandDetails.brandDetailsText || 'A innovative company focused on delivering exceptional results.');
+    
+  console.log(`[renderPreviewStyleGuide] Basic placeholders replaced`)
+
+  // Generate AI content with auto-retry
+  console.log(`[renderPreviewStyleGuide] Generating AI content with auto-retry...`)
+  
+  try {
+    const validatedDetails = {
+      name: brandName,
+      description: brandDetails.description?.trim() || brandDetails.brandDetailsText || '',
+      audience: brandDetails.audience?.trim() || '',
+      traits: brandDetails.traits || [],
+      keywords: Array.isArray(brandDetails.keywords) ? brandDetails.keywords : [],
+    };
+    
+    const rulesDetails = {
+      ...validatedDetails,
+      tone: brandDetails.tone || '',
+      formalityLevel: brandDetails.formalityLevel || '',
+      readingLevel: brandDetails.readingLevel || '',
+      englishVariant: brandDetails.englishVariant || '',
+    };
+
+    // Generate traits with retry
+    const traitsResult = await withRetry(
+      () => generateBrandVoiceTraitsPreview(validatedDetails, fullTraitCount, nameTraitCount),
+      3,
+      'Brand Voice Traits'
+    );
+
+    let fullTraitContent = "";
+    let traitsContextForRules: string | undefined;
+
+    if (traitsResult?.success && traitsResult.content) {
+      const parsedTraits = JSON.parse(traitsResult.content);
+      fullTraitContent = parsedTraits.fullTraits.join('\n\n');
+      traitsContextForRules = fullTraitContent.slice(0, 4000);
+    }
+
+    // Generate rules with retry
+    const rulesResult = await withRetry(
+      () => generatePreviewRules(rulesDetails, traitsContextForRules, rulesCount),
+      3,
+      'Preview Rules'
+    );
+
+    let rulesContent = "";
+    if (rulesResult?.success && rulesResult.content) {
+      rulesContent = formatMarkdownContent(rulesResult.content);
+    } else {
+      // No content generated - show empty content (paywall is in template)
+      rulesContent = "";
+    }
+
+    // Generate before/after with retry
+    const beforeAfterResult = await withRetry(
+      () => generateBeforeAfterSamples(rulesDetails, traitsContextForRules, beforeAfterCount),
+      3,
+      'Before/After Samples'
+    );
+
+    let beforeAfterContent = "";
+    if (beforeAfterResult?.success && beforeAfterResult.content) {
+      // Parse JSON and format as table
+      try {
+        const data = JSON.parse(beforeAfterResult.content) as { examples: Array<{ before: string; after: string }> };
+        const formattedPairs = [];
+        
+        if (data.examples && Array.isArray(data.examples)) {
+          for (const example of data.examples.slice(0, beforeAfterCount)) {
+            if (example.before && example.after) {
+              formattedPairs.push(`| ${example.before} | ${example.after} |`);
+            }
+          }
+        }
+
+        if (formattedPairs.length > 0) {
+          beforeAfterContent = `| Before (Generic) | After (On-Brand) |\n|------------------|------------------|\n${formattedPairs.join('\n')}`;
+        } else {
+          // No valid examples - leave empty; template handles paywall rendering
+          beforeAfterContent = "";
+        }
+      } catch (error) {
+        // JSON parsing failed - show paywall
+        console.error("Failed to parse before/after JSON response:", error);
+        // Leave empty; template includes paywall under the section header
+        beforeAfterContent = "";
+      }
+    } else {
+      // No content generated - leave empty; template includes paywall
+      beforeAfterContent = "";
+    }
+
+    // Replace template placeholders
+    result = result
+      .replace(/{{voice_trait_1_full}}/g, formatMarkdownContent(fullTraitContent))
+      .replace(/{{preview_rules}}/g, rulesContent)
+      .replace(/{{before_after_samples}}/g, beforeAfterContent);
+      
+  } catch (error) {
+    console.error('[renderPreviewStyleGuide] Critical error during generation:', error);
+    // Even if everything fails, show paywalls for all sections
+    result = result
+      .replace(/{{voice_trait_1_full}}/g, "")
+      .replace(/{{preview_rules}}/g, "")
+      .replace(/{{before_after_samples}}/g, "");
+  }
+
+  // Remove 'General Guidelines' section for preview
+  result = result.replace(/## General Guidelines[\s\S]*?(?=\n## |$)/, '');
+  
   return await prepareMarkdownContent(result);
 }

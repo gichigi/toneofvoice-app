@@ -190,13 +190,26 @@ export default function BrandDetailsPage() {
 
         setBrandDetails(updatedDetails)
         // Load saved keywords if present
-        const savedKeywords = localStorage.getItem("brandKeywords")
-        if (savedKeywords) {
-          const parsed = savedKeywords
-            .split(/\r?\n|,/) // support newlines or commas
-            .map(k => k.trim())
-            .filter(Boolean)
-          setKeywordTags(parsed)
+        try {
+          const savedKeywords = localStorage.getItem("brandKeywords")
+          if (savedKeywords) {
+            const parsed = savedKeywords
+              .split(/\r?\n|,/) // support newlines or commas
+              .map(k => k.trim())
+              .filter(Boolean)
+              .filter(k => {
+                const validation = validateKeyword(k)
+                return validation.isValid
+              })
+              .slice(0, KEYWORD_LIMIT) // Ensure we don't exceed limit
+            setKeywordTags(parsed)
+          }
+        } catch (error) {
+          console.error("Error loading saved keywords:", error)
+          // Clear corrupted data
+          try {
+            localStorage.removeItem("brandKeywords")
+          } catch {}
         }
 
         // Load suggested traits if present (from extraction)
@@ -246,11 +259,28 @@ export default function BrandDetailsPage() {
   const addKeyword = () => {
     const term = keywordInput.trim()
     if (!term) return
+    
+    // Clear previous error
+    setKeywordError("")
+    
+    // Validate keyword
+    const validation = validateKeyword(term)
+    if (!validation.isValid) {
+      setKeywordError(validation.error || "Invalid keyword")
+      return
+    }
+    
     if (keywordTags.includes(term)) {
+      setKeywordError("Keyword already added")
       setKeywordInput("")
       return
     }
-    if (keywordTags.length >= KEYWORD_LIMIT) return
+    
+    if (keywordTags.length >= KEYWORD_LIMIT) {
+      setKeywordError(`Maximum ${KEYWORD_LIMIT} keywords allowed`)
+      return
+    }
+    
     setKeywordTags(prev => [...prev, term])
     setKeywordInput("")
   }
@@ -260,14 +290,33 @@ export default function BrandDetailsPage() {
   }
 
   const addKeywordsBulk = (terms: string[]) => {
-    const cleaned = terms
+    setKeywordError("") // Clear previous error
+    
+    const validTerms = terms
       .map(t => t.trim())
       .filter(Boolean)
       .filter(t => !keywordTags.includes(t))
-    if (cleaned.length === 0) return
+      .filter(t => {
+        const validation = validateKeyword(t)
+        return validation.isValid
+      })
+    
+    if (validTerms.length === 0) return
+    
     const available = Math.max(0, KEYWORD_LIMIT - keywordTags.length)
-    if (available === 0) return
-    setKeywordTags(prev => [...prev, ...cleaned.slice(0, available)])
+    if (available === 0) {
+      setKeywordError(`Maximum ${KEYWORD_LIMIT} keywords allowed`)
+      return
+    }
+    
+    const toAdd = validTerms.slice(0, available)
+    setKeywordTags(prev => [...prev, ...toAdd])
+    
+    // Show info if some terms were filtered out
+    const filtered = terms.length - toAdd.length
+    if (filtered > 0) {
+      setKeywordError(`Added ${toAdd.length} keywords. ${filtered} were filtered out (invalid format, duplicates, or limit reached).`)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -312,6 +361,7 @@ export default function BrandDetailsPage() {
   // Validate both name and description fields
   const [mainError, setMainError] = useState("");
   const [nameError, setNameError] = useState("");
+  const [keywordError, setKeywordError] = useState("");
 
   const validateMainField = (value: string) => {
       if (!value.trim()) {
@@ -335,6 +385,27 @@ export default function BrandDetailsPage() {
     }
     setNameError("");
     return true;
+  }
+
+  // Validate individual keyword
+  const validateKeyword = (keyword: string): { isValid: boolean; error?: string } => {
+    const trimmed = keyword.trim()
+    
+    if (trimmed.length < 2) {
+      return { isValid: false, error: "Keyword must be at least 2 characters" }
+    }
+    
+    if (trimmed.length > 20) {
+      return { isValid: false, error: "Keyword must be 20 characters or less" }
+    }
+    
+    // Only allow alphanumeric, spaces, hyphens
+    const validPattern = /^[a-zA-Z0-9\s\-]+$/
+    if (!validPattern.test(trimmed)) {
+      return { isValid: false, error: "Keyword can only contain letters, numbers, spaces, and hyphens" }
+    }
+    
+    return { isValid: true }
   }
 
 
@@ -610,8 +681,7 @@ export default function BrandDetailsPage() {
                       <Label htmlFor="keywordInput">Keywords (optional)</Label>
                       {/* Tag list */}
                       <div
-                        className="flex w-full max-h-48 overflow-y-auto rounded-md border border-input bg-background px-3 py-2 flex-wrap items-start gap-1 content-start"
-                        style={{ minHeight: `${descriptionHeight}px` }}
+                        className="flex w-full h-32 sm:h-36 overflow-y-auto rounded-md border border-input bg-background px-3 py-2 flex-wrap items-start gap-1 content-start"
                         onClick={() => keywordInputRef.current?.focus()}
                       >
                         {keywordTags.map(term => (
@@ -647,6 +717,9 @@ export default function BrandDetailsPage() {
                         />
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">{keywordTags.length}/{KEYWORD_LIMIT} keywords</div>
+                      {keywordError && (
+                        <div className="text-xs text-red-600 mt-1">{keywordError}</div>
+                      )}
                       {/* Input + Add button (counter/clear removed per design) */}
                     </div>
                   </div>

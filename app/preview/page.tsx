@@ -183,8 +183,9 @@ export default function PreviewPage() {
             // Extract and save the generated trait descriptions for reuse in full-access
             const brandVoiceMatch = savedPreviewContent.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
             if (brandVoiceMatch) {
-              const brandVoiceSection = `## Brand Voice${brandVoiceMatch[1]}`
-              localStorage.setItem("generatedPreviewTraits", brandVoiceSection)
+              // Save only the content without the heading (full-access templates already have ## Brand Voice)
+              const brandVoiceContent = brandVoiceMatch[1].trim()
+              localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
               localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
               console.log('[Preview Page] Saved generated traits for reuse')
             }
@@ -225,8 +226,9 @@ export default function PreviewPage() {
           // Extract just the brand voice traits section from the preview
           const brandVoiceMatch = data.preview.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
           if (brandVoiceMatch) {
-            const brandVoiceSection = `## Brand Voice${brandVoiceMatch[1]}`
-            localStorage.setItem("generatedPreviewTraits", brandVoiceSection)
+            // Save only the content without the heading (full-access templates already have ## Brand Voice)
+            const brandVoiceContent = brandVoiceMatch[1].trim()
+            localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
             localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
             console.log('[Preview Page] Saved generated traits for reuse')
           }
@@ -304,11 +306,27 @@ export default function PreviewPage() {
     try {
       if (format === "pdf") {
         // Use html2pdf for PDF generation (same as full-access)
-        const element = document.getElementById('pdf-export-content')
-        if (!element) {
+        const source = document.getElementById('pdf-export-content')
+        if (!source) {
           throw new Error('PDF content not found')
         }
-        
+
+        // Create an offscreen clone to avoid mutating React-managed DOM
+        const clone = source.cloneNode(true) as HTMLElement
+        const wrapper = document.createElement('div')
+        wrapper.style.position = 'fixed'
+        wrapper.style.left = '-99999px'
+        wrapper.style.top = '0'
+        wrapper.style.background = '#ffffff'
+        // Match width so line wraps are consistent
+        wrapper.style.width = `${source.offsetWidth || 800}px`
+        wrapper.appendChild(clone)
+        document.body.appendChild(wrapper)
+
+        // Show/hide PDF-specific elements on the clone only
+        clone.querySelectorAll('.pdf-only').forEach(el => (el as HTMLElement).style.display = 'block')
+        clone.querySelectorAll('.pdf-exclude').forEach(el => (el as HTMLElement).style.display = 'none')
+
         // @ts-ignore
         const html2pdf = (await import('html2pdf.js')).default
         const opt = {
@@ -318,8 +336,13 @@ export default function PreviewPage() {
           html2canvas: { scale: 2 },
           jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         }
-        
-        await html2pdf().set(opt).from(element).save()
+
+        try {
+          await html2pdf().set(opt).from(clone).save()
+        } finally {
+          // Clean up offscreen wrapper
+          if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper)
+        }
       } else {
         // Keep existing method for other formats
         const file = await generateFile(format as FileFormat, previewContent, brandDetails.name)
@@ -399,7 +422,7 @@ export default function PreviewPage() {
               className="text-sm bg-gray-900 hover:bg-gray-800 text-white"
             >
               <CreditCard className="mr-2 h-4 w-4" />
-              Unlock Style Guide
+              Unlock Full Guide
             </Button>
           </div>
         </div>
@@ -482,7 +505,7 @@ export default function PreviewPage() {
                   ) : (
                     <CreditCard className="mr-2 h-4 w-4" />
                   )}
-                  Get Core Guide
+                  Unlock Full Guide
                 </Button>
               </div>
             </TabsContent>
@@ -548,7 +571,7 @@ export default function PreviewPage() {
                   ) : (
                     <CreditCard className="mr-2 h-4 w-4" />
                   )}
-                  Get Complete Guide
+                  Unlock Full Guide
                 </Button>
               </div>
             </TabsContent>
@@ -588,16 +611,24 @@ export default function PreviewPage() {
                 guideType="core"
                 showPreviewBadge={true}
               />
-              <div className="p-8 bg-white">
-                <div className="max-w-2xl mx-auto space-y-12">
-                  <div className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base">
-                    <MarkdownRenderer 
-                      content={previewContent || ""}
-                    />
-                  </div>
+                <div className="p-8 bg-white">
+                  <div className="max-w-2xl mx-auto space-y-12">
+                    <div className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base">
+                      <MarkdownRenderer 
+                        content={previewContent || ""}
+                        selectedTraits={(() => {
+                          try {
+                            const savedTraits = localStorage.getItem("selectedTraits")
+                            return savedTraits ? JSON.parse(savedTraits) : []
+                          } catch (e) {
+                            return []
+                          }
+                        })()}
+                      />
+                    </div>
                   
-                  {/* Professional PDF Footer */}
-                  <div className="mt-12 pt-8 border-t border-gray-200">
+                  {/* Professional PDF Footer - only in PDF */}
+                  <div className="pdf-only mt-12 pt-8 border-t border-gray-200">
                     <div className="text-center space-y-3">
                       <div className="text-sm text-gray-600">
                         <div className="font-medium text-gray-800">AI Style Guide Preview</div>

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { generateWithOpenAI, generateAudienceSummary, extractDomainTermsAndLexicon, generateTraitSuggestions } from "@/lib/openai"
+import { generateWithOpenAI, generateAudienceSummary, generateKeywords, generateTraitSuggestions } from "@/lib/openai"
 import Logger from "@/lib/logger"
 import { validateUrl } from "@/lib/url-validation"
 import * as cheerio from "cheerio"
@@ -147,19 +147,18 @@ Important: Make the description rich and detailed (300-450 chars) while staying 
           //     description: brandDetails.description 
           //   }).catch(err => ({ success: false, error: err.message })),
           //   
-          //   extractDomainTermsAndLexicon({ 
+          //   generateKeywords({ 
           //     name: brandDetails.name, 
-          //     description: brandDetails.description 
+          //     description: brandDetails.description,
+          //     audience: audienceStr 
           //   }).catch(err => ({ success: false, error: err.message }))
           // ])
           
-          // Only run keywords extraction for testing
-          const keywordsResult = await extractDomainTermsAndLexicon({ 
+          // Generate audience first for keyword context
+          const audienceResult = await generateAudienceSummary({ 
             name: brandDetails.name, 
             description: brandDetails.description 
           }).catch(err => ({ success: false, error: err.message }))
-          
-          const audienceResult = { success: false, error: "Disabled for testing" }
           
           // Process audience with error handling
           let audienceStr = ''
@@ -175,18 +174,20 @@ Important: Make the description rich and detailed (300-450 chars) while staying 
               }
             } catch {}
           }
+
+          // Generate keywords with audience context
+          const keywordsResult = await generateKeywords({ 
+            name: brandDetails.name, 
+            description: brandDetails.description,
+            audience: audienceStr || 'general audience'
+          }).catch(err => ({ success: false, error: err.message }))
           
           // Process keywords with error handling
           let keywords = ''
-          let domainTerms: string[] | undefined
-          let lexicon: any | undefined
           if (keywordsResult?.success && keywordsResult?.content) {
             const parsed = JSON.parse(keywordsResult.content)
-            domainTerms = Array.isArray(parsed.domainTerms) ? parsed.domainTerms : []
-            lexicon = parsed.lexicon || {}
-            const preferred = Array.isArray(lexicon.preferred) ? lexicon.preferred : []
-            const combined = [...new Set([...(domainTerms || []), ...preferred])]
-            keywords = combined.join('\n')
+            const keywordArray = Array.isArray(parsed.keywords) ? parsed.keywords : []
+            keywords = keywordArray.join('\n')
           }
 
           // Generate trait suggestions
@@ -440,20 +441,13 @@ ${summary}
     //     description: brandDetailsText 
     //   }).catch(err => ({ success: false, error: err.message })),
     //   
-    //   extractDomainTermsAndLexicon({
+    //   generateKeywords({
     
-    // Generate both audience and keywords for trait suggestions
-    const [audienceResult, keywordsResult] = await Promise.all([
-      generateAudienceSummary({ 
-        name: brandName || 'Brand', 
-        description: brandDetailsText 
-      }).catch(err => ({ success: false, error: err.message })),
-      
-      extractDomainTermsAndLexicon({ 
-        name: brandName || 'Brand', 
-        description: brandDetailsText 
-      }).catch(err => ({ success: false, error: err.message }))
-    ])
+    // Generate audience first, then keywords with audience context
+    const audienceResult = await generateAudienceSummary({ 
+      name: brandName || 'Brand', 
+      description: brandDetailsText 
+    }).catch(err => ({ success: false, error: err.message }))
 
     // Process audience with error handling
     let audience = ''
@@ -461,17 +455,19 @@ ${summary}
       audience = audienceResult.content.trim()
     }
 
+    // Generate keywords with audience context
+    const keywordsResult = await generateKeywords({ 
+      name: brandName || 'Brand', 
+      description: brandDetailsText,
+      audience: audience || 'general audience'
+    }).catch(err => ({ success: false, error: err.message }))
+
     // Process keywords with error handling
     let keywords = ''
-    let domainTerms: string[] | undefined
-    let lexicon: any | undefined
     if (keywordsResult?.success && keywordsResult?.content) {
       const parsed = JSON.parse(keywordsResult.content)
-      domainTerms = Array.isArray(parsed.domainTerms) ? parsed.domainTerms : []
-      lexicon = parsed.lexicon || {}
-      const preferred = Array.isArray(lexicon.preferred) ? lexicon.preferred : []
-      const combined = [...new Set([...(domainTerms || []), ...preferred])]
-      keywords = combined.join('\n')
+      const keywordArray = Array.isArray(parsed.keywords) ? parsed.keywords : []
+      keywords = keywordArray.join('\n')
     }
 
     // Generate trait suggestions

@@ -205,7 +205,7 @@ ${trait.dont.map(item => `✗ ${item}`).join('\n')}`
 async function generateCustomTraitDescription(traitName: string, brandDetails: any, index: number): Promise<string> {
   console.log(`🔧 [DEBUG] generateCustomTraitDescription called for trait: ${traitName}`)
   const keywordSection = Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-    ? `\n• Keywords: ${brandDetails.keywords.slice(0, 10).join(', ')}`
+    ? `\n• Keywords: ${brandDetails.keywords.slice(0, 15).join(', ')}`
     : '';
   
   const prompt = `You are a brand voice expert. Generate communication style guidelines for the trait "${traitName}" based on this brand information.
@@ -970,32 +970,32 @@ Put the person before their condition or characteristic to show respect and dign
   return generateWithOpenAI(prompt, "You are a writing style guide expert.", "markdown", 9000, "gpt-4o-mini");
 }
 
-// Extract domain terms and a simple brand lexicon (preferred/banned terms)
-export async function extractDomainTermsAndLexicon(params: { name: string; description: string }): Promise<GenerationResult> {
-  const { name, description } = params
-  const prompt = `From the brand info below, extract domain-specific keywords and a short brand lexicon.
+// Generate keywords for content marketing and brand voice
+export async function generateKeywords(params: { name: string; description: string; audience?: string }): Promise<GenerationResult> {
+  const { name, description, audience = 'general audience' } = params
+  
+  const prompt = `Generate 8-10 high-value keywords for this brand's content marketing and communications.
 
-Return strict JSON with this shape:
-{
-  "domainTerms": ["term1", "term2", "term3", "term4", "term5"],
-  "lexicon": {
-    "preferred": ["preferred term 1", "preferred term 2"],
-    "banned": ["banned term 1", "banned term 2"]
-  }
-}
+- Brand
+  - Name: ${name}
+  - Description: ${description}
+  - Audience: ${audience}
 
-Guidelines:
-- Choose concrete, non-generic domain terms (products, features, industry jargon users would actually write).
-- Preferred terms: words/phrases the brand should use consistently.
-- Banned terms: confusing or off-brand alternatives to avoid.
-- Keep arrays short (5–10 domain terms; 2–5 preferred; 2–5 banned).
-
-Brand Name: ${name}
-Brand Description: ${description}`
+- Guidelines
+  - Focus on terms the audience actually searches for and uses
+  - Include product/service names, features, and industry terminology
+  - Avoid generic buzzwords like "innovative", "leading", "solution"
+  - Each keyword MUST be 20 characters or less (including spaces)
+  - Prefer 1-2 words; use 3 words only if under 20 chars
+  - Choose terms that would appear in blog posts, marketing copy, and user communications
+  
+- Output format
+  - Return clean JSON: {"keywords": ["keyword1", "keyword2", "keyword3"]}
+  - Must contain exactly 8-10 keywords, no more, no less`
 
   return generateWithOpenAI(
     prompt,
-    "You are a careful content taxonomist. Return strict JSON only.",
+    "You are a keyword expert focused on content marketing terms.",
     "json",
     400,
     "gpt-4o-mini"

@@ -8,7 +8,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "ts-node test.ts",
     "generate-blog": "node scripts/generate-blog-posts.js",
     "generate-blog:dry": "node scripts/generate-blog-posts.js --dry-run",
     "generate-blog:limit": "node scripts/generate-blog-posts.js --limit=3"

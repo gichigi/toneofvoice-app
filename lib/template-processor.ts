@@ -130,7 +130,8 @@ function formatMarkdownContent(content: string | undefined): string {
   // Step 1.7: Prevent wraps around spaced dashes/slashes; leave quotes untouched
   // Convert patterns like "foo - bar" or "foo / bar" to use non-breaking spaces
   // so they don't wrap awkwardly, without altering hyphenated words or quoted text.
-  formatted2 = formatted2.replace(/(\w)\s+([\-\/])\s+(\w)/g, '$1\u00A0$2\u00A0$3');
+  // Use [a-zA-Z0-9] instead of \w to avoid matching emoji/Unicode characters
+  formatted2 = formatted2.replace(/([a-zA-Z0-9])\s+([\-\/])\s+([a-zA-Z0-9])/g, '$1\u00A0$2\u00A0$3');
 
   // Step 1.8: Fix broken parentheses across line breaks
   formatted2 = formatted2.replace(/\(\s*\n\s*/g, '(').replace(/\s*\n\s*\)/g, ')');
@@ -650,13 +651,25 @@ export async function renderStyleGuideTemplate({
         // Use preview traits if available
         console.log('[Template Processor] Using preview traits for consistency')
         brandVoiceContent = brandDetails.previewTraits
-        traitsContextForRules = brandVoiceContent.slice(0, 4000)
+        // Prepend explicit selected trait names
+        const traitNames = Array.isArray(validatedDetails.traits)
+          ? validatedDetails.traits.map((t: any) => (typeof t === 'string' ? t : t?.name)).filter(Boolean)
+          : []
+        const traitNamesLine = traitNames.length ? `Selected Traits: ${traitNames.join(', ')}` : ''
+        const combinedContext = [traitNamesLine, brandVoiceContent].filter(Boolean).join('\n\n')
+        traitsContextForRules = combinedContext.slice(0, 4000)
       } else {
         // Generate new traits
         const brandVoiceResult = await generateBrandVoiceTraits(validatedDetails);
         if (brandVoiceResult.success && brandVoiceResult.content) {
           brandVoiceContent = brandVoiceResult.content
-          traitsContextForRules = brandVoiceContent.slice(0, 4000)
+          // Prepend explicit selected trait names
+          const traitNames = Array.isArray(validatedDetails.traits)
+            ? validatedDetails.traits.map((t: any) => (typeof t === 'string' ? t : t?.name)).filter(Boolean)
+            : []
+          const traitNamesLine = traitNames.length ? `Selected Traits: ${traitNames.join(', ')}` : ''
+          const combinedContext = [traitNamesLine, brandVoiceContent].filter(Boolean).join('\n\n')
+          traitsContextForRules = combinedContext.slice(0, 4000)
         } else {
           brandVoiceContent = "_Could not generate brand voice traits for this brand._"
           traitsContextForRules = undefined
@@ -785,7 +798,13 @@ export async function renderPreviewStyleGuide({
     if (traitsResult?.success && traitsResult.content) {
       const parsedTraits = JSON.parse(traitsResult.content);
       fullTraitContent = parsedTraits.fullTraits.join('\n\n');
-      traitsContextForRules = fullTraitContent.slice(0, 4000);
+      // Prepend explicit selected trait names so the rules prompt can reference them
+      const traitNames = Array.isArray(validatedDetails.traits)
+        ? validatedDetails.traits.map((t: any) => (typeof t === 'string' ? t : t?.name)).filter(Boolean)
+        : [];
+      const traitNamesLine = traitNames.length ? `Selected Traits: ${traitNames.join(', ')}` : '';
+      const combinedContext = [traitNamesLine, fullTraitContent].filter(Boolean).join('\n\n');
+      traitsContextForRules = combinedContext.slice(0, 4000);
     }
 
     // Generate rules with retry

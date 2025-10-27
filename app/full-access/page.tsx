@@ -58,10 +58,11 @@ function FullAccessContent() {
       const selectedTraits = savedSelectedTraits ? JSON.parse(savedSelectedTraits) : []
       
       // Check if we can reuse preview traits
+      const TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
       const canReuseTraits = generatedPreviewTraits && 
                             previewTraitsTimestamp && 
                             selectedTraits.length > 0 &&
-                            (Date.now() - parseInt(previewTraitsTimestamp)) < 300000 // 5 minutes
+                            (Date.now() - parseInt(previewTraitsTimestamp)) < TTL_MS
       
       if (canReuseTraits) {
         console.log("[Full Access] Reusing preview traits to save API calls")
@@ -260,8 +261,16 @@ function FullAccessContent() {
       margin: 0.5,
       filename: `${brandDetails?.name?.replace(/\s+/g, '-').toLowerCase() || 'style'}-guide.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      html2canvas: { 
+        scale: 2,
+        letterRendering: true,
+        useCORS: true
+      },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+      pagebreak: { 
+        mode: ['avoid-all', 'css', 'legacy'],
+        avoid: ['h2', 'h3', '.voice-trait', '.rule-section']
+      }
     }
     html2pdf().set(opt).from(element).save()
   }
@@ -446,7 +455,7 @@ function FullAccessContent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
+      {/* Header (sticky to match preview) */}
       <Header 
         containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
         rightContent={
@@ -531,7 +540,7 @@ function FullAccessContent() {
           </div>
           
           <div className="bg-white rounded-2xl border shadow-lg overflow-hidden">
-            <div id="pdf-export-content">
+            <div id="pdf-export-content" className="print-optimized">
               <StyleGuideHeader 
                 brandName={brandDetails?.name || 'Your Brand'} 
                 guideType={guideType as 'core' | 'complete'} 
@@ -607,21 +616,6 @@ function FullAccessContent() {
               </div>
             </Button>
             
-            <Button
-              onClick={() => handleDownload("html")}
-              disabled={isDownloading}
-              className="w-full justify-start gap-3 h-14 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-none"
-            >
-              {downloadFormat === "html" ? (
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              ) : (
-                <FileText className="h-4 w-4 text-gray-600" />
-              )}
-              <div className="text-left">
-                <div className="font-medium text-gray-900">HTML</div>
-                <div className="text-xs text-gray-500">Ready to publish online</div>
-              </div>
-            </Button>
             
             <Button
               onClick={() => handleDownload("md")}

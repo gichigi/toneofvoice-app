@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils'
 interface MarkdownRendererProps {
   content: string
   className?: string
+  selectedTraits?: string[]
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className, selectedTraits = [] }: MarkdownRendererProps) {
   // Fix orphaned punctuation patterns
   const fixedContent = content
     .replace(/\s*\n\s*\)/g, ')') // Fix orphaned closing parentheses on new lines
@@ -27,11 +28,29 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             {children}
           </h1>
         ),
-        h2: ({ children }) => (
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-8">
-            {children}
-          </h2>
-        ),
+        h2: ({ children }) => {
+          const childrenText = typeof children === 'string' ? children : (Array.isArray(children) ? children.join('') : String(children))
+          const isTraitHeading = childrenText.toLowerCase().includes('brand voice')
+          return (
+            <>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-8">
+                {children}
+              </h2>
+              {isTraitHeading && selectedTraits.length > 0 && (
+                <div className="flex flex-wrap gap-3 md:gap-4 mb-8 mt-2">
+                  {selectedTraits.map((trait: string, index: number) => (
+                    <span 
+                      key={index}
+                      className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200"
+                    >
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )
+        },
         h3: ({ children }) => (
           <h3 className="text-xl font-medium text-gray-800 mb-3 mt-6" style={{ hyphens: 'none', wordBreak: 'keep-all' }}>
             {children}

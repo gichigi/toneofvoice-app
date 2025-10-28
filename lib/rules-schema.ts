@@ -1,7 +1,7 @@
 // Schema and validation for style guide rules
 
 export const ALLOWED_RULE_CATEGORIES = [
-  "Abbreviations",
+  "Abbreviated Words",
   "Acronyms",
   "Capitalisation",
   "Contractions",

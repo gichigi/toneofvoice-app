@@ -240,7 +240,7 @@ Important constraints for the ONE SENTENCE description (3 rules):
 
 Each "What It Doesn't Mean" should show how its corresponding "What It Means" could be taken too far - the same concept but pushed to an extreme. Focus on writing style, tone, and language use. Use → (unicode arrow) and ✗ (unicode cross) exactly as shown.`;
 
-  const result = await generateWithOpenAI(prompt, "You are a brand voice expert creating specific, actionable communication style guidelines.", "markdown", 800, "gpt-4o-mini");
+  const result = await generateWithOpenAI(prompt, "You are a brand voice expert creating specific, actionable communication style guidelines.", "markdown", 800, "gpt-4o");
   
   if (result.success && result.content) {
     return result.content.trim()
@@ -476,7 +476,7 @@ Return ONLY valid JSON array with exactly ${count} rules.`
         "You are a writing style guide expert. Return strict JSON only.",
         "json",
       2000,
-      "gpt-4o-mini"
+      "gpt-4o"
     )
 
     if (!result.success || !result.content) {
@@ -525,7 +525,7 @@ Return ${validation.invalid.length} replacement rules as JSON array using ONLY a
             "You are a writing style guide expert. Return strict JSON only.",
             "json",
             1000,
-            "gpt-4o-mini"
+            "gpt-4o"
           )
 
           if (repairResult.success && repairResult.content) {
@@ -609,7 +609,7 @@ Create ${count} similar transformations that feel natural for ${brandDetails.nam
       "You are an expert copywriter who transforms generic content into distinctive brand voice. Return strict JSON only.",
       "json",
       400,
-      "gpt-4o-mini"
+      "gpt-4o"
     )
 
     if (!result.success || !result.content) {
@@ -662,57 +662,42 @@ Use British English spelling
 
 // Function to generate the entire core style guide in one go
 export async function generateFullCoreStyleGuide(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
-  console.log('============================================')
-  console.log('[generateFullCoreStyleGuide] FUNCTION CALLED')
-  console.log('[generateFullCoreStyleGuide] Brand:', brandDetails?.name)
-  console.log('============================================')
+  console.log('[generateFullCoreStyleGuide] Generating core style guide for:', brandDetails?.name)
   
   try {
-    console.log('[generateFullCoreStyleGuide] Importing rules-schema...')
     const rulesSchema = await import('./rules-schema')
-    console.log('[generateFullCoreStyleGuide] Importing rules-renderer...')
-    const rulesRenderer = await import('./rules-renderer')
-    
-    const { getAllowedCategoriesPromptText, validateRules } = rulesSchema
-    const { renderRulesMarkdown } = rulesRenderer
-    
-    console.log('[generateFullCoreStyleGuide] Imports successful')
+    const { getAllowedCategoriesPromptText } = rulesSchema
     
     const traitsSection = traitsContext ? `\nTraits Context:\n${traitsContext}\n` : ''
-    const styleConstraints = `\nStyle Constraints:\n- Formality: ${brandDetails.formalityLevel || 'Neutral'} (Professional: avoid contractions; Casual: allow contractions; Very Formal: use third person)\n- Reading Level: ${brandDetails.readingLevel || '10-12'} (6–8: short sentences, simple vocab; 13+: technical precision allowed)\n- English Variant: ${brandDetails.englishVariant || 'american'} (apply spelling and punctuation accordingly)`
-  const keywordSection = Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-    ? `\nBrand Keywords (use naturally in examples where helpful):\n- ${brandDetails.keywords.slice(0, 15).join('\n- ')}`
-      : ''
 
     const allowedCategories = getAllowedCategoriesPromptText()
 
-    const prompt = `Create exactly 25 writing style rules in markdown format for this brand. Each rule supports one of the selected traits.
+    const prompt = `Create exactly 25 writing style rules in markdown format for this brand.
 
 - Brand
   - Name: ${brandDetails.name}
   - Audience: ${brandDetails.audience}
   - Description: ${brandDetails.description}
+  - Formality: ${brandDetails.formalityLevel || 'Neutral'}
+  - Reading Level: ${brandDetails.readingLevel || '10-12'}
+  - English Variant: ${brandDetails.englishVariant || 'american'}
   - Keywords: ${Array.isArray(brandDetails.keywords) && brandDetails.keywords.length ? brandDetails.keywords.slice(0, 15).join(', ') : 'None'}
-- Traits Context
-  - ${traitsSection ? 'Use the voice described here.' : 'No extra context provided.'}
-  - ${traitsSection || ''}
-  - Selected Traits: ${Array.isArray(brandDetails.traits) && brandDetails.traits.length ? brandDetails.traits.join(', ') : 'None'}
+
+${traitsSection}
+
 - Allowed Categories
-  - Use only these categories:
 ${allowedCategories}
-- Output format
-  - Return clean markdown with exactly 25 numbered rules.
-  - Each rule format:
-    ### N. Category Name
-    A rule (8–12 words) that supports one of the selected traits.
-    ✅ *Good example in brand voice*
-    ❌ *Bad example in brand voice*
-- Rules constraints
-  - Style/grammar/punctuation/formatting only; no content/marketing/strategy.
-  - No duplicate categories; each category appears once.
-  - Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}.
-- Count enforcement
-  - Must produce exactly 25 rules, no more, no less.`
+
+- Rules format
+  - ### N. Category Name
+  - One sentence rule (8–12 words)
+  - ✅ Good example in brand voice
+  - ❌ Bad example in brand voice
+  
+- Critical instructions
+  - Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
+  - No duplicate categories
+  - Exactly 25 rules`
 
     // Generate markdown rules directly
     let attempts = 0
@@ -720,28 +705,24 @@ ${allowedCategories}
 
     while (attempts < maxAttempts) {
       attempts++
-      console.log(`[generateFullCoreStyleGuide] Attempt ${attempts}/${maxAttempts}`)
       
       const result = await generateWithOpenAI(
         prompt,
         "You are a writing style guide expert. Generate clean markdown with exactly 25 numbered rules.",
         "markdown",
         5000,
-        "gpt-4o-mini"
+        "gpt-4o"
       )
 
       if (!result.success || !result.content) {
-        console.log(`[generateFullCoreStyleGuide] Attempt ${attempts} failed:`, result.error)
         if (attempts === maxAttempts) {
+          console.error('[generateFullCoreStyleGuide] Failed after all attempts:', result.error)
           return { success: false, error: result.error || 'Failed to generate core rules after retries' }
         }
         continue
       }
 
-      // Simple markdown validation - just check if we have content
-      console.log(`[generateFullCoreStyleGuide] Generated markdown, length: ${result.content.length}`)
-      console.log(`[generateFullCoreStyleGuide] Success! Generated markdown rules`)
-      
+      console.log(`[generateFullCoreStyleGuide] Success! Generated ${result.content.length} chars`)
       return { success: true, content: result.content }
     }
 
@@ -800,7 +781,7 @@ Instructions:
    - ### 10. UK vs. US English
 
 ## Grammar & Mechanics
-   - ### 11. Abbreviations
+   - ### 11. Abbreviated Words
    - ### 12. Acronyms
    - ### 13. Active vs. Passive Voice
    - ### 14. Capitalisation
@@ -921,8 +902,8 @@ Always capitalize "${brandDetails.name}" consistently to maintain brand identity
 ✅ Right: ${brandDetails.name} offers innovative solutions for businesses.
 ❌ Wrong: ${brandDetails.name.toLowerCase()} offers innovative solutions for businesses.
 
-### 11. Abbreviations
-Spell out abbreviations on first use to maintain clarity for all readers.
+### 11. Abbreviated Words
+Spell out abbreviated words on first use to maintain clarity for all readers.
 ✅ The World Health Organization (WHO) recommends...
 ❌ WHO recommends... (without introduction)
 
@@ -967,7 +948,7 @@ Put the person before their condition or characteristic to show respect and dign
 - Make each rule unique, clear, and actionable.
 - Focus on how to write, edit, and format text for this brand.
 `;
-  return generateWithOpenAI(prompt, "You are a writing style guide expert.", "markdown", 9000, "gpt-4o-mini");
+  return generateWithOpenAI(prompt, "You are a writing style guide expert.", "markdown", 9000, "gpt-4o");
 }
 
 // Generate keywords for content marketing and brand voice
@@ -1049,6 +1030,6 @@ Return ONLY a JSON array with exactly 3 trait names, like this:
     "You are a brand voice expert. Choose the 3 most fitting traits for this brand.",
     "json",
     100,
-    "gpt-4o-mini"
+    "gpt-4o"
   )
 }

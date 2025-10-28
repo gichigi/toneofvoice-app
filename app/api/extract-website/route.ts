@@ -118,23 +118,31 @@ export async function POST(request: Request) {
     if (body.description && !body.url) {
       Logger.info("Processing description input", { descriptionLength: body.description.length })
       
-      const prompt = `Based on this business description: "${body.description}"
+      const prompt = `Extract and expand brand details from this business description: "${body.description}"
 
-Extract and expand brand details in this exact JSON format:
-{
-  "name": "business name (if mentioned, extract exactly; if not mentioned, create a creative, memorable name that fits the business)",
-  "industry": "specific industry category",
-  "description": "rich, detailed business description (300-450 characters) that expands on the original input with specific details about what they do, their approach, and what makes them special",
-  "targetAudience": "detailed description of their ideal customers, including demographics, needs, and characteristics"
-}
+- Brand
+  - Input: ${body.description}
+  - Task: Create comprehensive brand profile
 
-Important: Make the description rich and detailed (300-450 chars) while staying true to the original business concept.`
+- Guidelines
+  - Description must be exactly 300-400 characters (STRICT LIMIT)
+  - Include what they do, their approach, and what makes them special
+  - Use clear, professional language
+  - Write in third person
+  - Focus on current offerings, not history
+  - CRITICAL: Never truncate mid-sentence. If approaching 400 characters, end at the last complete sentence before the limit.
+  - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
+
+- Output format
+  - Return clean JSON: {"name": "brand name", "industry": "category", "description": "300-400 char description", "targetAudience": "audience details"}
+  - If name not mentioned, create a creative, memorable name that fits the business`
 
       try {
         const result = await generateWithOpenAI(prompt, "You are a brand analysis expert.", "json", 800, "gpt-4o-mini")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
+          
           
           // Run audience generation and domain terms extraction in parallel
           // TODO: Consider consolidating into single AI call for 20-25% performance improvement
@@ -217,7 +225,7 @@ Important: Make the description rich and detailed (300-450 chars) while staying 
           return NextResponse.json({
             success: true,
             brandName: brandDetails.name,
-            brandDetailsText: brandDetails.description,
+            brandDetailsDescription: brandDetails.description,
             audience: audienceStr,
             keywords,
             suggestedTraits
@@ -387,29 +395,30 @@ Important: Make the description rich and detailed (300-450 chars) while staying 
     summary = summary.slice(0, 7000)
 
     // Generate prompt for website extraction with improved guidance
-    const prompt = `Analyze the following website content and extract the brand's core identity.
+    const prompt = `Analyze this website content and extract the brand's core identity.
 
-Write a single, cohesive paragraph (30-50 words) that follows this structure:
-1. Start with the brand name followed by what they are/do
-2. Include their main products/services
-3. Specify their target audience
-4. Mention what makes them unique (if identifiable)
+- Brand
+  - Website content provided below
+  - Task: Create comprehensive brand profile
 
-Your paragraph should be:
-- Professional, clear and easy to read 
-- Factual, not promotional
-- Written in third person
-- Focused on their current offerings, not history
-- Use short sentences and simple punctuation
+- Guidelines
+  - Description must be exactly 300-400 characters (STRICT LIMIT)
+  - Start with brand name followed by what they are/do
+  - Include main products/services
+  - Specify target audience
+  - Mention what makes them unique (if identifiable)
+  - Use professional, clear language
+  - Write in third person
+  - Focus on current offerings, not history
+  - CRITICAL: Never truncate mid-sentence. If approaching 400 characters, end at the last complete sentence before the limit.
+  - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
 
-Examples: 
-'Nike is a leading sports brand, selling a wide range of workout products, services and experiences worldwide. Nike targets athletes and sports enthusiasts globally, focusing on those who want high-quality sportswear and equipment.'
-
-'OpenAI is a technology company specializing in artificial intelligence research and development. OpenAI offers cutting-edge AI products and services to businesses and developers worldwide. Their target audience includes organizations looking to leverage advanced AI solutions.'
+- Output format
+  - Return clean JSON: {"name": "brand name", "description": "300-400 char description"}
+  - Description must be exactly 300-400 characters
 
 Website Content:
-${summary}
-`
+${summary}`
 
     const result = await generateWithOpenAI(
       prompt,
@@ -422,13 +431,12 @@ ${summary}
       throw new Error(result.error || "Failed to extract brand information")
     }
 
-    // Process the paragraph response
-    const brandDetailsText = result.content.trim()
-    Logger.debug("Generated brand details text", { brandDetailsText })
-
-    // Extract brand name from the description using simple pattern
-    const brandNameMatch = brandDetailsText.match(/^([^.]+?)\s+is\s+/i)
-    const brandName = brandNameMatch ? brandNameMatch[1].trim() : ""
+    // Parse the JSON response
+    const parsed = JSON.parse(result.content)
+    const brandName = parsed.name || ""
+    const brandDetailsDescription = parsed.description || ""
+    
+    Logger.debug("Generated brand details", { brandName, brandDetailsDescription })
 
     // Generate audience and keywords in parallel
     // TODO: Consider consolidating into single AI call for 20-25% performance improvement
@@ -438,7 +446,7 @@ ${summary}
     // const [audienceResult, keywordsResult] = await Promise.all([
     //   generateAudienceSummary({ 
     //     name: brandName || 'Brand', 
-    //     description: brandDetailsText 
+    //     description: brandDetailsDescription 
     //   }).catch(err => ({ success: false, error: err.message })),
     //   
     //   generateKeywords({
@@ -446,7 +454,7 @@ ${summary}
     // Generate audience first, then keywords with audience context
     const audienceResult = await generateAudienceSummary({ 
       name: brandName || 'Brand', 
-      description: brandDetailsText 
+      description: brandDetailsDescription 
     }).catch(err => ({ success: false, error: err.message }))
 
     // Process audience with error handling
@@ -458,7 +466,7 @@ ${summary}
     // Generate keywords with audience context
     const keywordsResult = await generateKeywords({ 
       name: brandName || 'Brand', 
-      description: brandDetailsText,
+      description: brandDetailsDescription,
       audience: audience || 'general audience'
     }).catch(err => ({ success: false, error: err.message }))
 
@@ -477,7 +485,7 @@ ${summary}
       Logger.info("Generating trait suggestions for:", { brandName, audience })
       const traitsResult = await generateTraitSuggestions({
         name: brandName,
-        description: brandDetailsText,
+        description: brandDetailsDescription,
         audience: audience
       })
       
@@ -495,7 +503,7 @@ ${summary}
     Logger.info("Successfully extracted brand information")
     return NextResponse.json({
       success: true,
-      brandDetailsText,
+      brandDetailsDescription,
       brandName,
       audience,
       keywords,

@@ -11,7 +11,7 @@ function validateBrandDetails(details: any) {
     errors.push("Brand name is required")
   }
   
-  if (!details.description || details.description.trim().length === 0) {
+  if (!details.brandDetailsDescription || details.brandDetailsDescription.trim().length === 0) {
     errors.push("Brand description is required")
   }
   
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       hasName: !!brandDetails.name,
       hasDescription: !!brandDetails.description,
       hasAudience: !!brandDetails.audience,
-      hasBrandDetailsText: !!brandDetails.brandDetailsText,
+      hasBrandDetailsDescription: !!brandDetails.brandDetailsDescription,
       tone: brandDetails.tone,
       keys: Object.keys(brandDetails)
     })

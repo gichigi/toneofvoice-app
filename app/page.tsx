@@ -341,7 +341,7 @@ export default function LandingPage() {
       console.log(`[HOMEPAGE] API response received:`, {
         success: data?.success,
         hasName: !!data?.brandName,
-        hasDescription: !!data?.brandDetailsText,
+        hasDescription: !!data?.brandDetailsDescription,
         status: response.status,
         responseTime: apiTime,
         dataKeys: data && typeof data === 'object' ? Object.keys(data) : []
@@ -351,7 +351,7 @@ export default function LandingPage() {
         // Save to localStorage with both name and description
         const brandDetails = {
           name: data.brandName || "",
-          brandDetailsText: data.brandDetailsText,
+          brandDetailsDescription: data.brandDetailsDescription,
           tone: "friendly", // Default tone
           audience: data.audience || ""
         }
@@ -366,7 +366,7 @@ export default function LandingPage() {
         localStorage.setItem("brandDetails", JSON.stringify(brandDetails))
         console.log(`[USER_JOURNEY] Brand details saved to localStorage:`, {
           hasName: !!brandDetails.name,
-          descriptionLength: brandDetails.brandDetailsText?.length || 0
+          descriptionLength: brandDetails.brandDetailsDescription?.length || 0
         })
 
         // Show success state briefly before redirecting

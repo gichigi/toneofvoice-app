@@ -22,7 +22,7 @@ import VoiceTraitSelector from "@/components/VoiceTraitSelector"
 // Default brand details
 const defaultBrandDetails = {
   name: "",
-  brandDetailsText: "",
+  brandDetailsDescription: "",
   audience: "",
   englishVariant: "american" as "american" | "british",
   formalityLevel: "Neutral", // Default to neutral
@@ -147,7 +147,7 @@ export default function BrandDetailsPage() {
 
   // Auto-resize textarea when content changes or on load
   useEffect(() => {
-    const textarea = document.getElementById('brandDetailsText') as HTMLTextAreaElement
+    const textarea = document.getElementById('brandDetailsDescription') as HTMLTextAreaElement
     if (textarea) {
       setTimeout(() => {
         textarea.style.height = "auto"
@@ -155,7 +155,7 @@ export default function BrandDetailsPage() {
         setDescriptionHeight(textarea.scrollHeight)
       }, 100)
     }
-  }, [brandDetails.brandDetailsText])
+  }, [brandDetails.brandDetailsDescription])
 
   // Load saved brand details and email from localStorage
   useEffect(() => {
@@ -172,16 +172,16 @@ export default function BrandDetailsPage() {
         }
         
         // Format auto-populated descriptions with paragraph breaks (only for extracted content)
-        let formattedBrandDetailsText = parsedDetails.brandDetailsText
-        if (fromExtraction && formattedBrandDetailsText && formattedBrandDetailsText.length > 20) {
-          formattedBrandDetailsText = formatAutoPopulatedDescription(formattedBrandDetailsText)
+        let formattedBrandDetailsDescription = parsedDetails.brandDetailsDescription
+        if (fromExtraction && formattedBrandDetailsDescription && formattedBrandDetailsDescription.length > 20) {
+          formattedBrandDetailsDescription = formatAutoPopulatedDescription(formattedBrandDetailsDescription)
         }
         
         // Ensure all required fields have values by merging with defaults
         const updatedDetails = {
           ...defaultBrandDetails,
           ...parsedDetails,
-          brandDetailsText: formattedBrandDetailsText || parsedDetails.brandDetailsText,
+          brandDetailsDescription: formattedBrandDetailsDescription || parsedDetails.brandDetailsDescription,
           englishVariant: parsedDetails.englishVariant || "american",
           formalityLevel: formalityLevelValue || "Neutral",
           readingLevel: parsedDetails.readingLevel || "6-8",
@@ -367,7 +367,7 @@ export default function BrandDetailsPage() {
       if (!value.trim()) {
       setMainError("Please enter a brand description.");
       return false;
-      } else if (value.length > 500) {
+      } else if (value.length > 400) {
       setMainError("Description is too long.");
       return false;
     }
@@ -478,7 +478,7 @@ export default function BrandDetailsPage() {
   const isCoreFormReady = () => {
     return (
       !!brandDetails.name?.trim() && 
-      !!brandDetails.brandDetailsText.trim() && 
+      !!brandDetails.brandDetailsDescription?.trim() && 
       selectedTraits.length === 3
     )
   }
@@ -498,7 +498,7 @@ export default function BrandDetailsPage() {
     } else if (!formReady && showEmailCapture) {
       setShowEmailCapture(false) // Reset if form becomes invalid
     }
-  }, [brandDetails.name, brandDetails.brandDetailsText, selectedTraits.length])
+  }, [brandDetails.name, brandDetails.brandDetailsDescription, selectedTraits.length])
 
   // Update isFormValid function - email is optional, no validation needed
   const isFormValid = () => {
@@ -533,8 +533,6 @@ export default function BrandDetailsPage() {
       const detailsWithName = { 
         ...brandDetails, 
         name: brandName,
-        // Map brandDetailsText to description for template processor compatibility
-        description: brandDetails.brandDetailsText,
         // Use extracted audience if present; otherwise leave empty (server will generate if needed)
         audience: brandDetails.audience || "",
         // Pass keywords (generated or user-edited) to backend
@@ -645,17 +643,17 @@ export default function BrandDetailsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
                     {/* Left: Description (span 2 columns to align with left + middle fields below) */}
                     <div className="grid gap-2 sm:col-span-2">
-                      <Label htmlFor="brandDetailsText">Description</Label>
+                      <Label htmlFor="brandDetailsDescription">Description</Label>
                       <Textarea
                         ref={descRef}
-                        id="brandDetailsText"
-                        name="brandDetailsText"
+                        id="brandDetailsDescription"
+                        name="brandDetailsDescription"
                         placeholder="Describe your brand in a few sentences. What do you do? Who do you serve?"
-                        value={brandDetails.brandDetailsText || ""}
+                        value={brandDetails.brandDetailsDescription || ""}
                         onChange={e => {
-                          const value = e.target.value.slice(0, 500)
+                          const value = e.target.value.slice(0, 400)
                           setBrandDetails(prev => {
-                            const updatedDetails = { ...prev, brandDetailsText: value }
+                            const updatedDetails = { ...prev, brandDetailsDescription: value }
                             localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
                             return updatedDetails
                           })
@@ -670,7 +668,7 @@ export default function BrandDetailsPage() {
                         onBlur={e => setShowCharCount(!!e.target.value)}
                       />
                       {showCharCount && (
-                        <div className={`text-xs mt-1 ${brandDetails.brandDetailsText?.length > 450 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{brandDetails.brandDetailsText?.length || 0}/500 characters</div>
+                        <div className={`text-xs mt-1 ${brandDetails.brandDetailsDescription?.length > 350 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{brandDetails.brandDetailsDescription?.length || 0}/400 characters</div>
                       )}
                       {mainError && (
                         <div className="text-xs text-red-600 mt-1">{mainError}</div>

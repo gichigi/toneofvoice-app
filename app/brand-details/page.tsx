@@ -679,7 +679,8 @@ export default function BrandDetailsPage() {
                       <Label htmlFor="keywordInput">Keywords (optional)</Label>
                       {/* Tag list */}
                       <div
-                        className="flex w-full h-32 sm:h-36 overflow-y-auto rounded-md border border-input bg-background px-3 py-2 flex-wrap items-start gap-1 content-start"
+                        className="flex w-full overflow-y-auto rounded-md border border-input bg-background px-3 py-2 flex-wrap items-start gap-1 content-start"
+                        style={{ height: `${Math.max(144, descriptionHeight)}px` }}
                         onClick={() => keywordInputRef.current?.focus()}
                       >
                         {keywordTags.map(term => (

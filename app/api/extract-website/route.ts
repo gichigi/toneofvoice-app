@@ -124,6 +124,16 @@ export async function POST(request: Request) {
   - Input: ${body.description}
   - Task: Create comprehensive brand profile
 
+- Brand Name Requirements (CRITICAL)
+  - Create a catchy, memorable name that charms users
+  - Must be phonetic and easy to pronounce
+  - 1-3 words maximum, ideally 2 words
+  - Should sound delightful when spoken aloud
+  - Avoid generic words like "Solutions", "Services", "Group"
+  - Consider alliteration, rhythm, or playful sounds
+  - Make it feel approachable and human
+  - Examples of charming names: "Popcorn Crust", "Whimsy & Co", "Bubble & Bliss"
+
 - Guidelines
   - Description must be exactly 300-400 characters (STRICT LIMIT)
   - Include what they do, their approach, and what makes them special
@@ -134,11 +144,11 @@ export async function POST(request: Request) {
   - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
 
 - Output format
-  - Return clean JSON: {"name": "brand name", "industry": "category", "description": "300-400 char description", "targetAudience": "audience details"}
-  - If name not mentioned, create a creative, memorable name that fits the business`
+  - Return clean JSON: {"name": "charming brand name", "industry": "category", "description": "300-400 char description", "targetAudience": "audience details"}
+  - The name should make users smile and remember it easily`
 
       try {
-        const result = await generateWithOpenAI(prompt, "You are a brand analysis expert.", "json", 800, "gpt-4o-mini")
+        const result = await generateWithOpenAI(prompt, "You are a creative brand naming expert who specializes in crafting catchy, memorable names that charm users and stick in their minds. You excel at creating phonetic, delightful names that make people smile.", "json", 800, "gpt-4o-mini")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -401,6 +411,16 @@ export async function POST(request: Request) {
   - Website content provided below
   - Task: Create comprehensive brand profile
 
+- Brand Name Requirements
+  - Extract the existing brand name if clearly mentioned
+  - If no clear name exists, create a compelling name that would charm its users
+  - Must be phonetic and easy to pronounce
+  - 1-3 words maximum
+  - Should sound delightful when spoken aloud
+  - Avoid generic words like "Solutions", "Services", "Group"
+  - Consider alliteration, rhythm, or playful sounds
+  - Make it feel approachable and human
+
 - Guidelines
   - Description must be exactly 300-400 characters (STRICT LIMIT)
   - Start with brand name followed by what they are/do
@@ -414,15 +434,16 @@ export async function POST(request: Request) {
   - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
 
 - Output format
-  - Return clean JSON: {"name": "brand name", "description": "300-400 char description"}
+  - Return clean JSON: {"name": "charming brand name", "description": "300-400 char description"}
   - Description must be exactly 300-400 characters
+  - The name should make users smile and remember it easily
 
 Website Content:
 ${summary}`
 
     const result = await generateWithOpenAI(
       prompt,
-      "You are an expert brand analyst with experience writing clear, readable brand summaries. Use simple language and short sentences. Avoid complex words, marketing jargon, and run-on sentences. Make your description easily scannable and accessible to all readers.",
+      "You are a creative brand naming expert who specializes in crafting catchy, memorable names that charm users and stick in their minds. You excel at creating phonetic, delightful names that make people smile. You also write clear, readable brand summaries using simple language and short sentences.",
       "json", // Use json format for faster processing
       500 // Reduce max tokens since we only need a short paragraph
     )

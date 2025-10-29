@@ -91,7 +91,6 @@ export async function POST(request: Request) {
       hasDescription: !!brandDetails.description,
       hasAudience: !!brandDetails.audience,
       hasBrandDetailsDescription: !!brandDetails.brandDetailsDescription,
-      tone: brandDetails.tone,
       keys: Object.keys(brandDetails)
     })
 
@@ -106,12 +105,6 @@ export async function POST(request: Request) {
         },
         { status: 400 },
       )
-    }
-
-    // Ensure tone is never empty
-    if (!brandDetails.tone || brandDetails.tone.trim() === "") {
-      brandDetails.tone = "professional"
-      console.log("Using default tone: professional")
     }
 
     // Determine which template to use based on the plan

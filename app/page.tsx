@@ -41,7 +41,6 @@ const defaultBrandDetails = {
   name: "AIStyleGuide",
   description: "A web app that generates brand voice and content style guides",
   audience: "marketing professionals aged 25-45 who are interested in branding, content creation, and efficiency",
-  tone: "friendly",
 }
 
 // Feature flag for Nike demo CTA
@@ -352,7 +351,6 @@ export default function LandingPage() {
         const brandDetails = {
           name: data.brandName || "",
           brandDetailsDescription: data.brandDetailsDescription,
-          tone: "friendly", // Default tone
           audience: data.audience || ""
         }
         if (data.keywords) {

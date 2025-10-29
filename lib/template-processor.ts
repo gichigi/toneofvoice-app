@@ -348,7 +348,6 @@ export async function processTemplate(templateType: string, brandDetails: any, p
     // For style guide rules generation (separate from voice traits)
     const rulesDetails = {
       ...validatedDetails,
-      tone: brandDetails.tone,
     }
 
     // Check for required fields
@@ -446,7 +445,7 @@ export async function processTemplate(templateType: string, brandDetails: any, p
     // Generate examples if needed for complete template
     if (plan === "complete") {
       try {
-            const examplePrompt = `Create example content for the ${rulesDetails.name} brand with a ${rulesDetails.tone} tone.
+            const examplePrompt = `Create example content for the ${rulesDetails.name} brand.
     The brand description is: ${rulesDetails.brandDetailsDescription}
     Target audience: ${rulesDetails.audience}
         
@@ -627,7 +626,6 @@ export async function renderStyleGuideTemplate({
       // For style guide rules generation (separate from voice traits)
       const rulesDetails = {
         ...validatedDetails,
-        tone: brandDetails.tone || '',
         formalityLevel: brandDetails.formalityLevel || '',
         readingLevel: brandDetails.readingLevel || '',
         englishVariant: brandDetails.englishVariant || '',
@@ -779,7 +777,6 @@ export async function renderPreviewStyleGuide({
     
     const rulesDetails = {
       ...validatedDetails,
-      tone: brandDetails.tone || '',
       formalityLevel: brandDetails.formalityLevel || '',
       readingLevel: brandDetails.readingLevel || '',
       englishVariant: brandDetails.englishVariant || '',

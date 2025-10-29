@@ -15,7 +15,6 @@ export default function StartPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [manualDetails, setManualDetails] = useState("")
   const [showCharCount, setShowCharCount] = useState(false)
-  const [tone, setTone] = useState("friendly")
   const [showManual, setShowManual] = useState(false)
 
   // URL validation function (copied from homepage)

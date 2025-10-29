@@ -125,14 +125,13 @@ export async function POST(request: Request) {
   - Task: Create comprehensive brand profile
 
 - Brand Name Requirements (CRITICAL)
-  - Create a catchy, memorable name that charms users
+  - Create a memorable name that fits the business
   - Must be phonetic and easy to pronounce
   - 1-3 words maximum, ideally 2 words
-  - Should sound delightful when spoken aloud
   - Avoid generic words like "Solutions", "Services", "Group"
-  - Consider alliteration, rhythm, or playful sounds
-  - Make it feel approachable and human
-  - Examples of charming names: "Popcorn Crust", "Whimsy & Co", "Bubble & Bliss"
+  - Avoid overly obvious or literal names
+  - Consider phonetics, alliteration, rhythm or distinctive sounds
+  - Be creative and distinctive rather than descriptive
 
 - Guidelines
   - Description must be exactly 300-400 characters (STRICT LIMIT)
@@ -144,11 +143,10 @@ export async function POST(request: Request) {
   - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
 
 - Output format
-  - Return clean JSON: {"name": "charming brand name", "industry": "category", "description": "300-400 char description", "targetAudience": "audience details"}
-  - The name should make users smile and remember it easily`
+  - Return clean JSON: {"name": "memorable brand name", "industry": "category", "description": "300-400 char description", "targetAudience": "audience details"}`
 
       try {
-        const result = await generateWithOpenAI(prompt, "You are a creative brand naming expert who specializes in crafting catchy, memorable names that charm users and stick in their minds. You excel at creating phonetic, delightful names that make people smile.", "json", 800, "gpt-4o-mini")
+        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context.", "json", 800, "gpt-4o")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -413,13 +411,9 @@ export async function POST(request: Request) {
 
 - Brand Name Requirements
   - Extract the existing brand name if clearly mentioned
-  - If no clear name exists, create a compelling name that would charm its users
-  - Must be phonetic and easy to pronounce
+  - If no clear name exists, create a compelling name that fits the business
   - 1-3 words maximum
-  - Should sound delightful when spoken aloud
-  - Avoid generic words like "Solutions", "Services", "Group"
-  - Consider alliteration, rhythm, or playful sounds
-  - Make it feel approachable and human
+  - Be creative and descriptive
 
 - Guidelines
   - Description must be exactly 300-400 characters (STRICT LIMIT)
@@ -434,18 +428,18 @@ export async function POST(request: Request) {
   - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
 
 - Output format
-  - Return clean JSON: {"name": "charming brand name", "description": "300-400 char description"}
+  - Return clean JSON: {"name": "memorable brand name", "description": "300-400 char description"}
   - Description must be exactly 300-400 characters
-  - The name should make users smile and remember it easily
 
 Website Content:
 ${summary}`
 
     const result = await generateWithOpenAI(
       prompt,
-      "You are a creative brand naming expert who specializes in crafting catchy, memorable names that charm users and stick in their minds. You excel at creating phonetic, delightful names that make people smile. You also write clear, readable brand summaries using simple language and short sentences.",
+      "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. You also write clear, readable brand summaries using simple language and short sentences.",
       "json", // Use json format for faster processing
-      500 // Reduce max tokens since we only need a short paragraph
+      500, // Reduce max tokens since we only need a short paragraph
+      "gpt-4o"
     )
 
     if (!result.success || !result.content) {

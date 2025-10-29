@@ -782,9 +782,9 @@ export default function BrandDetailsPage() {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="6-8">General Public</SelectItem>
-                          <SelectItem value="10-12">Professional</SelectItem>
-                          <SelectItem value="13+">Technical/Academic</SelectItem>
+                          <SelectItem value="6-8">1. General Public</SelectItem>
+                          <SelectItem value="10-12">2. Professional</SelectItem>
+                          <SelectItem value="13+">3. Technical</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

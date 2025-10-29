@@ -528,7 +528,7 @@ function FullAccessContent() {
       </Dialog>
 
       {/* Main Content */}
-      <main className="flex-1 py-8">
+      <main className="flex-1 pt-24 pb-8">
         <div className="max-w-5xl mx-auto">
           <div className="mb-6 px-8">
             <Link

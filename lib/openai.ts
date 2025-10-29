@@ -681,7 +681,7 @@ export async function generateFullCoreStyleGuide(brandDetails: any, traitsContex
 
     const allowedCategories = getAllowedCategoriesPromptText()
 
-    const prompt = `Create exactly 25 writing style rules in markdown format for this brand.
+    const prompt = `Create exactly 25 writing style rules in markdown format for this brand. Rules are designed to support brand voice traits.
 
 - Brand
   - Name: ${brandDetails.name}

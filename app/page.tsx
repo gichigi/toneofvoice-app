@@ -630,7 +630,7 @@ export default function LandingPage() {
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-xl font-bold">Multiple export formats</h3>
-                    <p className="text-muted-foreground">PDF, Word, HTML, and Markdown for any workflow</p>
+                    <p className="text-muted-foreground">PDF, Word, and Markdown for any workflow</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4 p-4 rounded-lg bg-white shadow-sm md:shadow-none md:bg-transparent md:p-0">
@@ -1360,15 +1360,15 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-left">
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Brand voice definition</span>
+                        <span>Brand voice guidelines</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>25 essential writing rules</span>
+                        <span>25 supporting rules</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Tone guidelines</span>
+                        <span>Before/After examples</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
@@ -1393,7 +1393,7 @@ export default function LandingPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
-                      <span className="font-medium">30-day guarantee</span>
+                      <span className="font-medium">Best for startups and small teams</span>
                     </div>
                   </div>
                 </CardContent>
@@ -1411,17 +1411,13 @@ export default function LandingPage() {
                     </div>
                     <ul className="text-left space-y-2 text-sm">
                       <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Everything in Core Guide</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />99+ writing rules (used by Apple, Spotify, BBC)</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Advanced formatting standards</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />99+ supporting rules</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Best practices guidelines</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Before/After examples</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Dos and don'ts</li>
                       <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Multiple download formats</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Best for agencies & larger teams</li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
-                      track('Pricing Card Clicked', {
-                        guideType: 'complete',
-                        price: 149,
-                        location: 'homepage'
-                      });
                       router.push("/brand-details?guideType=complete");
                     }}>Get Complete Guide</Button>
                     
@@ -1430,7 +1426,7 @@ export default function LandingPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
-                      <span className="font-medium">30-day guarantee</span>
+                      <span className="font-medium">Best for agencies & large teams</span>
                     </div>
                   </div>
                 </CardContent>
@@ -1449,7 +1445,7 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-left">
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Everything in Complete Guide</span>
+                        <span className="text-white">Everything in Complete</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-white" />

@@ -301,9 +301,9 @@ function validateBrandDetails(details: any) {
   }
   
   // Description validation
-  if (!details.description || details.description.trim().length === 0) {
+  if (!details.brandDetailsDescription || details.brandDetailsDescription.trim().length === 0) {
     errors.push("Brand description is required")
-  } else if (details.description.length > 500) {
+  } else if (details.brandDetailsDescription.length > 500) {
     errors.push("Brand description must be 500 characters or less")
   }
   
@@ -340,7 +340,7 @@ export async function processTemplate(templateType: string, brandDetails: any, p
     // Validate and set defaults for brand details - only essential fields
     const validatedDetails = {
       name: brandDetails.name.trim(),
-      description: brandDetails.description.trim(),
+      brandDetailsDescription: brandDetails.brandDetailsDescription.trim(),
       audience: brandDetails.audience.trim(),
       traits: brandDetails.traits || [],
     }
@@ -352,7 +352,7 @@ export async function processTemplate(templateType: string, brandDetails: any, p
     }
 
     // Check for required fields
-    if (!validatedDetails.name || !validatedDetails.description) {
+    if (!validatedDetails.name || !validatedDetails.brandDetailsDescription) {
       throw new Error("Brand name and description are required")
     }
 
@@ -375,7 +375,7 @@ export async function processTemplate(templateType: string, brandDetails: any, p
     // Replace basic placeholders
     template = template.replace(/{{DD MONTH YYYY}}/g, formatDate())
     template = template.replace(/{{brand_name}}/g, validatedDetails.name)
-    template = template.replace(/{{brand_description}}/g, validatedDetails.description)
+    template = template.replace(/{{brand_description}}/g, validatedDetails.brandDetailsDescription)
     template = template.replace(/{{brand_audience}}/g, validatedDetails.audience)
     template = template.replace(
       /{{brand_contact_email}}/g,
@@ -447,7 +447,7 @@ export async function processTemplate(templateType: string, brandDetails: any, p
     if (plan === "complete") {
       try {
             const examplePrompt = `Create example content for the ${rulesDetails.name} brand with a ${rulesDetails.tone} tone.
-    The brand description is: ${rulesDetails.description}
+    The brand description is: ${rulesDetails.brandDetailsDescription}
     Target audience: ${rulesDetails.audience}
         
         Generate in markdown format:
@@ -606,7 +606,7 @@ export async function renderStyleGuideTemplate({
   let result = template
     .replace(/{{DD MONTH YYYY}}/g, formattedDate)
     .replace(/{{brand_name}}/g, brandName)
-    .replace(/{{brand_description}}/g, brandDetails.description || brandDetails.brandDetailsText || 'A innovative company focused on delivering exceptional results.')
+    .replace(/{{brand_description}}/g, brandDetails.brandDetailsDescription || brandDetails.brandDetailsText || 'A innovative company focused on delivering exceptional results.')
     .replace(/{{brand_audience}}/g, brandDetails.audience || 'Business professionals and decision makers');
     
   console.log(`[renderStyleGuideTemplate] Basic placeholders replaced`)
@@ -618,7 +618,7 @@ export async function renderStyleGuideTemplate({
     try {
       const validatedDetails = {
         name: brandName,
-        description: brandDetails.description?.trim() || brandDetails.brandDetailsText || '',
+        brandDetailsDescription: brandDetails.brandDetailsDescription?.trim() || brandDetails.brandDetailsText || '',
         audience: brandDetails.audience?.trim() || '',
         traits: brandDetails.traits || [],
         keywords: Array.isArray(brandDetails.keywords) ? brandDetails.keywords : [],
@@ -635,7 +635,7 @@ export async function renderStyleGuideTemplate({
       // Ensure non-empty audience for prompts only
       if (!rulesDetails.audience || rulesDetails.audience.toLowerCase() === 'general audience') {
         try {
-          const aud = await generateAudienceSummary({ name: rulesDetails.name, description: rulesDetails.description })
+          const aud = await generateAudienceSummary({ name: rulesDetails.name, brandDetailsDescription: rulesDetails.brandDetailsDescription })
           if (aud.success && aud.content) {
             rulesDetails.audience = aud.content.trim()
           }
@@ -761,7 +761,7 @@ export async function renderPreviewStyleGuide({
   let result = template
     .replace(/{{DD MONTH YYYY}}/g, formattedDate)
     .replace(/{{brand_name}}/g, brandName)
-    .replace(/{{brand_description}}/g, brandDetails.description || brandDetails.brandDetailsText || 'A innovative company focused on delivering exceptional results.');
+    .replace(/{{brand_description}}/g, brandDetails.brandDetailsDescription || brandDetails.brandDetailsText || 'A innovative company focused on delivering exceptional results.');
     
   console.log(`[renderPreviewStyleGuide] Basic placeholders replaced`)
 
@@ -771,7 +771,7 @@ export async function renderPreviewStyleGuide({
   try {
     const validatedDetails = {
       name: brandName,
-      description: brandDetails.description?.trim() || brandDetails.brandDetailsText || '',
+      brandDetailsDescription: brandDetails.brandDetailsDescription?.trim() || brandDetails.brandDetailsText || '',
       audience: brandDetails.audience?.trim() || '',
       traits: brandDetails.traits || [],
       keywords: Array.isArray(brandDetails.keywords) ? brandDetails.keywords : [],

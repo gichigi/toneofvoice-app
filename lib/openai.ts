@@ -212,7 +212,7 @@ async function generateCustomTraitDescription(traitName: string, brandDetails: a
 
 Brand Info:
 • Brand Name: ${brandDetails.name}
-• What they do: ${brandDetails.description}
+• What they do: ${brandDetails.brandDetailsDescription}
 • Audience: ${brandDetails.audience}${keywordSection}
 
 Create the trait description in this EXACT format:
@@ -409,7 +409,7 @@ export async function generatePreviewRules(brandDetails: any, traitsContext?: st
 Brand Info:
   • Brand Name: ${brandDetails.name}
   • Audience: ${brandDetails.audience}
-  • What they do: ${brandDetails.description}
+  • What they do: ${brandDetails.brandDetailsDescription}
 
 ${traitsSection}
 ${styleConstraints}
@@ -516,7 +516,7 @@ ${JSON.stringify(validation.invalid, null, 2)}
 Brand context:
 - Name: ${brandDetails.name}
 - Audience: ${brandDetails.audience}
-- Type: ${brandDetails.description}
+- Type: ${brandDetails.brandDetailsDescription}
 
 Return ${validation.invalid.length} replacement rules as JSON array using ONLY allowed categories.`
 
@@ -583,7 +583,7 @@ export async function generateBeforeAfterSamples(brandDetails: any, traitsContex
 
 Brand Details:
 - Name: ${brandDetails.name}
-- Description: ${brandDetails.description}
+- Description: ${brandDetails.brandDetailsDescription}
 - Target Audience: ${brandDetails.audience}
 ${traitsContext ? `- Brand Voice Traits: ${traitsContext.slice(0, 1000)}` : ''}
 
@@ -598,7 +598,16 @@ Generate ${count} pairs showing how generic content transforms to match this bra
 Return as JSON with this exact structure:
 {
   "examples": [
-    { "before": "Try our pancakes today.", "after": "Taste the cosmos." }
+    { "before": "Try our pancakes today.", "after": "Taste the cosmos." }OUTPUT FORMAT:
+Start directly with ### 1. [Category Name]
+One sentence rule (8–12 words)
+✅ Good example in brand voice
+❌ Bad example in brand voice
+
+REQUIREMENTS:
+- Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
+- No duplicate categories
+- Exactly 25 rules
   ]
 }
 
@@ -627,7 +636,7 @@ Create ${count} similar transformations that feel natural for ${brandDetails.nam
 export async function generateStyleGuideRules(brandDetails: any, section: string): Promise<GenerationResult> {
   const prompt = `Create style guide rules for ${brandDetails.name}'s ${section} section.
   
-Brand Description: ${brandDetails.description}
+Brand Description: ${brandDetails.brandDetailsDescription}
 Target Audience: ${brandDetails.audience}
 
 Consider how ${brandDetails.audience} will interact with the content. Rules should help content creators effectively communicate with this audience.
@@ -677,7 +686,7 @@ export async function generateFullCoreStyleGuide(brandDetails: any, traitsContex
 - Brand
   - Name: ${brandDetails.name}
   - Audience: ${brandDetails.audience}
-  - Description: ${brandDetails.description}
+  - Description: ${brandDetails.brandDetailsDescription}
   - Formality: ${brandDetails.formalityLevel || 'Neutral'}
   - Reading Level: ${brandDetails.readingLevel || '10-12'}
   - English Variant: ${brandDetails.englishVariant || 'american'}
@@ -688,16 +697,16 @@ ${traitsSection}
 - Allowed Categories
 ${allowedCategories}
 
-- Rules format
-  - ### N. Category Name
-  - One sentence rule (8–12 words)
-  - ✅ Good example in brand voice
-  - ❌ Bad example in brand voice
-  
-- Critical instructions
-  - Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
-  - No duplicate categories
-  - Exactly 25 rules`
+OUTPUT FORMAT:
+Start directly with ### 1. [Category Name]
+One sentence rule (8–12 words)
+✅ Good example in brand voice
+❌ Bad example in brand voice
+
+REQUIREMENTS:
+- Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
+- No duplicate categories
+- Exactly 25 rules`
 
     // Generate markdown rules directly
     let attempts = 0
@@ -745,7 +754,7 @@ export async function generateCompleteStyleGuide(brandDetails: any, traitsContex
 Brand Info:
   • Brand Name: ${brandDetails.name}
   • Audience: ${brandDetails.audience}
-  • What they do: ${brandDetails.description}
+  • What they do: ${brandDetails.brandDetailsDescription}
 
 ${traitsSection}
 ${styleConstraints}
@@ -952,14 +961,14 @@ Put the person before their condition or characteristic to show respect and dign
 }
 
 // Generate keywords for content marketing and brand voice
-export async function generateKeywords(params: { name: string; description: string; audience?: string }): Promise<GenerationResult> {
-  const { name, description, audience = 'general audience' } = params
+export async function generateKeywords(params: { name: string; brandDetailsDescription: string; audience?: string }): Promise<GenerationResult> {
+  const { name, brandDetailsDescription, audience = 'general audience' } = params
   
   const prompt = `Generate 8-10 high-value keywords for this brand's content marketing and communications.
 
 - Brand
   - Name: ${name}
-  - Description: ${description}
+  - Description: ${brandDetailsDescription}
   - Audience: ${audience}
 
 - Guidelines
@@ -984,12 +993,12 @@ export async function generateKeywords(params: { name: string; description: stri
 }
 
 // Generate a short internal audience description (1–2 sentences, ~25–40 words)
-export async function generateAudienceSummary(params: { name: string; description: string }): Promise<GenerationResult> {
-  const { name, description } = params
+export async function generateAudienceSummary(params: { name: string; brandDetailsDescription: string }): Promise<GenerationResult> {
+  const { name, brandDetailsDescription } = params
   const prompt = `Based on the brand below, write a concise audience description (1–2 sentences, ~25–40 words). Keep it practical and specific. Output plain text only.
 
 Brand Name: ${name}
-What they do: ${description}`
+What they do: ${brandDetailsDescription}`
 
   return generateWithOpenAI(
     prompt,
@@ -1017,7 +1026,7 @@ export async function generateTraitSuggestions(brandDetails: any): Promise<Gener
   const prompt = `Based on this brand information, suggest exactly 3 brand voice traits that would work best for this brand.
 
 Brand Name: ${brandDetails.name || 'Brand'}
-Description: ${brandDetails.description || brandDetails.brandDetailsText}
+Description: ${brandDetails.brandDetailsDescription || brandDetails.brandDetailsText}
 Audience: ${brandDetails.audience || brandDetails.targetAudience}
 
 Available traits: Authoritative, Witty, Direct, Inspiring, Warm, Inclusive, Optimistic, Passionate, Playful, Supportive, Sophisticated, Thoughtful

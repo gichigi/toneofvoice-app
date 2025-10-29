@@ -711,7 +711,7 @@ export default function LandingPage() {
                   Why choose AIStyleGuide
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  See how we compare to other solutions
+                  See how we compare to using a template or ChatGPT
                 </p>
               </div>
             </div>
@@ -722,8 +722,8 @@ export default function LandingPage() {
                   <thead>
                     <tr className="border-b-2 border-gray-200 bg-gray-100">
                       <th className="text-left py-5 px-4 font-bold text-gray-900 text-xl sm:text-lg">What you get</th>
-                      <th className="text-center py-5 px-4 font-bold text-gray-900 text-xl sm:text-lg">ChatGPT</th>
                       <th className="text-center py-5 px-4 font-bold text-gray-900 text-xl sm:text-lg">Templates</th>
+                      <th className="text-center py-5 px-4 font-bold text-gray-900 text-xl sm:text-lg">ChatGPT</th>
                       <th className="text-center py-5 px-4 font-bold text-gray-700 text-xl sm:text-lg">
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-6 h-6 rounded-md overflow-hidden shadow-sm">
@@ -740,29 +740,11 @@ export default function LandingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-gray-200">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Analyze any website in one click</td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                          <Check className="h-5 w-5 text-emerald-600" />
-                        </div>
-                      </td>
-                    </tr>
                     <tr className="border-b border-gray-200 bg-slate-50">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">No prompt writing or AI skills needed</td>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Complete brand voice & style guidelines</td>
                       <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
+                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                          <Check className="h-5 w-5 text-emerald-600" />
                         </div>
                       </td>
                       <td className="py-5 px-4 text-center">
@@ -777,10 +759,10 @@ export default function LandingPage() {
                       </td>
                     </tr>
                     <tr className="border-b border-gray-200">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Consistent, professional structure</td>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Writing rules from Apple, BBC, Spotify</td>
                       <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
+                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                          <Check className="h-5 w-5 text-emerald-600" />
                         </div>
                       </td>
                       <td className="py-5 px-4 text-center">
@@ -795,15 +777,15 @@ export default function LandingPage() {
                       </td>
                     </tr>
                     <tr className="border-b border-gray-200 bg-slate-50">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Complete rules: spelling, grammar, tone</td>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Analyse any brand website with a click</td>
                       <td className="py-5 px-4 text-center">
                         <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                           <X className="h-5 w-5 text-orange-600" />
                         </div>
                       </td>
                       <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
+                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                          <Check className="h-5 w-5 text-emerald-600" />
                         </div>
                       </td>
                       <td className="py-5 px-4 text-center">
@@ -813,43 +795,7 @@ export default function LandingPage() {
                       </td>
                     </tr>
                     <tr className="border-b border-gray-200">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Enterprise standards from top brands</td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                          <Check className="h-5 w-5 text-emerald-600" />
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200 bg-slate-50">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Beautiful, presentation-ready guide</td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                          <X className="h-5 w-5 text-orange-600" />
-                        </div>
-                      </td>
-                      <td className="py-5 px-4 text-center">
-                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                          <Check className="h-5 w-5 text-emerald-600" />
-                        </div>
-                      </td>
-                    </tr>
-                    <tr className="border-b border-gray-200">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Export PDF, Word, HTML instantly</td>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">No prompt engineering required</td>
                       <td className="py-5 px-4 text-center">
                         <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                           <X className="h-5 w-5 text-orange-600" />
@@ -867,7 +813,25 @@ export default function LandingPage() {
                       </td>
                     </tr>
                     <tr className="bg-slate-50">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Ready in under 5 minutes</td>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Beautiful, clean style document</td>
+                      <td className="py-5 px-4 text-center">
+                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                          <X className="h-5 w-5 text-orange-600" />
+                        </div>
+                      </td>
+                      <td className="py-5 px-4 text-center">
+                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                          <X className="h-5 w-5 text-orange-600" />
+                        </div>
+                      </td>
+                      <td className="py-5 px-4 text-center">
+                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                          <Check className="h-5 w-5 text-emerald-600" />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Ready to use in under 5 minutes</td>
                       <td className="py-5 px-4 text-center">
                         <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                           <X className="h-5 w-5 text-orange-600" />
@@ -892,18 +856,18 @@ export default function LandingPage() {
               <div className="md:hidden space-y-4">
                 {/* Feature Card 1 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Analyze any website in one click</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Complete brand voice & style guidelines</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
+                      <div className="text-xs text-gray-500 mb-2">Templates</div>
+                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                        <Check className="h-4 w-4 text-emerald-600" />
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
+                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
+                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                        <Check className="h-4 w-4 text-emerald-600" />
                       </div>
                     </div>
                     <div>
@@ -927,16 +891,16 @@ export default function LandingPage() {
 
                 {/* Feature Card 2 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">No prompt writing or AI skills needed</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Writing rules from Apple, BBC, Spotify etc.</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
+                      <div className="text-xs text-gray-500 mb-2">Templates</div>
+                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+                        <Check className="h-4 w-4 text-emerald-600" />
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
+                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
                       <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
                         <Check className="h-4 w-4 text-emerald-600" />
                       </div>
@@ -962,16 +926,16 @@ export default function LandingPage() {
 
                 {/* Feature Card 3 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Consistent, professional structure</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Analyse any brand website with a click</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
+                      <div className="text-xs text-gray-500 mb-2">Templates</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                         <X className="h-4 w-4 text-orange-600" />
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
+                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
                       <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
                         <Check className="h-4 w-4 text-emerald-600" />
                       </div>
@@ -997,16 +961,16 @@ export default function LandingPage() {
 
                 {/* Feature Card 4 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Complete rules: spelling, grammar, tone</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">No prompt engineering required</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
+                      <div className="text-xs text-gray-500 mb-2">Templates</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                         <X className="h-4 w-4 text-orange-600" />
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
+                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                         <X className="h-4 w-4 text-orange-600" />
                       </div>
@@ -1032,16 +996,16 @@ export default function LandingPage() {
 
                 {/* Feature Card 5 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Enterprise standards from top brands</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Beautiful, clean style document</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
+                      <div className="text-xs text-gray-500 mb-2">Templates</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                         <X className="h-4 w-4 text-orange-600" />
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
+                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                         <X className="h-4 w-4 text-orange-600" />
                       </div>
@@ -1067,14 +1031,8 @@ export default function LandingPage() {
 
                 {/* Feature Card 6 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Beautiful, presentation-ready guide</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Ready to use in under 5 minutes</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
-                      </div>
-                    </div>
                     <div>
                       <div className="text-xs text-gray-500 mb-2">Templates</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
@@ -1082,71 +1040,7 @@ export default function LandingPage() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
-                        <div className="w-4 h-4 rounded-sm overflow-hidden">
-                          <div className="h-full w-full grid grid-cols-2">
-                            <div className="bg-primary"></div>
-                            <div className="bg-blue-500"></div>
-                            <div className="bg-gray-200"></div>
-                            <div className="bg-indigo-600"></div>
-                          </div>
-                        </div>
-                        <span>AISG</span>
-                      </div>
-                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                        <Check className="h-4 w-4 text-emerald-600" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Feature Card 7 */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Export PDF, Word, HTML instantly</h3>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
                       <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
-                        <div className="w-4 h-4 rounded-sm overflow-hidden">
-                          <div className="h-full w-full grid grid-cols-2">
-                            <div className="bg-primary"></div>
-                            <div className="bg-blue-500"></div>
-                            <div className="bg-gray-200"></div>
-                            <div className="bg-indigo-600"></div>
-                          </div>
-                        </div>
-                        <span>AISG</span>
-                      </div>
-                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
-                        <Check className="h-4 w-4 text-emerald-600" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Feature Card 8 */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Ready in under 5 minutes</h3>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-2">ChatGPT</div>
-                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
-                        <X className="h-4 w-4 text-orange-600" />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 mb-2">Templates</div>
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
                         <X className="h-4 w-4 text-orange-600" />
                       </div>
@@ -1393,7 +1287,7 @@ export default function LandingPage() {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
-                      <span className="font-medium">Best for startups and small teams</span>
+                      <span className="font-medium">Best for startups & small teams</span>
                     </div>
                   </div>
                 </CardContent>

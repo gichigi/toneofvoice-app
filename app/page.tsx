@@ -9,7 +9,6 @@ import { track } from "@vercel/analytics"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   FileText,
   CheckCircle,
@@ -17,7 +16,6 @@ import {
   FileDown,
   PenTool,
   FileCode,
-  Brain,
   Globe,
   Sparkles,
   Loader2,
@@ -28,6 +26,16 @@ import {
   PhoneCall,
   Check,
   X,
+  FileQuestion,
+  AlertCircle,
+  FileCheck,
+  UserCheck,
+  Shield,
+  Clock,
+  Target,
+  Heart,
+  Zap,
+  ShieldOff,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import dynamic from "next/dynamic"
@@ -35,6 +43,7 @@ import { validateInput, sanitizeInput } from "@/lib/input-utils"
 import BrandBanner from "@/components/BrandBanner"
 import Logo from "@/components/Logo"
 import Header from "@/components/Header"
+import { TRAITS, type TraitName } from "@/lib/traits"
 
 // Default brand details
 const defaultBrandDetails = {
@@ -56,6 +65,68 @@ export default function LandingPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("")
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
+  const [showSolutions, setShowSolutions] = useState(false) // Toggle state for brand voice section
+  const [selectedTrait, setSelectedTrait] = useState<TraitName>("Direct") // Selected trait for preview
+  const [ruleCount, setRuleCount] = useState(0) // Counter for animated rule count
+  const [hasAnimated, setHasAnimated] = useState(false) // Track if counter has animated
+
+  // Counter animation for rules section with smooth easing
+  useEffect(() => {
+    if (hasAnimated) return
+
+    const observerOptions = {
+      threshold: 0.3,
+      rootMargin: '0px'
+    }
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !hasAnimated) {
+          setHasAnimated(true)
+          
+          const startTime = Date.now()
+          const duration = 2000 // 2 seconds
+          const start = 0
+          const end = 99
+          
+          // Ease-out function: easeOutQuad for gentler deceleration
+          const easeOutQuad = (t: number): number => {
+            return 1 - (1 - t) * (1 - t)
+          }
+
+          const animate = () => {
+            const elapsed = Date.now() - startTime
+            const progress = Math.min(elapsed / duration, 1)
+            const eased = easeOutQuad(progress)
+            const current = Math.floor(start + (end - start) * eased)
+            
+            setRuleCount(current)
+            
+            if (progress < 1) {
+              requestAnimationFrame(animate)
+            } else {
+              setRuleCount(end)
+            }
+          }
+          
+          requestAnimationFrame(animate)
+        }
+      })
+    }
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions)
+    const element = document.getElementById('whats-included')
+    
+    if (element) {
+      observer.observe(element)
+    }
+
+    return () => {
+      if (element) {
+        observer.unobserve(element)
+      }
+    }
+  }, [hasAnimated])
 
   // Progressive loading word arrays
   const descriptionWords = ["Thinking...", "Exploring...", "Assembling...", "Creating..."]
@@ -452,7 +523,7 @@ export default function LandingPage() {
                 Build your unique brand tone of voice in minutes
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
-                Generate a full content style guide — tone, rules, and real examples — tailored to your brand.
+                Generate a professional writing style guide, complete with brand voice traits, supporting style rules, and tailored content examples.
               </p>
 
               <form onSubmit={handleExtraction} className="w-full max-w-2xl">
@@ -527,7 +598,7 @@ export default function LandingPage() {
                         </>
                       ) : (
                         <>
-                          <span>Get sample</span> 
+                          <span>Generate</span> 
                           <ArrowRight className="ml-2 h-5 w-5" />
                         </>
                       )}
@@ -582,126 +653,212 @@ export default function LandingPage() {
 
         <BrandBanner />
         
-        {/* What You Get - MOVED TO 2ND POSITION AND BACKGROUND CHANGED */}
+        {/* Why Brand Voice Matters - Interactive Toggle Pattern */}
         <section id="features" className="w-full py-12 md:py-20 lg:py-24 bg-muted">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            {/* Interactive Toggle Header */}
+            <div className="flex flex-col items-start space-y-4 max-w-5xl mx-auto mb-12">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-gray-900">
+                When you
+              </h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowSolutions(!showSolutions)}
+                  className="relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  style={{
+                    backgroundColor: showSolutions ? '#3b82f6' : '#ef4444'
+                  }}
+                  aria-label={showSolutions ? "Show problems" : "Show solutions"}
+                  aria-pressed={showSolutions}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-300 ease-out ${
+                      showSolutions ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl transition-colors duration-300 whitespace-nowrap" style={{
+                  color: showSolutions ? '#3b82f6' : '#ef4444',
+                  minWidth: '280px'
+                }}>
+                  {showSolutions ? 'have a brand voice' : "don't have a brand voice"}
+                </h2>
+              </div>
+            </div>
+
+            {/* Content Area - Switches Based on Toggle */}
+            <div className="mx-auto max-w-5xl mb-16">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {showSolutions ? (
+                  // Solutions (Toggle ON)
+                  <>
+                    {[
+                      { icon: CheckCircle, title: "Consistent messaging", desc: "Clear, unified voice across all content that resonates with your audience and builds trust" },
+                      { icon: FileCheck, title: "Complete style guidelines", desc: "Detailed guidelines with brand voice, do's/don'ts, and examples to align your entire team" },
+                      { icon: UserCheck, title: "Team alignment", desc: "Everyone writes in your brand's voice, creating consistent experiences at every touchpoint" },
+                      { icon: Shield, title: "Strong brand identity", desc: "Every message reinforces who you are, making your brand instantly recognizable and memorable" },
+                      { icon: Heart, title: "Customer trust", desc: "Clear, consistent voice builds credibility and makes customers feel confident choosing you" },
+                      { icon: Zap, title: "Faster content creation", desc: "Guidelines eliminate guesswork, so your team spends less time debating and more time creating" },
+                    ].map((card, index) => {
+                      const Icon = card.icon
+                      const delay = index * 100 // Stagger: 0ms, 100ms, 200ms, 300ms, 400ms, 500ms
+                      return (
+                        <div
+                          key={`solution-${index}`}
+                          className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow opacity-0 animate-slide-in-right-fade"
+                          style={{
+                            animationDelay: `${delay}ms`
+                          }}
+                        >
+                          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-4">
+                            <Icon className="h-6 w-6" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2 text-gray-900">{card.title}</h3>
+                          <p className="text-sm text-muted-foreground">{card.desc}</p>
+                        </div>
+                      )
+                    })}
+                  </>
+                ) : (
+                  // Problems (Toggle OFF)
+                  <>
+                    {[
+                      { icon: AlertTriangle, title: "Inconsistent messaging", desc: "Inconsistent messages that don't resonate with your audience, causing confusion and disconnect" },
+                      { icon: FileQuestion, title: "Unclear guidelines", desc: "Guidelines missing critical sections, leaving your team guessing and even disagreeing" },
+                      { icon: AlertCircle, title: "Team confusion", desc: "Everyone writes differently, creating mixed messages, lost brand equity and identity" },
+                      { icon: ShieldOff, title: "Lost brand identity", desc: "Every piece of content sounds different, diluting your brand and making you forgettable" },
+                      { icon: X, title: "Customer confusion", desc: "Mixed messages erode trust and make customers question whether you're the right choice" },
+                      { icon: Clock, title: "Time wasted", desc: "Teams spend hours debating tone and rewriting content instead of focusing on what matters" },
+                    ].map((card, index) => {
+                      const Icon = card.icon
+                      const delay = index * 100 // Stagger: 0ms, 100ms, 200ms, 300ms, 400ms, 500ms
+                      return (
+                        <div
+                          key={`problem-${index}`}
+                          className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow opacity-0 animate-slide-in-right-fade"
+                          style={{
+                            animationDelay: `${delay}ms`
+                          }}
+                        >
+                          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4">
+                            <Icon className="h-6 w-6" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2 text-gray-900">{card.title}</h3>
+                          <p className="text-sm text-muted-foreground">{card.desc}</p>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What's Included - Enhanced Section */}
+        <section id="whats-included" className="w-full py-12 md:py-20 lg:py-24 bg-background">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Your brand voice toolkit
+                  What's included in your style guide
                 </h2>
-                <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Everything you need to create consistent, professional communication
+                <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl">
+                  Everything you need to create compelling content that always sounds like you
                 </p>
               </div>
             </div>
-            {/* Mobile-optimized grid */}
-            <div className="mx-auto max-w-5xl items-center gap-8 py-10 grid grid-cols-1 lg:grid-cols-2 lg:gap-16">
-              {/* Feature list with improved mobile spacing */}
-              <div className="grid gap-8 md:gap-6">
-                {/* Each feature as a card on mobile for better separation */}
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-white shadow-sm md:shadow-none md:bg-transparent md:p-0">
-                  <div className="flex-shrink-0">
-                    <FileText className="h-9 w-9 md:h-8 md:w-8 text-primary" />
+
+            {/* Split Layout: Stats + Features */}
+            <div className="mx-auto max-w-5xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* 99+ Enterprise writing rules */}
+                <div className="opacity-0 animate-slide-in-right-fade md:border-r md:border-gray-200 md:pr-6" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">
+                      {ruleCount > 0 ? ruleCount : '99'}
+                    </span>
+                    <span className="text-4xl md:text-5xl font-bold text-primary">+</span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold">99+ enterprise-grade content rules</h3>
-                    <p className="text-muted-foreground">
-                      Used by Apple, Spotify, BBC and other leading brands
-                    </p>
-                  </div>
+                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
+                    Enterprise writing rules
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Based on style guides from Apple, Spotify, BBC, and other top brands
+                  </p>
                 </div>
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-white shadow-sm md:shadow-none md:bg-transparent md:p-0">
-                  <div className="flex-shrink-0">
-                    <PenTool className="h-9 w-9 md:h-8 md:w-8 text-primary" />
+
+                {/* 3 Brand voice traits */}
+                <div className="opacity-0 animate-slide-in-right-fade md:border-r md:border-gray-200 md:px-6" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">3</span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold">A clear brand voice framework</h3>
-                    <p className="text-muted-foreground">
-                      Define your brand persona with unique brand traits
-                    </p>
-                  </div>
+                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
+                    Brand voice traits
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Complete definitions, do's, don'ts customised for your brand
+                  </p>
                 </div>
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-white shadow-sm md:shadow-none md:bg-transparent md:p-0">
-                  <div className="flex-shrink-0">
-                    <FileDown className="h-9 w-9 md:h-8 md:w-8 text-primary" />
+
+                {/* 15 Keywords */}
+                <div className="opacity-0 animate-slide-in-right-fade md:pl-6" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">15</span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold">Multiple export formats</h3>
-                    <p className="text-muted-foreground">PDF, Word, and Markdown for any workflow</p>
-                  </div>
+                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
+                    Keywords
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Brand-specific terms included in your guide to ensure consistency
+                  </p>
                 </div>
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-white shadow-sm md:shadow-none md:bg-transparent md:p-0">
-                  <div className="flex-shrink-0">
-                    <FileCode className="h-9 w-9 md:h-8 md:w-8 text-primary" />
+
+                {/* 3 Before/After examples */}
+                <div className="opacity-0 animate-slide-in-right-fade md:border-r md:border-gray-200 md:pr-6 md:pt-6 md:border-t md:border-gray-200" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">3</span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold">Brand voice examples</h3>
-                    <p className="text-muted-foreground">Real-world applications across different content types</p>
-                  </div>
+                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
+                    Before/After examples
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    See your brand voice applied to content examples for your brand
+                  </p>
                 </div>
-                <div className="flex items-start gap-4 p-4 rounded-lg bg-white shadow-sm md:shadow-none md:bg-transparent md:p-0">
-                  <div className="flex-shrink-0">
-                    <Brain className="h-9 w-9 md:h-8 md:w-8 text-primary" />
+
+                {/* 4 Export formats */}
+                <div className="opacity-0 animate-slide-in-right-fade md:px-6 md:pt-6 md:border-t md:border-gray-200" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">4</span>
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xl font-bold">Built-in tone selector</h3>
-                    <p className="text-muted-foreground">Adapt your voice for any situation with multiple tones</p>
-                  </div>
+                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
+                    Export formats
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Export as PDF to share, Microsoft Word to edit, or markdown for AI
+                  </p>
                 </div>
-              </div>
-              {/* Tab component with better mobile handling */}
-              <div className="relative overflow-hidden rounded-xl border bg-white p-4 shadow-md mt-6 lg:mt-0">
-                <Tabs defaultValue="formal" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
-                    <TabsTrigger value="formal">Formal</TabsTrigger>
-                    <TabsTrigger value="friendly">Friendly</TabsTrigger>
-                    <TabsTrigger value="funny">Funny</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="formal" className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <h4 className="font-semibold">Example: Formal Brand Voice</h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-muted-foreground">
-                        "Our comprehensive solution provides organizations with the tools necessary to optimize their
-                        content strategy."
-                      </p>
-                      <p className="text-muted-foreground">
-                        "We prioritize precision and clarity in all communications to ensure maximum effectiveness."
-                      </p>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="friendly" className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <h4 className="font-semibold">Example: Friendly Brand Voice</h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-muted-foreground">
-                        "Hey there! Our tool helps you nail your content strategy without the headache."
-                      </p>
-                      <p className="text-muted-foreground">
-                        "We're all about keeping things simple and clear, so you can get back to what you do best."
-                      </p>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="funny" className="p-4 space-y-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <h4 className="font-semibold">Example: Funny Brand Voice</h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-muted-foreground">
-                        "Let's face it, your content strategy is about as organized as a toddler's toy box. We can fix
-                        that."
-                      </p>
-                      <p className="text-muted-foreground">
-                        "Our style guide is like GPS for your writing—except it won't lead you into a lake like that one
-                        time."
-                      </p>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+
+                {/* 5 Minutes to complete */}
+                <div className="opacity-0 animate-slide-in-right-fade md:pl-6 md:pt-6 md:border-t md:border-gray-200" style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">5</span>
+                  </div>
+                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
+                    Minutes to complete
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No prompting, no templates. Enter the URL or description to start
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Why Choose AIStyleGuide - Comparison Table */}
-        <section id="comparison" className="w-full py-12 md:py-20 lg:py-24 bg-background">
+        <section id="comparison" className="w-full py-12 md:py-20 lg:py-24 bg-muted">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -1066,8 +1223,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* How It Works - BACKGROUND CHANGED TO MUTED FOR ALTERNATION */}
-        <section id="how-it-works" className="w-full py-12 md:py-20 lg:py-24 bg-muted">
+        {/* How It Works - Input to impact */}
+        <section id="how-it-works" className="w-full py-12 md:py-20 lg:py-24 bg-background">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -1075,36 +1232,36 @@ export default function LandingPage() {
                   Input to impact in 3 steps
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Generate a comprehensive style guide with just a few clicks
+                  Generate a professional writing style guide tailored to your brand in just a few clicks
                 </p>
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl items-center gap-6 py-8 md:grid-cols-3 lg:gap-12">
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
+              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm bg-white">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <span className="text-xl font-bold text-primary">1</span>
                 </div>
-                <h3 className="text-xl font-bold">Answer a few questions</h3>
+                <h3 className="text-xl font-bold">Get started</h3>
                 <p className="text-center text-muted-foreground">
-                  Tell us about your brand or let our AI extract details from your website
+                  Enter the URL or description of your brand to get started
                 </p>
               </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
+              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm bg-white">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <span className="text-xl font-bold text-primary">2</span>
                 </div>
-                <h3 className="text-xl font-bold">Get personalized rules</h3>
+                <h3 className="text-xl font-bold">Pick voice traits</h3>
                 <p className="text-center text-muted-foreground">
-                  Receive a tailored tone of voice + 99+ writing rules for your brand
+                  Select the right voice traits and brand details for your style guide
                 </p>
               </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm">
+              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm bg-white">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <span className="text-xl font-bold text-primary">3</span>
                 </div>
-                <h3 className="text-xl font-bold">Export and share</h3>
+                <h3 className="text-xl font-bold">Generate your guide</h3>
                 <p className="text-center text-muted-foreground">
-                  Download in multiple formats: PDF, Word, HTML, or Markdown for any workflow
+                  Generate your full writing style guide and export with just a click
                 </p>
               </div>
             </div>
@@ -1120,111 +1277,98 @@ export default function LandingPage() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Sample style guide
+                  Brand voice traits in action
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl mb-4">
-                  See an example of what your style guide will look like
+                  Click through different traits to see definitions, do's, don'ts, and real examples
                 </p>
               </div>
             </div>
 
-            {/* Style Guide Document Preview with Modern Look */}
-            <div className="mx-auto max-w-4xl py-10 relative">
-              <div className="bg-white rounded-2xl border shadow-lg overflow-hidden pb-0">
-                {/* Document Header */}
-                <div className="p-8 border-b bg-gray-50">
-                  <div className="max-w-2xl mx-auto">
-                    <div className="text-base text-gray-500 mb-2 tracking-wide font-semibold">
-                      A Complete Content Style Guide
-                    </div>
-                    <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-gray-900">Nike Brand Voice & Content Style Guide</h1>
-                    <p className="text-gray-500 text-base">Created on {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            {/* Trait Selector with Example Card */}
+            <div className="mx-auto max-w-4xl py-10">
+              {/* Trait Tabs */}
+              <div className="flex flex-wrap gap-2 justify-center mb-6">
+                {(["Direct", "Sophisticated", "Witty", "Warm"] as TraitName[]).map((trait) => {
+                  const isSelected = selectedTrait === trait
+                  return (
+                    <button
+                      key={trait}
+                      onClick={() => setSelectedTrait(trait)}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                    >
+                      {trait}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Trait Card */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden transition-opacity duration-300">
+                <div className="p-6 md:p-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <PenTool className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">The "{selectedTrait}" trait</h3>
                   </div>
-                </div>
-
-                {/* Document Content */}
-                <div className="p-8 bg-white">
-                  <div className="max-w-2xl mx-auto space-y-12">
-                    {/* About Section */}
-                    <section>
-                      <h2 className="text-2xl font-bold mb-4 text-gray-900">About Nike</h2>
-                      <p className="text-gray-700 leading-relaxed mb-4">
-                        Nike empowers every athlete. This guide keeps our voice clear and bold.
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Here's how one trait translates into actionable writing guidance:
+                  </p>
+                  
+                  <div className="space-y-6">
+                    {/* Definition */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm font-medium mb-2">Definition</p>
+                      <p className="text-sm text-gray-700">
+                        {TRAITS[selectedTrait].definition}
                       </p>
-                      {/* About Annotation as Info Card */}
-                      <div className="mt-4 flex items-center gap-3">
-                        <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-blue-700 text-sm font-medium">
-                          <span className="font-semibold">Company Overview:</span> Your brand's mission in one place.
-                        </div>
-                      </div>
-                    </section>
+                    </div>
 
-                    {/* Brand Voice Section */}
-                    <section>
-                      <h2 className="text-2xl font-bold mb-4 text-gray-900">Brand Voice</h2>
-                      <p className="text-gray-700 mb-4">
-                        Our voice is bold, inspiring, and direct.
-                      </p>
-                      <ul className="space-y-6">
-                        <li className="bg-gray-100 p-6 rounded-xl border-l-4 border-indigo-600 shadow-sm flex flex-col gap-3">
-                          <h3 className="font-semibold mb-2 text-gray-900 text-lg">Confident but approachable</h3>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex gap-2 items-center">
-                              <span className="text-blue-500 font-normal">Do:</span>
-                              <span className="text-gray-800 font-normal text-base">"We help every athlete unleash their potential."</span>
-                            </div>
-                            <div className="flex gap-2 items-center">
-                              <span className="text-rose-600 font-normal">Don't:</span>
-                              <span className="text-gray-800 font-normal text-base">"We're the world's #1—just trust us."</span>
-                            </div>
-                          </div>
-                        </li>
-                      </ul>
-                      {/* Brand Voice Annotation as Info Card */}
-                      <div className="mt-4 flex items-center gap-3">
-                        <div className="rounded-lg bg-indigo-50 border border-indigo-200 px-4 py-2 text-indigo-700 text-sm font-medium">
-                          <span className="font-semibold">Voice Definition:</span> See how your brand's personality is described.
-                        </div>
+                    {/* Do's and Don'ts */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
+                        <p className="text-sm font-medium mb-2 text-green-900">Do</p>
+                        <ul className="text-sm text-green-800 space-y-2">
+                          {TRAITS[selectedTrait].do.map((item, idx) => (
+                            <li key={idx}>• {item}</li>
+                          ))}
+                        </ul>
                       </div>
-                    </section>
+                      <div className="border-l-4 border-red-500 bg-red-50 rounded-r-lg p-4">
+                        <p className="text-sm font-medium mb-2 text-red-900">Don't</p>
+                        <ul className="text-sm text-red-800 space-y-2">
+                          {TRAITS[selectedTrait].dont.map((item, idx) => (
+                            <li key={idx}>• {item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
 
-                    {/* Grammar & Mechanics Section */}
-                    <section>
-                      <h2 className="text-2xl font-bold mb-4 text-gray-900">Grammar & Mechanics</h2>
-                      <ul className="space-y-6">
-                        <li className="bg-gray-100 p-6 rounded-xl border-l-4 border-blue-500 shadow-sm flex flex-col gap-3">
-                          <h3 className="font-semibold mb-2 text-gray-900">Use American English</h3>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex gap-2 items-center">
-                              <span className="text-blue-500 font-normal">Do:</span>
-                              <span className="text-gray-800 font-normal text-base">"Color", "Optimize"</span>
-                            </div>
-                            <div className="flex gap-2 items-center">
-                              <span className="text-rose-600 font-normal">Don't:</span>
-                              <span className="text-gray-800 font-normal text-base">"Colour", "Optimise"</span>
-                            </div>
-                          </div>
-                        </li>
-                      </ul>
-                      <div className="text-sm text-gray-500 mt-2">And 99+ more rules for clarity and consistency.</div>
-                      {/* Grammar Annotation as Info Card */}
-                      <div className="mt-4 flex items-center gap-3">
-                        <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-blue-700 text-sm font-medium">
-                          <span className="font-semibold">Writing Rules:</span> 99+ rules for clear, consistent content.
+                    {/* Before/After Example */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-sm font-medium mb-3">Before → After</p>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-2">
+                          <span className="text-red-600 font-medium">Before:</span>
+                          <p className="text-sm text-gray-700 flex-1">
+                            "{TRAITS[selectedTrait].example.before}"
+                          </p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-green-600 font-medium">After:</span>
+                          <p className="text-sm text-gray-700 flex-1">
+                            "{TRAITS[selectedTrait].example.after}"
+                          </p>
                         </div>
                       </div>
-                    </section>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* CTA Button below card, center aligned in preview section
-            <div className="flex justify-center mt-4 mb-4">
-               <Button onClick={() => router.push('/start')} className="gap-2 px-8 py-4 rounded-full font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
-                Create your own style guide <ArrowRight className="h-5 w-5" />
-              </Button>
-            </div> */}
           </div>
         </section>
 

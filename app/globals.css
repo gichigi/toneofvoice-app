@@ -326,11 +326,24 @@ h1, h2, h3, h4, h5, h6 {
     from { transform: translateY(0); }
     to { transform: translateY(100%); }
   }
+  @keyframes slide-in-right-fade {
+    from {
+      opacity: 0;
+      transform: translateX(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
   .animate-slide-up {
     animation: slide-up 0.3s cubic-bezier(0.4,0,0.2,1);
   }
   .animate-slide-down {
     animation: slide-down 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .animate-slide-in-right-fade {
+    animation: slide-in-right-fade 1s ease-out forwards;
   }
 }
 

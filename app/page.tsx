@@ -662,7 +662,7 @@ export default function LandingPage() {
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-gray-900">
                 When you
               </h2>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex flex-row items-center gap-3">
                 <button
                   onClick={() => setShowSolutions(!showSolutions)}
                   className="relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -678,18 +678,11 @@ export default function LandingPage() {
                     }`}
                   />
                 </button>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-3">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter transition-colors duration-300 whitespace-nowrap" style={{
-                    color: showSolutions ? '#3b82f6' : '#ef4444'
-                  }}>
-                    {showSolutions ? 'have' : "don't have"}
-                  </h2>
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter transition-colors duration-300 sm:whitespace-nowrap" style={{
-                    color: showSolutions ? '#3b82f6' : '#ef4444'
-                  }}>
-                    {' '}a brand voice
-                  </h2>
-                </div>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter transition-colors duration-300 break-words md:break-normal" style={{
+                  color: showSolutions ? '#3b82f6' : '#ef4444'
+                }}>
+                  {showSolutions ? 'have a brand voice' : "don't have a brand voice"}
+                </h2>
               </div>
             </div>
 

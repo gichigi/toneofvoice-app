@@ -21,6 +21,24 @@ export default function TestimonialsSection() {
         "It's saves days of work and creates a more detailed guide than I could for my clients. I can raise the price of my work because the perceived value of it is now higher.",
       heading: "It's so easy and quick.",
       image: "/headshot-2.jpg" // Second headshot image
+    },
+    {
+      name: "Remi",
+      title: "",
+      company: "MOCAA Agency",
+      quote:
+        "Really simple and easy to use. I'm not a writer, so creating good content isn't easy for me. This saved a lot of time and frustration. Highly recommend for anyone who wants their content to sound like them.",
+      heading: "Saves time and frustration.",
+      image: "/logos/remi.png"
+    },
+    {
+      name: "Andrew",
+      title: "",
+      company: "Working Content",
+      quote:
+        "If clients always say 'we've been meaning to do that' when you ask for their style guide, this will save you a tonne of time. Based on a few text inputs, it generates a guide that replaces 20 hours of work with a few clicks.",
+      heading: "Replaces hours of work.",
+      image: "/logos/Andrew.jpeg"
     }
   ]
 

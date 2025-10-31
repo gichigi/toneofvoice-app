@@ -36,6 +36,7 @@ import {
   Heart,
   Zap,
   ShieldOff,
+  Hash,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import dynamic from "next/dynamic"
@@ -661,7 +662,7 @@ export default function LandingPage() {
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-gray-900">
                 When you
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={() => setShowSolutions(!showSolutions)}
                   className="relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -677,12 +678,18 @@ export default function LandingPage() {
                     }`}
                   />
                 </button>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl transition-colors duration-300 whitespace-nowrap" style={{
-                  color: showSolutions ? '#3b82f6' : '#ef4444',
-                  minWidth: '280px'
-                }}>
-                  {showSolutions ? 'have a brand voice' : "don't have a brand voice"}
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-3">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter transition-colors duration-300 whitespace-nowrap" style={{
+                    color: showSolutions ? '#3b82f6' : '#ef4444'
+                  }}>
+                    {showSolutions ? 'have' : "don't have"}
+                  </h2>
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tighter transition-colors duration-300 sm:whitespace-nowrap" style={{
+                    color: showSolutions ? '#3b82f6' : '#ef4444'
+                  }}>
+                    {' '}a brand voice
+                  </h2>
+                </div>
               </div>
             </div>
 
@@ -769,89 +776,87 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Split Layout: Stats + Features */}
+            {/* Card-based Layout: Stats + Features */}
             <div className="mx-auto max-w-5xl">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* 99+ Enterprise writing rules */}
-                <div className="opacity-0 animate-slide-in-right-fade md:border-r md:border-gray-200 md:pr-6" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">
-                      {ruleCount > 0 ? ruleCount : '99'}
-                    </span>
-                    <span className="text-4xl md:text-5xl font-bold text-primary">+</span>
-                  </div>
-                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
-                    Enterprise writing rules
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Based on style guides from Apple, Spotify, BBC, and other top brands
-                  </p>
-                </div>
-
-                {/* 3 Brand voice traits */}
-                <div className="opacity-0 animate-slide-in-right-fade md:border-r md:border-gray-200 md:px-6" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">3</span>
-                  </div>
-                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
-                    Brand voice traits
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Complete definitions, do's, don'ts customised for your brand
-                  </p>
-                </div>
-
-                {/* 15 Keywords */}
-                <div className="opacity-0 animate-slide-in-right-fade md:pl-6" style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">15</span>
-                  </div>
-                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
-                    Keywords
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Brand-specific terms included in your guide to ensure consistency
-                  </p>
-                </div>
-
-                {/* 3 Before/After examples */}
-                <div className="opacity-0 animate-slide-in-right-fade md:border-r md:border-gray-200 md:pr-6 md:pt-6 md:border-t md:border-gray-200" style={{ animationDelay: '300ms', animationFillMode: 'forwards' }}>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">3</span>
-                  </div>
-                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
-                    Before/After examples
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    See your brand voice applied to content examples for your brand
-                  </p>
-                </div>
-
-                {/* 4 Export formats */}
-                <div className="opacity-0 animate-slide-in-right-fade md:px-6 md:pt-6 md:border-t md:border-gray-200" style={{ animationDelay: '400ms', animationFillMode: 'forwards' }}>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">4</span>
-                  </div>
-                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
-                    Export formats
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Export as PDF to share, Microsoft Word to edit, or markdown for AI
-                  </p>
-                </div>
-
-                {/* 5 Minutes to complete */}
-                <div className="opacity-0 animate-slide-in-right-fade md:pl-6 md:pt-6 md:border-t md:border-gray-200" style={{ animationDelay: '500ms', animationFillMode: 'forwards' }}>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-5xl md:text-6xl font-bold text-primary tabular-nums">5</span>
-                  </div>
-                  <p className="text-lg md:text-xl text-gray-700 mt-2 font-medium">
-                    Minutes to complete
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    No prompting, no templates. Enter the URL or description to start
-                  </p>
-                </div>
+                {[
+                  {
+                    number: ruleCount > 0 ? ruleCount : '99',
+                    suffix: '+',
+                    title: "Enterprise writing rules",
+                    description: "Based on style guides from Apple, Spotify, BBC, and other top brands",
+                    iconBg: "bg-blue-100",
+                    delay: '0ms'
+                  },
+                  {
+                    number: '3',
+                    suffix: '',
+                    title: "Brand voice traits",
+                    description: "Complete definitions, do's, don'ts customised for your brand",
+                    iconBg: "bg-purple-100",
+                    delay: '100ms'
+                  },
+                  {
+                    number: '15',
+                    suffix: '',
+                    title: "Keywords",
+                    description: "Brand-specific terms included in your guide to ensure consistency",
+                    iconBg: "bg-green-100",
+                    delay: '200ms'
+                  },
+                  {
+                    number: '3',
+                    suffix: '',
+                    title: "Before/After examples",
+                    description: "See your brand voice applied to content examples for your brand",
+                    iconBg: "bg-orange-100",
+                    delay: '300ms'
+                  },
+                  {
+                    number: '4',
+                    suffix: '',
+                    title: "Export formats",
+                    description: "Export as PDF to share, Microsoft Word to edit, or markdown for AI",
+                    iconBg: "bg-indigo-100",
+                    delay: '400ms'
+                  },
+                  {
+                    number: '5',
+                    suffix: '',
+                    title: "Minutes to complete",
+                    description: "No prompting, no templates. Enter the URL or description to start",
+                    iconBg: "bg-pink-100",
+                    delay: '500ms'
+                  },
+                ].map((feature, index) => {
+                  return (
+                    <div
+                      key={`feature-${index}`}
+                      className={`${feature.iconBg} rounded-lg border border-transparent shadow-sm p-6 hover:shadow-md transition-shadow opacity-0 animate-slide-in-right-fade`}
+                      style={{
+                        animationDelay: feature.delay,
+                        animationFillMode: 'forwards'
+                      }}
+                    >
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-5xl md:text-6xl font-bold text-gray-900 tabular-nums">
+                          {feature.number}
+                        </span>
+                        {feature.suffix && (
+                          <span className="text-4xl md:text-5xl font-bold text-gray-900">
+                            {feature.suffix}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-lg md:text-xl text-gray-900 font-medium mb-2">
+                        {feature.title}
+                      </h3>
+                      <p className="text-sm text-gray-700">
+                        {feature.description}
+                      </p>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

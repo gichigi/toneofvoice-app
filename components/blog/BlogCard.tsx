@@ -21,6 +21,28 @@ interface BlogCardProps {
   post: BlogPost
 }
 
+function getMutedGradient(slug: string): string {
+  // Generate consistent "random" number from slug
+  let hash = 0
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash) + slug.charCodeAt(i)
+    hash = hash & hash
+  }
+  const index = Math.abs(hash) % 6
+  
+  // Muted gradient combinations (more visible)
+  const gradients = [
+    'bg-gradient-to-br from-blue-100 to-blue-200',
+    'bg-gradient-to-br from-green-100 to-green-200',
+    'bg-gradient-to-br from-purple-100 to-purple-200',
+    'bg-gradient-to-br from-orange-100 to-orange-200',
+    'bg-gradient-to-br from-pink-100 to-pink-200',
+    'bg-gradient-to-br from-slate-100 to-slate-200',
+  ]
+  
+  return gradients[index]
+}
+
 export default function BlogCard({ post }: BlogCardProps) {
   const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -41,10 +63,10 @@ export default function BlogCard({ post }: BlogCardProps) {
               className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <div className="text-white text-center p-6">
-                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{post.title}</h3>
-                <Badge variant="secondary" className="bg-white/20 text-white">
+            <div className={`w-full h-48 ${getMutedGradient(post.slug)} flex items-center justify-center border-b`}>
+              <div className="text-center p-6">
+                <h3 className="font-semibold text-lg mb-2 line-clamp-2 text-foreground">{post.title}</h3>
+                <Badge variant="secondary">
                   {post.category}
                 </Badge>
               </div>
@@ -90,6 +112,7 @@ export default function BlogCard({ post }: BlogCardProps) {
     </Card>
   )
 }
+
 
 
 

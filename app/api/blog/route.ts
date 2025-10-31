@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
       keywords = [], 
       category = 'Brand Strategy',
       featured_image,
-      author_name = 'AI Style Guide',
+      author_name = 'Tahi Gichigi',
+      author_image,
       is_published = false 
     } = body
 
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
       category,
       featured_image,
       author_name,
+      author_image,
       word_count: wordCount,
       reading_time: readingTime,
       is_published,
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
 
 
 

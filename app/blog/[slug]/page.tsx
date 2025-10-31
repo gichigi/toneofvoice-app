@@ -4,9 +4,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
 import BlogContent from '@/components/blog/BlogContent'
+import ShareButton from '@/components/blog/ShareButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Clock, Calendar, ArrowLeft, Share2 } from 'lucide-react'
+import { Clock, Calendar, Home, BookOpen } from 'lucide-react'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 interface BlogPost {
   id: string
@@ -17,6 +19,7 @@ interface BlogPost {
   category: string
   featured_image?: string
   author_name: string
+  author_image?: string
   published_at: string
   updated_at: string
   reading_time: number
@@ -74,12 +77,16 @@ export async function generateMetadata({
   return {
     title: `${post.title} | AI Style Guide`,
     description: post.excerpt,
-    keywords: post.keywords.join(', '),
+    keywords: post.keywords,
     authors: [{ name: post.author_name }],
+    alternates: {
+      canonical: `https://aistyleguide.com/blog/${post.slug}`,
+    },
     openGraph: {
       title: post.title,
       description: post.excerpt,
       url: `https://aistyleguide.com/blog/${post.slug}`,
+      siteName: 'AI Style Guide',
       type: 'article',
       publishedTime: post.published_at,
       modifiedTime: post.updated_at,
@@ -110,11 +117,19 @@ function BlogSchema({ post }: { post: BlogPost }) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
+    name: post.title, // duplicate of headline for better search compatibility
     headline: post.title,
     description: post.excerpt,
     articleBody: articleBody,
     datePublished: post.published_at,
     dateModified: post.updated_at,
+    inLanguage: 'en-US',
+    genre: post.category,
+    isPartOf: {
+      '@type': 'Blog',
+      name: 'AI Style Guide Blog',
+      url: 'https://aistyleguide.com/blog'
+    },
     author: {
       '@type': 'Person',
       name: post.author_name,
@@ -148,6 +163,35 @@ function BlogSchema({ post }: { post: BlogPost }) {
   )
 }
 
+// Breadcrumb schema for better navigation context
+function BreadcrumbSchema({ slug, title }: { slug: string; title: string }) {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Blog',
+        item: 'https://aistyleguide.com/blog'
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: title,
+        item: `https://aistyleguide.com/blog/${slug}`
+      }
+    ]
+  }
+  
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
 export default async function BlogPostPage({
   params,
 }: {
@@ -160,49 +204,67 @@ export default async function BlogPostPage({
     notFound()
   }
 
-  const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
+  // Date formatting and update detection logic
+  // This template displays dates under the author name:
+  // - Shows published date if post hasn't been updated
+  // - Shows "Updated on: [date]" if post has been updated (more than 1 minute difference)
+  const publishedDateObj = new Date(post.published_at)
+  const updatedDateObj = new Date(post.updated_at)
+  
+  const publishedDate = publishedDateObj.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
 
-  const updatedDate = new Date(post.updated_at).toLocaleDateString('en-US', {
+  const updatedDate = updatedDateObj.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
+
+  // Check if post has been updated (updated_at is significantly different from published_at)
+  const hasBeenUpdated = updatedDateObj.getTime() - publishedDateObj.getTime() > 60000 // More than 1 minute difference
 
   return (
     <>
       <BlogSchema post={post} />
+      <BreadcrumbSchema slug={post.slug} title={post.title} />
       <div className="min-h-screen bg-background">
         <Header />
         
         <main className="container mx-auto px-4 py-8">
-          {/* Breadcrumb */}
-          <nav className="mb-8">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/blog" className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Blog
+          {/* Navigation */}
+          <nav className="mb-8 max-w-[47.6rem] mx-auto">
+            <div className="flex items-center gap-3 text-sm">
+              <Link 
+                href="/" 
+                className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Home className="h-4 w-4" />
+                <span>Home</span>
               </Link>
-            </Button>
+              <span className="text-muted-foreground">/</span>
+              <Link 
+                href="/blog" 
+                className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Blog</span>
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <span className="text-foreground font-medium truncate">{post.title}</span>
+            </div>
           </nav>
 
-          <article className="max-w-4xl mx-auto">
+          <article className="max-w-[47.6rem] mx-auto">
             {/* Article Header */}
             <header className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <Badge variant="outline">{post.category}</Badge>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span>{publishedDate}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{post.reading_time} min read</span>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-sm text-muted-foreground">{post.reading_time} min read</span>
                 </div>
               </div>
 
@@ -216,21 +278,50 @@ export default async function BlogPostPage({
 
               <div className="flex items-center justify-between py-4 border-y">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-semibold">
-                    {post.author_name.charAt(0)}
-                  </div>
+                  <Link 
+                    href="https://x.com/tahigichigi" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:opacity-80 transition-opacity"
+                  >
+                    <Avatar className="w-10 h-10">
+                      {post.author_image ? (
+                        <AvatarImage src={post.author_image} alt={post.author_name} />
+                      ) : null}
+                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                        {post.author_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
                   <div>
-                    <p className="font-medium">{post.author_name}</p>
+                    <Link 
+                      href="https://x.com/tahigichigi" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="font-medium hover:text-primary transition-colors"
+                    >
+                      {post.author_name}
+                    </Link>
                     <p className="text-sm text-muted-foreground">
-                      {publishedDate !== updatedDate && `Updated ${updatedDate}`}
+                      {hasBeenUpdated ? (
+                        <>
+                          <Calendar className="h-3 w-3 inline mr-1" />
+                          Updated on: {updatedDate}
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="h-3 w-3 inline mr-1" />
+                          {publishedDate}
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
 
-                <Button variant="outline" size="sm">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
+                <ShareButton 
+                  url={`https://aistyleguide.com/blog/${post.slug}`}
+                  title={post.title}
+                />
               </div>
             </header>
 

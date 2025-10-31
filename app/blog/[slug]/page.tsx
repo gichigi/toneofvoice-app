@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Clock, Calendar, Home, BookOpen } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { isAdminAuthenticated } from '@/lib/admin-auth'
+import PostActions from './components/PostActions'
 
 interface BlogPost {
   id: string
@@ -20,14 +22,15 @@ interface BlogPost {
   featured_image?: string
   author_name: string
   author_image?: string
-  published_at: string
+  published_at: string | null
   updated_at: string
   reading_time: number
   word_count: number
   keywords: string[]
+  is_published: boolean
 }
 
-async function getBlogPost(slug: string): Promise<BlogPost | null> {
+async function getBlogPost(slug: string, allowUnpublished: boolean = false): Promise<BlogPost | null> {
   try {
     // Import supabase client directly for server-side rendering
     const { createClient } = await import('@supabase/supabase-js')
@@ -37,12 +40,18 @@ async function getBlogPost(slug: string): Promise<BlogPost | null> {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
-    const { data: post, error } = await supabase
+    // Build query - conditionally filter by is_published
+    let query = supabase
       .from('blog_posts')
       .select('*')
       .eq('slug', slug)
-      .eq('is_published', true)
-      .single()
+    
+    // Only filter for published posts if not allowing unpublished
+    if (!allowUnpublished) {
+      query = query.eq('is_published', true)
+    }
+    
+    const { data: post, error } = await query.single()
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned
@@ -65,7 +74,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const resolvedParams = await params
-  const post = await getBlogPost(resolvedParams.slug)
+  
+  // Check if user is admin to allow fetching unpublished posts for metadata
+  const isAdmin = await isAdminAuthenticated()
+  const post = await getBlogPost(resolvedParams.slug, isAdmin)
   
   if (!post) {
     return {
@@ -74,8 +86,11 @@ export async function generateMetadata({
     }
   }
 
+  // Add draft indicator to title if unpublished
+  const titlePrefix = !post.is_published ? '[Draft] ' : ''
+
   return {
-    title: `${post.title} | AI Style Guide`,
+    title: `${titlePrefix}${post.title} | AI Style Guide`,
     description: post.excerpt,
     keywords: post.keywords,
     authors: [{ name: post.author_name }],
@@ -83,12 +98,12 @@ export async function generateMetadata({
       canonical: `https://aistyleguide.com/blog/${post.slug}`,
     },
     openGraph: {
-      title: post.title,
+      title: `${titlePrefix}${post.title}`,
       description: post.excerpt,
       url: `https://aistyleguide.com/blog/${post.slug}`,
       siteName: 'AI Style Guide',
       type: 'article',
-      publishedTime: post.published_at,
+      publishedTime: post.published_at || undefined,
       modifiedTime: post.updated_at,
       authors: [post.author_name],
       images: [
@@ -102,7 +117,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: post.title,
+      title: `${titlePrefix}${post.title}`,
       description: post.excerpt,
       images: [post.featured_image || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=630&fit=crop&auto=format'],
     },
@@ -110,7 +125,13 @@ export async function generateMetadata({
 }
 
 // Schema.org structured data component - optimized for SEO
+// Only include schema for published posts
 function BlogSchema({ post }: { post: BlogPost }) {
+  // Skip schema for unpublished posts (not for SEO)
+  if (!post.is_published) {
+    return null
+  }
+
   // Remove the first heading from content for articleBody (title is already in headline)
   const articleBody = post.content.replace(/^#\s+.*$/m, '');
   
@@ -121,7 +142,7 @@ function BlogSchema({ post }: { post: BlogPost }) {
     headline: post.title,
     description: post.excerpt,
     articleBody: articleBody,
-    datePublished: post.published_at,
+    datePublished: post.published_at || post.updated_at,
     dateModified: post.updated_at,
     inLanguage: 'en-US',
     genre: post.category,
@@ -198,9 +219,17 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>
 }) {
   const resolvedParams = await params
-  const post = await getBlogPost(resolvedParams.slug)
+  
+  // Check if user is authenticated as admin to allow viewing unpublished posts
+  const isAdmin = await isAdminAuthenticated()
+  const post = await getBlogPost(resolvedParams.slug, isAdmin)
 
   if (!post) {
+    notFound()
+  }
+
+  // If post is unpublished and user is not admin, don't show it
+  if (!post.is_published && !isAdmin) {
     notFound()
   }
 
@@ -208,7 +237,8 @@ export default async function BlogPostPage({
   // This template displays dates under the author name:
   // - Shows published date if post hasn't been updated
   // - Shows "Updated on: [date]" if post has been updated (more than 1 minute difference)
-  const publishedDateObj = new Date(post.published_at)
+  // - For unpublished posts, use updated_at as fallback
+  const publishedDateObj = post.published_at ? new Date(post.published_at) : new Date(post.updated_at)
   const updatedDateObj = new Date(post.updated_at)
   
   const publishedDate = publishedDateObj.toLocaleDateString('en-US', {
@@ -224,7 +254,10 @@ export default async function BlogPostPage({
   })
 
   // Check if post has been updated (updated_at is significantly different from published_at)
-  const hasBeenUpdated = updatedDateObj.getTime() - publishedDateObj.getTime() > 60000 // More than 1 minute difference
+  // For unpublished posts, always show updated date
+  const hasBeenUpdated = post.published_at 
+    ? updatedDateObj.getTime() - publishedDateObj.getTime() > 60000 // More than 1 minute difference
+    : true // Unpublished posts always show as updated
 
   return (
     <>
@@ -262,8 +295,13 @@ export default async function BlogPostPage({
             <header className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <Badge variant="outline">{post.category}</Badge>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
+                {!post.is_published && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    Draft
+                  </Badge>
+                )}
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
                   <span className="text-sm text-muted-foreground">{post.reading_time} min read</span>
                 </div>
               </div>
@@ -318,11 +356,18 @@ export default async function BlogPostPage({
                   </div>
                 </div>
 
-                <ShareButton 
-                  url={`https://aistyleguide.com/blog/${post.slug}`}
-                  title={post.title}
-                />
+                {post.is_published && (
+                  <ShareButton 
+                    url={`https://aistyleguide.com/blog/${post.slug}`}
+                    title={post.title}
+                  />
+                )}
               </div>
+
+              {/* Admin actions for unpublished posts */}
+              {!post.is_published && isAdmin && (
+                <PostActions slug={post.slug} isPublished={post.is_published} />
+              )}
             </header>
 
             {/* Featured Image */}
@@ -355,9 +400,15 @@ export default async function BlogPostPage({
 
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  <p>Published on {publishedDate}</p>
-                  {publishedDate !== updatedDate && (
-                    <p>Last updated on {updatedDate}</p>
+                  {post.is_published ? (
+                    <>
+                      <p>Published on {publishedDate}</p>
+                      {publishedDate !== updatedDate && (
+                        <p>Last updated on {updatedDate}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p>Created on {updatedDate} (Draft)</p>
                   )}
                 </div>
 

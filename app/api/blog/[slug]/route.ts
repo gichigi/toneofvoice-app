@@ -1,20 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+// Helper to check admin authentication
+async function isAdminAuthenticated(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies()
+    const session = cookieStore.get('admin-blog-session')
+    return session?.value === 'authenticated'
+  } catch {
+    return false
+  }
+}
 
 // GET /api/blog/[slug] - Fetch individual blog post by slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params
+    const resolvedParams = await params
+    const { slug } = resolvedParams
 
-    const { data: post, error } = await supabase
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    
+    // Check if admin - allow fetching unpublished posts
+    const isAdmin = await isAdminAuthenticated()
+    
+    let query = supabase
       .from('blog_posts')
       .select('*')
       .eq('slug', slug)
-      .eq('is_published', true)
-      .single()
+    
+    if (!isAdmin) {
+      query = query.eq('is_published', true)
+    }
+    
+    const { data: post, error } = await query.single()
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned
@@ -31,14 +56,22 @@ export async function GET(
   }
 }
 
-// PUT /api/blog/[slug] - Update blog post
+// PUT /api/blog/[slug] - Update blog post (requires admin auth)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params
+    // Check admin authentication
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 })
+    }
+
+    const resolvedParams = await params
+    const { slug } = resolvedParams
     const body = await request.json()
+    
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     
     // Calculate word count and reading time if content is updated
     if (body.content) {
@@ -74,13 +107,84 @@ export async function PUT(
   }
 }
 
-// DELETE /api/blog/[slug] - Delete blog post
-export async function DELETE(
+// PATCH /api/blog/[slug] - Publish/unpublish blog post (requires admin auth)
+export async function PATCH(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params
+    // Check admin authentication
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 })
+    }
+
+    const resolvedParams = await params
+    const { slug } = resolvedParams
+    const body = await request.json()
+    const action = body.action // 'publish' or 'unpublish'
+    
+    if (!action || !['publish', 'unpublish'].includes(action)) {
+      return NextResponse.json({ error: 'Invalid action. Must be "publish" or "unpublish"' }, { status: 400 })
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    
+    const updateData: any = {
+      is_published: action === 'publish',
+      updated_at: new Date().toISOString()
+    }
+
+    // Set published_at if publishing for the first time
+    if (action === 'publish') {
+      // Check if post already has published_at
+      const { data: existingPost } = await supabase
+        .from('blog_posts')
+        .select('published_at')
+        .eq('slug', slug)
+        .single()
+
+      if (!existingPost?.published_at) {
+        updateData.published_at = new Date().toISOString()
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .update(updateData)
+      .eq('slug', slug)
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Blog post not found' }, { status: 404 })
+      }
+      console.error('Error publishing blog post:', error)
+      return NextResponse.json({ error: 'Failed to publish blog post' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, post: data })
+  } catch (error) {
+    console.error('Error in blog PATCH API:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// DELETE /api/blog/[slug] - Delete blog post (requires admin auth)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    // Check admin authentication
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized - Please log in' }, { status: 401 })
+    }
+
+    const resolvedParams = await params
+    const { slug } = resolvedParams
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     const { error } = await supabase
       .from('blog_posts')

@@ -1,8 +1,11 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo"
 import { ReactNode } from "react"
 import { PhoneCall } from "lucide-react"
+import { track } from "@vercel/analytics"
 
 interface HeaderProps {
   showNavigation?: boolean
@@ -55,7 +58,23 @@ export default function Header({
               </Link>
             </Button>
             <Button asChild>
-              <Link href="#hero">Get Started</Link>
+              <Link 
+                href="#hero"
+                onClick={(e) => {
+                  track('Get Started Clicked', { location: 'header' })
+                  // Dispatch custom event to trigger input animation even if already at top
+                  window.dispatchEvent(new CustomEvent('get-started-clicked'))
+                  // If already at top, prevent default scroll behavior
+                  const heroElement = document.getElementById('hero')
+                  if (heroElement && window.scrollY < heroElement.offsetTop + heroElement.offsetHeight) {
+                    e.preventDefault()
+                    // Manually scroll to ensure we're at the exact position
+                    heroElement.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
+              >
+                Get Started
+              </Link>
             </Button>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { track } from "@vercel/analytics"
@@ -46,6 +46,17 @@ import Logo from "@/components/Logo"
 import Header from "@/components/Header"
 import { TRAITS, type TraitName } from "@/lib/traits"
 
+// Lazy load non-critical sections (moved outside component to prevent re-creation on re-renders)
+const TestimonialsSection = dynamic(() => import("../components/testimonials-section"), {
+  ssr: false,
+  loading: () => <div className="w-full py-12 md:py-20 lg:py-24 bg-muted"></div>,
+})
+
+const CompanyLogosSection = dynamic(() => import("../components/company-logos-section"), {
+  ssr: false,
+  loading: () => <div className="w-full py-6 bg-muted"></div>,
+})
+
 // Default brand details
 const defaultBrandDetails = {
   name: "AIStyleGuide",
@@ -68,8 +79,97 @@ export default function LandingPage() {
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
   const [showSolutions, setShowSolutions] = useState(false) // Toggle state for brand voice section
   const [selectedTrait, setSelectedTrait] = useState<TraitName>("Direct") // Selected trait for preview
+  const [traitCyclePaused, setTraitCyclePaused] = useState(false) // Pause auto-cycle when user clicks
+  const traitCycleIntervalRef = useRef<NodeJS.Timeout | null>(null) // Ref for interval
+  const traitCyclePausedRef = useRef(false) // Ref to track paused state without causing re-renders
   const [ruleCount, setRuleCount] = useState(0) // Counter for animated rule count
   const [hasAnimated, setHasAnimated] = useState(false) // Track if counter has animated
+  const [inputAnimating, setInputAnimating] = useState(false) // Track input animation state
+  const inputRef = useRef<HTMLInputElement>(null) // Ref for input field
+
+  // Handle "Get Started" button click - animate and focus input
+  useEffect(() => {
+    const animateAndFocusInput = () => {
+      if (inputRef.current) {
+        // Check if we're already at the hero section
+        const heroElement = document.getElementById('hero')
+        const isAtHero = heroElement && 
+          window.scrollY < heroElement.offsetTop + heroElement.offsetHeight
+        
+        if (isAtHero) {
+          // User is already at top, focus immediately
+          setInputAnimating(true)
+          inputRef.current.focus()
+          setTimeout(() => setInputAnimating(false), 2000)
+        } else {
+          // User needs to scroll, wait for scroll then focus
+          setTimeout(() => {
+            setInputAnimating(true)
+            inputRef.current?.focus()
+            setTimeout(() => setInputAnimating(false), 2000)
+          }, 500)
+        }
+      }
+    }
+
+    const handleHashChange = () => {
+      if (window.location.hash === '#hero') {
+        animateAndFocusInput()
+      }
+    }
+
+    // Check on mount if hash is #hero
+    if (window.location.hash === '#hero') {
+      animateAndFocusInput()
+    }
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange)
+    
+    // Also listen for custom event from Header component
+    const handleGetStartedClick = () => {
+      animateAndFocusInput()
+    }
+    window.addEventListener('get-started-clicked', handleGetStartedClick)
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+      window.removeEventListener('get-started-clicked', handleGetStartedClick)
+    }
+  }, [])
+
+  // Auto-cycle through traits for demo
+  useEffect(() => {
+    const traits: TraitName[] = ["Direct", "Sophisticated", "Witty", "Warm"]
+
+    // Clear any existing interval first
+    if (traitCycleIntervalRef.current) {
+      clearInterval(traitCycleIntervalRef.current)
+    }
+
+    traitCycleIntervalRef.current = setInterval(() => {
+      // Check paused state via ref (doesn't cause re-render)
+      if (traitCyclePausedRef.current) return
+      
+      setSelectedTrait((prevTrait) => {
+        const prevIndex = traits.indexOf(prevTrait)
+        const nextIndex = (prevIndex + 1) % traits.length
+        return traits[nextIndex]
+      })
+    }, 5000) // 5 seconds per trait - enough time to scan
+
+    return () => {
+      if (traitCycleIntervalRef.current) {
+        clearInterval(traitCycleIntervalRef.current)
+        traitCycleIntervalRef.current = null
+      }
+    }
+  }, []) // Empty deps - only run once on mount, never restart
+
+  // Sync paused state to ref
+  useEffect(() => {
+    traitCyclePausedRef.current = traitCyclePaused
+  }, [traitCyclePaused])
 
   // Counter animation for rules section with smooth easing
   useEffect(() => {
@@ -159,16 +259,6 @@ export default function LandingPage() {
     return validation.isValid
   }
 
-  // Lazy load non-critical sections
-  const TestimonialsSection = dynamic(() => import("../components/testimonials-section"), {
-    ssr: false,
-    loading: () => <div className="w-full py-12 md:py-20 lg:py-24 bg-muted"></div>,
-  })
-
-  const CompanyLogosSection = dynamic(() => import("../components/company-logos-section"), {
-    ssr: false,
-    loading: () => <div className="w-full py-6 bg-muted"></div>,
-  })
 
   // Classify error types for better UX
   const classifyError = (error: any, response?: Response): { type: string; message: string } => {
@@ -531,20 +621,21 @@ export default function LandingPage() {
                 {/* Mobile-optimized input layout */}
                 <div className="relative w-full max-w-2xl mx-auto mt-4 mb-6">
                   {/* Mobile: Stack vertically, Desktop: Side by side */}
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-1 sm:p-1 sm:rounded-xl sm:bg-white sm:border sm:border-gray-200 sm:shadow-sm">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-1 sm:p-1 sm:rounded-xl sm:bg-white sm:border sm:border-blue-200 sm:shadow-sm">
                     <div className="relative flex-1">
                       {/* Icon - smaller on mobile, normal on desktop */}
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-colors duration-200" />
+                        <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 transition-colors duration-200" />
                       </div>
                       <input
+                        ref={inputRef}
                         type="text"
                         placeholder="Enter URL or describe the brand"
                         className={`
                           w-full py-4 pl-10 pr-4 sm:pl-11 sm:pr-4 sm:py-3
                           text-base font-medium 
                           bg-white sm:bg-transparent 
-                          border border-gray-200 sm:border-none 
+                          border border-blue-200 sm:border-none 
                           rounded-lg sm:rounded-none
                           shadow-sm sm:shadow-none
                           focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:focus:ring-0 sm:focus:outline-none 
@@ -552,6 +643,7 @@ export default function LandingPage() {
                           transition-all duration-200 
                           ${error ? "ring-2 ring-red-500 border-red-500" : ""} 
                           ${isSuccess ? "ring-2 ring-green-500 bg-green-50" : ""}
+                          ${inputAnimating ? "ring-4 ring-blue-400 animate-glow-pulse" : ""}
                         `}
                         value={url}
                         onChange={(e) => {
@@ -574,6 +666,10 @@ export default function LandingPage() {
                     <Button
                       type="submit"
                       size="lg"
+                      onClick={() => track('Generate Button Clicked', { 
+                        hasUrl: !!url.trim(),
+                        location: 'hero'
+                      })}
                       className={`
                         w-full sm:w-auto
                         h-14 sm:h-12 px-6 sm:px-4 
@@ -583,7 +679,7 @@ export default function LandingPage() {
                         hover:bg-gray-800 focus:bg-gray-800 focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 
                         transition-all duration-200 
                         ${isSuccess ? "bg-green-500 hover:bg-green-600 text-white focus:ring-green-400" : ""}
-                        ${!isInputValid() && !isExtracting && !isSuccess ? "opacity-50 cursor-not-allowed" : ""}
+                        ${!isInputValid() && !isExtracting && !isSuccess ? "opacity-75 cursor-not-allowed" : ""}
                       `}
                       disabled={isExtracting || isSuccess || !isInputValid()}
                     >
@@ -623,7 +719,12 @@ export default function LandingPage() {
                   
                   {/* Manual entry link at bottom right outside the container */}
                   <div className={`absolute right-6 ${error ? '-bottom-11' : '-bottom-7'}`}>
-                    <Link href="/brand-details" className="text-gray-400 underline font-medium text-sm whitespace-nowrap" style={{ textTransform: 'lowercase' }}>
+                    <Link 
+                      href="/brand-details" 
+                      onClick={() => track('Manual Entry Clicked', { location: 'hero' })}
+                      className="text-gray-400 underline font-medium text-sm whitespace-nowrap" 
+                      style={{ textTransform: 'lowercase' }}
+                    >
                       or add brand details manually
                     </Link>
                   </div>
@@ -664,7 +765,12 @@ export default function LandingPage() {
               </h2>
               <div className="flex flex-row items-center gap-3">
                 <button
-                  onClick={() => setShowSolutions(!showSolutions)}
+                  onClick={() => {
+                    setShowSolutions(!showSolutions)
+                    track('Toggle Problems Solutions', { 
+                      showing: !showSolutions ? 'solutions' : 'problems'
+                    })
+                  }}
                   className="relative inline-flex h-8 w-14 flex-shrink-0 items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   style={{
                     backgroundColor: showSolutions ? '#3b82f6' : '#ef4444'
@@ -887,7 +993,7 @@ export default function LandingPage() {
                               <div className="bg-indigo-600"></div>
                             </div>
                           </div>
-                          <span>AIStyleGuide</span>
+                          <span>AISG</span>
                         </div>
                       </th>
                     </tr>
@@ -1267,7 +1373,9 @@ export default function LandingPage() {
         </section>
 
         {/* Social Proof */}
-        <TestimonialsSection />
+        <div key="testimonials-stable">
+          <TestimonialsSection />
+        </div>
 
         {/* Example Output Preview - Redesigned with annotations - BACKGROUND CHANGED TO WHITE FOR ALTERNATION */}
         <section id="example" className="w-full py-6 md:py-24 bg-background">
@@ -1278,7 +1386,7 @@ export default function LandingPage() {
                   Brand voice traits in action
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl mb-4">
-                  Click through different traits to see definitions, do's, don'ts, and real examples
+                  Click through different traits to see definitions, do's, don'ts, and before/after examples
                 </p>
               </div>
             </div>
@@ -1292,7 +1400,10 @@ export default function LandingPage() {
                   return (
                     <button
                       key={trait}
-                      onClick={() => setSelectedTrait(trait)}
+                      onClick={() => {
+                        setSelectedTrait(trait)
+                        setTraitCyclePaused(true) // Pause auto-cycle when user clicks
+                      }}
                       className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                         isSelected
                           ? "bg-primary text-primary-foreground shadow-sm"
@@ -1306,7 +1417,7 @@ export default function LandingPage() {
               </div>
 
               {/* Trait Card */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden transition-opacity duration-300">
+              <div key={selectedTrait} className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
                 <div className="p-6 md:p-8">
                   <div className="flex items-center gap-2 mb-4">
                     <PenTool className="h-5 w-5 text-primary" />
@@ -1452,6 +1563,11 @@ export default function LandingPage() {
                       <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Multiple download formats</li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
+                      track('Pricing Card Clicked', {
+                        guideType: 'complete',
+                        price: 149,
+                        location: 'homepage'
+                      })
                       router.push("/brand-details?guideType=complete");
                     }}>Get Complete Guide</Button>
                     
@@ -1503,7 +1619,12 @@ export default function LandingPage() {
                       </li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-white hover:bg-gray-200 text-black font-bold rounded-full px-8 py-3 shadow-md" variant="outline" asChild>
-                      <Link href="mailto:enterprise@styleguideai.com">Contact Sales</Link>
+                      <Link 
+                        href="mailto:enterprise@styleguideai.com"
+                        onClick={() => track('Contact Sales Clicked', { plan: 'enterprise', location: 'pricing' })}
+                      >
+                        Contact Sales
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>

@@ -25,7 +25,7 @@ export default function TestimonialsSection() {
     {
       name: "Remi",
       title: "",
-      company: "MOCAA Agency",
+      company: "MOCAA Studio",
       quote:
         "Really simple and easy to use. I'm not a writer, so creating good content isn't easy for me. This saved a lot of time and frustration. Highly recommend for anyone who wants their content to sound like them.",
       heading: "Saves time and frustration.",

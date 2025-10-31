@@ -183,7 +183,7 @@ function BreadcrumbSchema({ slug, title }: { slug: string; title: string }) {
       }
     ]
   }
-  
+
   return (
     <script
       type="application/ld+json"
@@ -262,8 +262,8 @@ export default async function BlogPostPage({
             <header className="mb-8">
               <div className="flex items-center gap-2 mb-4">
                 <Badge variant="outline">{post.category}</Badge>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
                   <span className="text-sm text-muted-foreground">{post.reading_time} min read</span>
                 </div>
               </div>
@@ -289,7 +289,7 @@ export default async function BlogPostPage({
                         <AvatarImage src={post.author_image} alt={post.author_name} />
                       ) : null}
                       <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                        {post.author_name.charAt(0)}
+                    {post.author_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   </Link>

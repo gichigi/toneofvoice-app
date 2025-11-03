@@ -54,6 +54,9 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
         'accent-gray': '#e5e7eb',
+        blog: {
+          text: "hsl(var(--blog-text))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

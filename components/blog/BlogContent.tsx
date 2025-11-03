@@ -15,12 +15,12 @@ export default function BlogContent({ children, className = '' }: BlogContentPro
 
   return (
     <div
-      className={`prose prose-lg md:prose-xl dark:prose-invert max-w-none
+      className={`prose prose-xl dark:prose-invert max-w-[42.5rem]
       prose-headings:font-semibold prose-headings:tracking-tight
       prose-h1:text-4xl md:prose-h1:text-5xl prose-h1:leading-tight prose-h1:mt-12 prose-h1:mb-6
       prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:leading-snug prose-h2:mt-10 prose-h2:mb-4
       prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-3
-      prose-p:leading-8 md:prose-p:leading-9 prose-p:mb-6
+      prose-p:leading-[1.6] prose-p:tracking-[-0.003em] prose-p:text-blog-text prose-p:mb-6
       prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-a:underline-offset-4 prose-a:transition-all
       prose-ul:my-6 prose-ol:my-6 prose-li:my-2 prose-li:leading-8 md:prose-li:leading-9
       prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:pl-6 prose-blockquote:my-8 prose-blockquote:text-muted-foreground prose-blockquote:italic

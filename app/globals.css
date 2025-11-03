@@ -54,6 +54,8 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    --blog-text: 0 0% 14.1%; /* #242424 - Medium-style blog text color */
   }
 
   .dark {

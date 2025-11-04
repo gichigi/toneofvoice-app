@@ -11,6 +11,7 @@
     "generate-blog": "node scripts/generate-blog-posts.js",
     "generate-blog:dry": "node scripts/generate-blog-posts.js --dry-run",
     "generate-blog:limit": "node scripts/generate-blog-posts.js --limit=3",
+    "update-blog-images": "node scripts/update-blog-images.js",
     "generate-logos": "node scripts/generate-logo-svgs.js",
     "generate-favicons": "node scripts/generate-favicons.js",
     "generate-icons": "pnpm generate-logos && pnpm generate-favicons"

@@ -61,7 +61,7 @@ export default function BlogCard({ post }: BlogCardProps) {
         </div>
         
         <CardContent className="p-4">
-          <p className="text-muted-foreground mb-3 line-clamp-3">
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
             {post.excerpt}
           </p>
           

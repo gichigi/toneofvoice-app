@@ -7,7 +7,7 @@ import BlogContent from '@/components/blog/BlogContent'
 import ShareButton from '@/components/blog/ShareButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Clock, Calendar, Home, BookOpen } from 'lucide-react'
+import { Clock, Calendar, Home, BookOpen, ArrowRight } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { isAdminAuthenticated } from '@/lib/admin-auth'
 import PostActions from './components/PostActions'
@@ -389,6 +389,24 @@ export default async function BlogPostPage({
             <BlogContent>
               {post.content.replace(/^#\s+.*$/m, '')}
             </BlogContent>
+
+            {/* CTA Section */}
+            <section className="my-12 pt-8 border-t">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-2">Download your free preview style guide</h2>
+                  <p className="text-muted-foreground">
+                    Generate a professional brand voice style guide with tailored examples and rules
+                  </p>
+                </div>
+                <Button asChild size="lg" className="text-lg font-bold bg-gradient-to-r from-orange-500 via-orange-600 to-red-500 hover:from-orange-600 hover:via-orange-700 hover:to-red-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200">
+                  <Link href="/">
+                    Get Style Guide
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </section>
 
             {/* Article Footer */}
             <footer className="mt-12 pt-8 border-t">

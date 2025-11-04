@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateWithOpenAI } from '@/lib/openai'
 import { cookies } from 'next/headers'
+import fs from 'fs'
+import path from 'path'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -58,6 +60,66 @@ Return ONLY the category name that best fits this topic. No explanation, just th
 
   // Fallback to default
   return 'Brand Strategy'
+}
+
+// Function to read blog images directory and return sorted filenames
+async function getBlogImages(): Promise<string[]> {
+  try {
+    const blogImagesPath = path.join(process.cwd(), 'public', 'blog-images')
+    
+    // Check if directory exists
+    if (!fs.existsSync(blogImagesPath)) {
+      console.error('Blog images directory not found:', blogImagesPath)
+      return []
+    }
+    
+    // Read directory contents
+    const files = await fs.promises.readdir(blogImagesPath)
+    
+    // Filter for image files and sort alphabetically
+    const imageFiles = files
+      .filter(file => /\.(jpg|jpeg|png|webp)$/i.test(file))
+      .sort()
+    
+    console.log(`Found ${imageFiles.length} blog images:`, imageFiles.slice(0, 3), '...')
+    return imageFiles
+  } catch (error) {
+    console.error('Error reading blog images directory:', error)
+    return []
+  }
+}
+
+// Function to select image based on post count (cycling through images)
+async function selectBlogImage(supabase: any): Promise<string | null> {
+  try {
+    // Get available images
+    const images = await getBlogImages()
+    if (images.length === 0) {
+      console.log('No blog images available')
+      return null
+    }
+    
+    // Count existing blog posts to determine cycle index
+    const { count, error } = await supabase
+      .from('blog_posts')
+      .select('*', { count: 'exact', head: true })
+    
+    if (error) {
+      console.error('Error counting blog posts:', error)
+      // Fallback to first image if count fails
+      return `/blog-images/${images[0]}`
+    }
+    
+    // Calculate image index using modulo to cycle through images
+    const imageIndex = (count || 0) % images.length
+    const selectedImage = `/blog-images/${images[imageIndex]}`
+    
+    console.log(`Selected image ${imageIndex + 1}/${images.length}: ${selectedImage}`)
+    return selectedImage
+  } catch (error) {
+    console.error('Error selecting blog image:', error)
+    return null
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -187,6 +249,9 @@ Write for marketing professionals, content creators, and business owners who wan
     // Create Supabase client with service role key
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+    // Select featured image using cycling logic
+    const featured_image = await selectBlogImage(supabase)
+
     // Prepare blog post data
     const blogPost = {
       title,
@@ -195,6 +260,7 @@ Write for marketing professionals, content creators, and business owners who wan
       excerpt,
       keywords: kws,
       category,
+      featured_image,
       author_name: 'Tahi Gichigi',
       author_image: '/logos/profile_orange_clean.png',
       word_count,

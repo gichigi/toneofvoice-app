@@ -13,9 +13,14 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
-    domains: ['vercel.com'],
+    // Re-enable optimization and provide sensible responsive breakpoints
+    deviceSizes: [360, 414, 640, 768, 1024, 1280, 1536, 1600],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'vercel.com',
+      },
       {
         protocol: 'https',
         hostname: '**',

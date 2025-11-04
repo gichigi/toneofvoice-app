@@ -21,27 +21,6 @@ interface BlogCardProps {
   post: BlogPost
 }
 
-function getMutedGradient(slug: string): string {
-  // Generate consistent "random" number from slug
-  let hash = 0
-  for (let i = 0; i < slug.length; i++) {
-    hash = ((hash << 5) - hash) + slug.charCodeAt(i)
-    hash = hash & hash
-  }
-  const index = Math.abs(hash) % 6
-  
-  // Muted gradient combinations (more visible)
-  const gradients = [
-    'bg-gradient-to-br from-blue-100 to-blue-200',
-    'bg-gradient-to-br from-green-100 to-green-200',
-    'bg-gradient-to-br from-purple-100 to-purple-200',
-    'bg-gradient-to-br from-orange-100 to-orange-200',
-    'bg-gradient-to-br from-pink-100 to-pink-200',
-    'bg-gradient-to-br from-slate-100 to-slate-200',
-  ]
-  
-  return gradients[index]
-}
 
 export default function BlogCard({ post }: BlogCardProps) {
   const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
@@ -53,17 +32,18 @@ export default function BlogCard({ post }: BlogCardProps) {
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <Link href={`/blog/${post.slug}`}>
-        <div className="relative overflow-hidden rounded-t-lg">
+        <div className="relative overflow-hidden rounded-t-lg h-48">
           {post.featured_image ? (
             <Image
               src={post.featured_image}
               alt={post.title}
-              width={400}
-              height={200}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              fill
+              quality={90}
+              sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className={`w-full h-48 ${getMutedGradient(post.slug)} flex items-center justify-center border-b`}>
+            <div className="w-full h-48 bg-muted flex items-center justify-center border-b">
               <div className="text-center p-6">
                 <h3 className="font-semibold text-lg mb-2 line-clamp-2 text-foreground">{post.title}</h3>
                 <Badge variant="secondary">

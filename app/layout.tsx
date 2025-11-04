@@ -9,6 +9,7 @@ const geistSans = Geist({ subsets: ["latin"], display: "swap" })
 const geistMono = Geist_Mono({ subsets: ["latin"], display: "swap" })
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'),
   title: "Build your brand tone of voice | AIStyleGuide",
   description: "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
   generator: 'v0.dev',

@@ -272,7 +272,7 @@ export default async function BlogPostPage({
             <div className="flex items-center gap-3 text-sm">
               <Link 
                 href="/" 
-                className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-1 px-1 -mx-1 min-h-[44px] min-w-[44px] touch-manipulation"
               >
                 <Home className="h-4 w-4" />
                 <span>Home</span>
@@ -280,7 +280,7 @@ export default async function BlogPostPage({
               <span className="text-muted-foreground">/</span>
               <Link 
                 href="/blog" 
-                className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors py-1 px-1 -mx-1 min-h-[44px] min-w-[44px] touch-manipulation"
               >
                 <BookOpen className="h-4 w-4" />
                 <span>Blog</span>
@@ -372,13 +372,15 @@ export default async function BlogPostPage({
 
             {/* Featured Image */}
             {post.featured_image && (
-              <div className="mb-8">
+              <div className="mb-8 relative w-full aspect-[2/1]">
                 <Image
                   src={post.featured_image}
                   alt={post.title}
-                  width={800}
-                  height={400}
-                  className="w-full rounded-lg shadow-lg"
+                  fill
+                  quality={90}
+                  sizes="(min-width: 1280px) 60vw, (min-width: 768px) 80vw, 100vw"
+                  className="object-cover rounded-lg shadow-lg"
+                  priority
                 />
               </div>
             )}

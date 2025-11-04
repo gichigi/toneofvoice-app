@@ -611,7 +611,7 @@ export default function LandingPage() {
                 AI-Powered Brand Voice Guidelines
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4">
-                Build your unique brand tone of voice in minutes
+                Stop asking ChatGPT to make it sound better
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
                 Generate a professional writing style guide, complete with brand voice traits, supporting style rules, and tailored content examples.

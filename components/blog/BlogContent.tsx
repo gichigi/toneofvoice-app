@@ -15,7 +15,7 @@ export default function BlogContent({ children, className = '' }: BlogContentPro
 
   return (
     <div
-      className={`prose prose-xl dark:prose-invert max-w-[42.5rem]
+      className={`prose prose-xl dark:prose-invert max-w-[47.6rem]
       prose-headings:font-semibold prose-headings:tracking-tight
       prose-h1:text-4xl md:prose-h1:text-5xl prose-h1:leading-tight prose-h1:mt-12 prose-h1:mb-6
       prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:leading-snug prose-h2:mt-10 prose-h2:mb-4

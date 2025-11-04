@@ -257,7 +257,7 @@ export default function DemoPage() {
       <div className="fixed bottom-0 left-0 w-full flex justify-center z-50 pointer-events-none">
         <div className="w-full max-w-3xl px-4 pb-4 pointer-events-auto">
           <Button asChild size="lg" className="w-full max-w-xs text-lg font-bold shadow-md transition-all duration-200 bg-orange-500 hover:bg-orange-600 hover:scale-105 focus:bg-orange-600 focus:scale-105 text-white">
-            <Link href="/start">Generate Your Own Style Guide</Link>
+            <Link href="/">Generate Your Own Style Guide</Link>
           </Button>
         </div>
       </div>

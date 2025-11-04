@@ -128,10 +128,12 @@ export default async function BlogPage({
         {/* Blog Posts Grid */}
         {posts.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-              {posts.map((post) => (
-                <BlogCard key={post.id} post={post} />
-              ))}
+            <div className="max-w-[42.5rem] mx-auto mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {posts.map((post) => (
+                  <BlogCard key={post.id} post={post} />
+                ))}
+              </div>
             </div>
 
             {/* Pagination */}

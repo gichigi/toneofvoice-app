@@ -12,8 +12,17 @@ export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'),
   title: "Build your brand tone of voice | AIStyleGuide",
   description: "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+  icons: {
+    icon: [
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   generator: 'v0.dev',
-  keywords: 'brand style guide, content guidelines, brand voice, writing rules, content strategy, brand consistency, marketing guidelines',
   authors: [{ name: 'AI Style Guide' }],
   creator: 'AI Style Guide',
   publisher: 'AI Style Guide',
@@ -72,6 +81,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         
+        {/* Explicit meta tags for compatibility */}
+        <title>Build your brand tone of voice | AIStyleGuide</title>
+        <meta name="description" content="Generate a complete content style guide including tone of voice, rules, and examples — all tailored to your brand." />
+        
+        {/* WebPage Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebPage",
+              "@id": "https://aistyleguide.com#webpage",
+              "name": "AIStyleGuide — Build your brand tone of voice",
+              "description": "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+              "url": "https://aistyleguide.com",
+              "primaryImageOfPage": "https://aistyleguide.com/brand-voice-guidelines.png",
+              "inLanguage": "en",
+              "isPartOf": {
+                "@id": "https://aistyleguide.com#website"
+              },
+              "mainEntity": {
+                "@id": "https://aistyleguide.com#software"
+              },
+              "datePublished": "2024-01-01",
+              "dateModified": "2024-11-04"
+            })
+          }}
+        />
+        
+        {/* WebSite Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "@id": "https://aistyleguide.com#website",
+              "name": "AIStyleGuide",
+              "url": "https://aistyleguide.com",
+              "description": "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+            })
+          }}
+        />
+        
         {/* Schema.org markup for SoftwareApplication */}
         <script
           type="application/ld+json"
@@ -79,6 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
+              "@id": "https://aistyleguide.com#software",
               "name": "AIStyleGuide",
               "description": "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
               "brand": {
@@ -95,8 +149,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "availability": "https://schema.org/InStock"
               },
               "creator": {
-                "@type": "Organization",
-                "name": "AIStyleGuide"
+                "@id": "https://aistyleguide.com#organization"
               }
             })
           }}
@@ -217,25 +270,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         
-        {/* BreadcrumbList Schema */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "BreadcrumbList",
-              "itemListElement": [
-                {
-                  "@type": "ListItem",
-                  "position": 1,
-                  "name": "Home",
-                  "item": "https://aistyleguide.com"
-                }
-              ]
-            })
-          }}
-        />
-        
         {/* Organization Schema */}
         <script
           type="application/ld+json"
@@ -243,9 +277,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
+              "@id": "https://aistyleguide.com#organization",
               "name": "AIStyleGuide",
               "url": "https://aistyleguide.com",
-              "logo": "https://aistyleguide.com/aistyleguide-logo.svg",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://aistyleguide.com/logo-wordmark.svg",
+                "width": 184,
+                "height": 32
+              },
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "email": "support@aistyleguide.com",
+                "contactType": "customer support"
+              },
               "sameAs": [
                 "https://twitter.com/aistyleguide"
               ]

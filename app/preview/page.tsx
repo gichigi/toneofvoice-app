@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Logo from "@/components/Logo"
 import { StyleGuideHeader } from "@/components/StyleGuideHeader"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
+import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 
 // (MiniPaywallBanner removed)
 
@@ -384,6 +385,11 @@ export default function PreviewPage() {
 
   return (
     <>
+      <BreadcrumbSchema items={[
+        { name: "Home", url: "https://aistyleguide.com" },
+        { name: "Brand Details", url: "https://aistyleguide.com/brand-details" },
+        { name: "Preview", url: "https://aistyleguide.com/preview" }
+      ]} />
       {/* (Mini paywall CSS removed) */}
       <div className="bg-gray-50 dark:bg-gray-900">
       {/* Sticky Header with CTAs */}

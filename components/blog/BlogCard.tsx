@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Clock, Calendar } from 'lucide-react'
+import { Clock } from 'lucide-react'
 
 interface BlogPost {
   id: string
@@ -23,25 +23,31 @@ interface BlogCardProps {
 
 
 export default function BlogCard({ post }: BlogCardProps) {
-  const publishedDate = new Date(post.published_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <Link href={`/blog/${post.slug}`}>
         <div className="relative overflow-hidden rounded-t-lg h-48">
           {post.featured_image ? (
-            <Image
-              src={post.featured_image}
-              alt={post.title}
-              fill
-              quality={90}
-              sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            <>
+              <Image
+                src={post.featured_image}
+                alt={post.title}
+                fill
+                quality={90}
+                sizes="(min-width: 768px) 50vw, 100vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              {/* Gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              {/* Title and category overlay */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                <h3 className="font-semibold text-lg mb-2 line-clamp-2 text-white drop-shadow-lg">{post.title}</h3>
+                <Badge variant="secondary" className="bg-white/90 text-foreground">
+                  {post.category}
+                </Badge>
+              </div>
+            </>
           ) : (
             <div className="w-full h-48 bg-muted flex items-center justify-center border-b">
               <div className="text-center p-6">
@@ -54,34 +60,15 @@ export default function BlogCard({ post }: BlogCardProps) {
           )}
         </div>
         
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Badge variant="outline" className="text-xs">
-              {post.category}
-            </Badge>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>{publishedDate}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{post.reading_time} min read</span>
-              </div>
-            </div>
-          </div>
-          
-          <h2 className="text-xl font-semibold mb-3 line-clamp-2 group-hover:text-primary transition-colors">
-            {post.title}
-          </h2>
-          
-          <p className="text-muted-foreground mb-4 line-clamp-3">
+        <CardContent className="p-4">
+          <p className="text-muted-foreground mb-3 line-clamp-3">
             {post.excerpt}
           </p>
           
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              By {post.author_name}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {post.reading_time} min read
             </span>
             <span className="text-primary font-medium text-sm group-hover:underline">
               Read more →

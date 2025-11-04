@@ -18,6 +18,7 @@ import { useSearchParams } from "next/navigation"
 import Logo from "@/components/Logo"
 import Header from "@/components/Header"
 import VoiceTraitSelector from "@/components/VoiceTraitSelector"
+import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 
 // Default brand details
 const defaultBrandDetails = {
@@ -602,6 +603,10 @@ export default function BrandDetailsPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <BreadcrumbSchema items={[
+        { name: "Home", url: "https://aistyleguide.com" },
+        { name: "Brand Details", url: "https://aistyleguide.com/brand-details" }
+      ]} />
       <Header />
       <main
         className={`flex-1 container py-8 transition-opacity duration-500 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}

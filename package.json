@@ -11,7 +11,10 @@
     "generate-blog": "node scripts/generate-blog-posts.js",
     "generate-blog:dry": "node scripts/generate-blog-posts.js --dry-run",
     "generate-blog:limit": "node scripts/generate-blog-posts.js --limit=3",
+    "convert-search-terms": "node scripts/convert-search-terms-to-blog-csv.js",
+    "update-post-images": "node scripts/update-existing-posts-images.js",
     "update-blog-images": "node scripts/update-blog-images.js",
+    "test-outline": "node scripts/test-outline-approach.js",
     "generate-logos": "node scripts/generate-logo-svgs.js",
     "generate-favicons": "node scripts/generate-favicons.js",
     "generate-icons": "pnpm generate-logos && pnpm generate-favicons"

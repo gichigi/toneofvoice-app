@@ -4,6 +4,8 @@ import { generateWithOpenAI } from '@/lib/openai'
 import { cookies } from 'next/headers'
 import fs from 'fs'
 import path from 'path'
+import { BLOG_SYSTEM_PROMPT, getBlogOutlinePrompt, getBlogArticlePromptFromOutline } from '@/lib/blog-prompts'
+import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -163,57 +165,91 @@ export async function POST(req: NextRequest) {
       category = 'Brand Strategy' // Fallback
     }
 
-    // System prompt with brand voice beliefs
-    const systemPrompt = `You are a brand voice and content style guide expert specializing in copywriting and content marketing. The current year is 2025. You believe that:
+    // Use shared prompts from lib/blog-prompts.js
+    const systemPrompt = BLOG_SYSTEM_PROMPT
 
-1. Brand voice is the moat — it's what makes every brand unique.
-2. Content is what you say; brand voice is how you say it.
-3. Brand voice comes from what you do, why you do it, and who you do it for.
-4. Brand voice and tone of voice mean the same thing — voice doesn't change based on circumstance, it just flexes as you lean into different voice traits.
-5. A good brand voice is made up of 3 traits that are single word adjectives and supported by spelling, grammar, punctuation and formatting rules that reinforce the voice.
-6. Strong visuals exist to strengthen the voice.
-7. A strong voice makes even simple ideas memorable.
-8. Voice is the bridge between brand and emotion.
-9. When voice is right, you don't need to shout.
-10. People don't remember what you wrote; they remember how it felt.
-
-Always return strict JSON only.`
-    
-    const userPrompt = `Write a comprehensive, SEO-optimized blog post about the given topic. The post should be:
-
-1. **Informative and actionable** - Provide practical insights readers can implement
-2. **SEO-friendly** - Naturally incorporate the target keywords
-3. **Well-structured** - Use clear headings, subheadings, and bullet points
-4. **Engaging** - Write in a conversational, professional tone
-5. **Comprehensive** - Cover the topic thoroughly (800-1200 words)
-6. **Voice-driven** - Reflect your brand voice beliefs throughout
-
-Format the response as JSON with these fields:
-- title: The blog post title (60 characters or less)
-- content: The full blog post content in markdown format. Start with "# {title}" then include well-structured sections with H2 headings
-- excerpt: A compelling 140-160 character summary
-- keywords: Array of 5-8 relevant SEO keywords from the target keywords provided or close variants
-
-Topic: ${topic}
-Target Keywords: ${keywords.join(', ') || 'none provided'}
-
-Write for marketing professionals, content creators, and business owners who want to improve their brand communication.`
-
-    // Generate content
-    const result = await generateWithOpenAI(
-      userPrompt,
+    // Step 1: Generate outline using gpt-4o
+    const outlinePrompt = getBlogOutlinePrompt(topic, keywords)
+    const outlineResult = await generateWithOpenAI(
+      outlinePrompt,
       systemPrompt,
       'json',
-      3000,
+      2000,
       'gpt-4o'
     )
 
-    if (!result.success || !result.content) {
-      console.error('Content generation failed:', result.error)
+    if (!outlineResult.success || !outlineResult.content) {
+      console.error('Outline generation failed:', outlineResult.error)
       return NextResponse.json(
-        { error: result.error || 'Content generation failed' },
+        { error: outlineResult.error || 'Outline generation failed' },
         { status: 502 }
       )
+    }
+
+    // Parse outline
+    let outline
+    try {
+      outline = JSON.parse(outlineResult.content)
+    } catch (parseError) {
+      console.error('Failed to parse outline JSON:', parseError)
+      return NextResponse.json(
+        { error: 'Invalid JSON response from outline generation' },
+        { status: 502 }
+      )
+    }
+
+    // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
+    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic, keywords)
+    
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+    
+    const articleResponse = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: articlePrompt }
+      ],
+      temperature: 0.8,
+      max_tokens: 3000
+    })
+
+    const rawResponse = articleResponse.choices[0]?.message?.content
+    if (!rawResponse) {
+      return NextResponse.json(
+        { error: 'Empty response from article generation' },
+        { status: 502 }
+      )
+    }
+
+    // Clean response (remove markdown code blocks)
+    let cleanedResponse = rawResponse.trim()
+    cleanedResponse = cleanedResponse.replace(/```(json|markdown)\n?/g, '').replace(/```\n?/g, '')
+
+    // For JSON, try to extract valid JSON
+    const jsonStart = Math.min(
+      cleanedResponse.indexOf('[') >= 0 ? cleanedResponse.indexOf('[') : Infinity,
+      cleanedResponse.indexOf('{') >= 0 ? cleanedResponse.indexOf('{') : Infinity
+    )
+    
+    if (jsonStart < Infinity) {
+      let jsonText = cleanedResponse.substring(jsonStart)
+      for (let i = jsonText.length; i > 0; i--) {
+        try {
+          const candidate = jsonText.substring(0, i)
+          JSON.parse(candidate)
+          cleanedResponse = candidate
+          break
+        } catch (e) {
+          // Continue trying shorter substrings
+        }
+      }
+    }
+
+    const result = {
+      success: true,
+      content: cleanedResponse.trim()
     }
 
     // Parse generated content

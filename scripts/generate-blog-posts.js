@@ -11,6 +11,11 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
+import dotenv from 'dotenv'
+import { BLOG_SYSTEM_PROMPT, getBlogOutlinePrompt, getBlogArticlePromptFromOutline } from '../lib/blog-prompts.js'
+
+// Load environment variables from .env file
+dotenv.config()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -112,42 +117,8 @@ async function generateWithOpenAI(prompt, systemPrompt, responseFormat = 'json',
   }
 }
 
-// System prompt with brand voice beliefs (matches API endpoint)
-const SYSTEM_PROMPT = `You are a brand voice and content style guide expert specializing in copywriting and content marketing. The current year is 2025. You believe that:
-
-1. Brand voice is the moat — it's what makes every brand unique.
-2. Content is what you say; brand voice is how you say it.
-3. Brand voice comes from what you do, why you do it, and who you do it for.
-4. Brand voice and tone of voice mean the same thing — voice doesn't change based on circumstance, it just flexes as you lean into different voice traits.
-5. A good brand voice is made up of 3 traits that are single word adjectives and supported by spelling, grammar, punctuation and formatting rules that reinforce the voice.
-6. Strong visuals exist to strengthen the voice.
-7. A strong voice makes even simple ideas memorable.
-8. Voice is the bridge between brand and emotion.
-9. When voice is right, you don't need to shout.
-10. People don't remember what you wrote; they remember how it felt.
-
-Always return strict JSON only.`
-
-// User prompt template (matches API endpoint)
-const USER_PROMPT_TEMPLATE = `Write a comprehensive, SEO-optimized blog post about the given topic. The post should be:
-
-1. **Informative and actionable** - Provide practical insights readers can implement
-2. **SEO-friendly** - Naturally incorporate the target keywords
-3. **Well-structured** - Use clear headings, subheadings, and bullet points
-4. **Engaging** - Write in a conversational, professional tone
-5. **Comprehensive** - Cover the topic thoroughly (800-1200 words)
-6. **Voice-driven** - Reflect your brand voice beliefs throughout
-
-Format the response as JSON with these fields:
-- title: The blog post title (60 characters or less)
-- content: The full blog post content in markdown format. Start with "# {title}" then include well-structured sections with H2 headings
-- excerpt: A compelling 140-160 character summary
-- keywords: Array of 5-8 relevant SEO keywords from the target keywords provided or close variants
-
-Topic: {title}
-Target Keywords: {keywords}
-
-Write for marketing professionals, content creators, and business owners who want to improve their brand communication.`
+// Use shared prompts from lib/blog-prompts.js
+const SYSTEM_PROMPT = BLOG_SYSTEM_PROMPT
 
 /**
  * Parse CSV file
@@ -160,16 +131,47 @@ Write for marketing professionals, content creators, and business owners who wan
  * title,keywords,category
  * Brand Voice Guide,brand voice,marketing,Brand Strategy
  */
+/**
+ * Parse CSV row handling quoted fields with commas
+ */
+function parseCSVRow(row) {
+  const values = []
+  let current = ''
+  let inQuotes = false
+  
+  for (let i = 0; i < row.length; i++) {
+    const char = row[i]
+    
+    if (char === '"') {
+      // Handle escaped quotes ("")
+      if (i + 1 < row.length && row[i + 1] === '"') {
+        current += '"'
+        i++ // Skip next quote
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (char === ',' && !inQuotes) {
+      values.push(current.trim())
+      current = ''
+    } else {
+      current += char
+    }
+  }
+  values.push(current.trim()) // Add last value
+  
+  return values
+}
+
 function parseCSV(csvContent) {
-  const lines = csvContent.trim().split('\n')
+  const lines = csvContent.trim().split('\n').filter(line => line.trim())
   if (lines.length < 2) {
     throw new Error('CSV file must have at least a header row and one data row')
   }
   
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim())
+  const headers = parseCSVRow(lines[0]).map(h => h.replace(/^"|"$/g, '').trim())
   
-  return lines.slice(1).filter(line => line.trim()).map((line, index) => {
-    const values = line.split(',').map(v => v.replace(/"/g, '').trim())
+  return lines.slice(1).map((line, index) => {
+    const values = parseCSVRow(line).map(v => v.replace(/^"|"$/g, '').trim())
     
     // Validate required fields
     if (!values[0] || values[0].trim() === '') {
@@ -245,6 +247,65 @@ function calculateReadingTime(content) {
   return Math.ceil(wordCount / wordsPerMinute)
 }
 
+// Function to read blog images directory and return sorted filenames
+async function getBlogImages() {
+  try {
+    const blogImagesPath = path.join(__dirname, '..', 'public', 'blog-images')
+    
+    // Check if directory exists
+    if (!fs.existsSync(blogImagesPath)) {
+      console.error('Blog images directory not found:', blogImagesPath)
+      return []
+    }
+    
+    // Read directory contents
+    const files = await fs.promises.readdir(blogImagesPath)
+    
+    // Filter for image files and sort alphabetically
+    const imageFiles = files
+      .filter(file => /\.(jpg|jpeg|png|webp)$/i.test(file))
+      .sort()
+    
+    return imageFiles
+  } catch (error) {
+    console.error('Error reading blog images directory:', error)
+    return []
+  }
+}
+
+// Function to select image based on post count (cycling through images)
+async function selectBlogImage(supabase) {
+  try {
+    // Get available images
+    const images = await getBlogImages()
+    if (images.length === 0) {
+      console.log('   ⚠️  No blog images available')
+      return null
+    }
+    
+    // Count existing blog posts to determine cycle index
+    const { count, error } = await supabase
+      .from('blog_posts')
+      .select('*', { count: 'exact', head: true })
+    
+    if (error) {
+      console.error('Error counting blog posts:', error)
+      // Fallback to first image if count fails
+      return `/blog-images/${images[0]}`
+    }
+    
+    // Calculate image index using modulo to cycle through images
+    const imageIndex = (count || 0) % images.length
+    const selectedImage = `/blog-images/${images[imageIndex]}`
+    
+    console.log(`   🖼️  Selected image ${imageIndex + 1}/${images.length}: ${selectedImage}`)
+    return selectedImage
+  } catch (error) {
+    console.error('Error selecting blog image:', error)
+    return null
+  }
+}
+
 async function generateBlogPost(topic) {
   console.log(`🤖 Generating blog post for: "${topic.title}"`)
   
@@ -268,24 +329,96 @@ async function generateBlogPost(topic) {
     }
     console.log(`   📂 Category: ${category}`)
 
-    // Build user prompt
-    const userPrompt = USER_PROMPT_TEMPLATE
-      .replace('{title}', topic.title)
-      .replace('{keywords}', keywords.join(', ') || 'none provided')
-
-    // Generate content using generateWithOpenAI helper
-    console.log(`   ✍️  Generating content...`)
-    const result = await generateWithOpenAI(
-      userPrompt,
+    // Step 1: Generate outline using gpt-4o
+    console.log(`   📝 Generating outline...`)
+    const outlinePrompt = getBlogOutlinePrompt(topic.title, keywords)
+    const outlineResult = await generateWithOpenAI(
+      outlinePrompt,
       SYSTEM_PROMPT,
       'json',
-      3000,
+      2000,
       'gpt-4o'
     )
 
-    if (!result.success || !result.content) {
-      console.error(`❌ Content generation failed for "${topic.title}":`, result.error)
+    if (!outlineResult.success || !outlineResult.content) {
+      console.error(`❌ Outline generation failed for "${topic.title}":`, outlineResult.error)
       return null
+    }
+
+    let outline
+    try {
+      outline = JSON.parse(outlineResult.content)
+    } catch (parseError) {
+      console.error(`❌ Failed to parse outline JSON for "${topic.title}":`, parseError.message)
+      return null
+    }
+
+    console.log(`   ✅ Outline: "${outline.title}"`)
+    console.log(`   📋 Format: ${outline.format}`)
+
+    // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
+    console.log(`   ✍️  Generating article from outline...`)
+    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic.title, keywords)
+    
+    // Use gpt-4o-mini with temperature 0.8 for article generation
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+    
+    const articleResponse = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: articlePrompt }
+      ],
+      temperature: 0.8,
+      max_tokens: 3000
+    })
+
+    const rawResponse = articleResponse.choices[0]?.message?.content
+    if (!rawResponse) {
+      throw new Error('Empty response from OpenAI')
+    }
+
+    // Log token usage
+    if (articleResponse.usage) {
+      console.log('='.repeat(50))
+      console.log('🔢 TOKEN USAGE SUMMARY')
+      console.log('='.repeat(50))
+      console.log(`Model: ${articleResponse.model}`)
+      console.log(`Prompt tokens: ${articleResponse.usage.prompt_tokens}`)
+      console.log(`Completion tokens: ${articleResponse.usage.completion_tokens}`)
+      console.log(`Total tokens: ${articleResponse.usage.total_tokens}`)
+      console.log('='.repeat(50))
+    }
+
+    // Clean response (remove markdown code blocks)
+    let cleanedResponse = rawResponse.trim()
+    cleanedResponse = cleanedResponse.replace(/```(json|markdown)\n?/g, '').replace(/```\n?/g, '')
+
+    // For JSON, try to extract valid JSON
+    const jsonStart = Math.min(
+      cleanedResponse.indexOf('[') >= 0 ? cleanedResponse.indexOf('[') : Infinity,
+      cleanedResponse.indexOf('{') >= 0 ? cleanedResponse.indexOf('{') : Infinity
+    )
+    
+    if (jsonStart < Infinity) {
+      let jsonText = cleanedResponse.substring(jsonStart)
+      for (let i = jsonText.length; i > 0; i--) {
+        try {
+          const candidate = jsonText.substring(0, i)
+          JSON.parse(candidate)
+          cleanedResponse = candidate
+          break
+        } catch (e) {
+          // Continue trying shorter substrings
+        }
+      }
+    }
+
+    const result = {
+      success: true,
+      content: cleanedResponse.trim()
     }
 
     // Parse generated content
@@ -326,6 +459,9 @@ async function generateBlogPost(topic) {
 
     console.log(`   ✅ Generated: ${wordCount} words, ${readingTime} min read`)
 
+    // Note: featured_image will be selected before saving (in saveBlogPost)
+    // This ensures we count posts correctly including the one being saved
+
     return {
       title: blogPost.title,
       slug,
@@ -333,6 +469,7 @@ async function generateBlogPost(topic) {
       excerpt: blogPost.excerpt,
       keywords: keywordsArray,
       category,
+      featured_image: null, // Will be set in saveBlogPost
       author_name: 'Tahi Gichigi',
       author_image: '/logos/profile_orange_clean.png',
       word_count: wordCount,
@@ -356,12 +493,18 @@ async function saveBlogPost(blogPost) {
     process.env.SUPABASE_SERVICE_ROLE_KEY
   )
 
+  // Select featured image using cycling logic (same as API endpoint)
+  if (!blogPost.featured_image) {
+    blogPost.featured_image = await selectBlogImage(supabase)
+  }
+
   if (DRY_RUN) {
     console.log('📝 [DRY RUN] Would save blog post:', {
       title: blogPost.title,
       slug: blogPost.slug,
       word_count: blogPost.word_count,
-      reading_time: blogPost.reading_time
+      reading_time: blogPost.reading_time,
+      featured_image: blogPost.featured_image || 'none'
     })
     return { success: true }
   }
@@ -382,6 +525,9 @@ async function saveBlogPost(blogPost) {
     }
 
     console.log(`✅ Saved blog post: "${blogPost.title}" (${blogPost.word_count} words)`)
+    if (blogPost.featured_image) {
+      console.log(`   🖼️  Featured image: ${blogPost.featured_image}`)
+    }
     return { success: true, data }
   } catch (error) {
     console.error(`❌ Error saving blog post "${blogPost.title}":`, error.message)

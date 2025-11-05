@@ -614,7 +614,7 @@ export default function LandingPage() {
                 Stop asking ChatGPT to make it sound better
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
-                Generate a professional writing style guide, complete with brand voice traits, supporting style rules, and tailored content examples.
+                Create a professional brand tone of voice and complete content style guide, so you always sound like you.  
               </p>
 
               <form onSubmit={handleExtraction} className="w-full max-w-2xl">

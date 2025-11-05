@@ -59,15 +59,21 @@ This document outlines the current state, optimizations, and future roadmap for 
   - [x] **BreadcrumbList Schema**: Breadcrumb navigation with Schema.org BreadcrumbList ✅ COMPLETED
 - [x] **Homepage Schema Improvement**: Implement comprehensive Schema.org markup for the homepage (Organization, Website, WebSite schema types) ✅ COMPLETED
 - [x] **🚨 PRIORITY: Blog Post Generation API Endpoint**: Create `/api/blog/generate` endpoint for automated content creation ✅ COMPLETED
-  - [x] **Endpoint Structure**: `POST /api/blog/generate` with authentication via `x-admin-token` header ✅ COMPLETED
+  - [x] **Endpoint Structure**: `POST /api/blog/generate` with session-based authentication via HTTP-only cookies ✅ COMPLETED
   - [x] **Input Parameters**: Accept `{ topic, keywords?, category?, publish? }` ✅ COMPLETED
+  - [x] **Two-Step Generation Process**: Outline generation (gpt-4o) → Article generation (gpt-4o-mini with temperature 0.8) ✅ COMPLETED
   - [x] **AI Content Generation**: Generate title, content (markdown), excerpt, keywords using OpenAI ✅ COMPLETED
   - [x] **AI Category Generation**: Auto-generate appropriate category based on topic/keywords (maps to `genre` and `articleSection` schema properties) ✅ COMPLETED
   - [x] **Database Integration**: Save generated post to Supabase with proper slug, word count, reading time ✅ COMPLETED
   - [x] **SEO Optimization**: Ensure generated content includes all required Schema.org properties ✅ COMPLETED
   - [x] **Error Handling**: Handle duplicate slugs, API failures, validation errors ✅ COMPLETED
-  - [x] **Environment Variables**: Add `ADMIN_BLOG_TOKEN` to `.env` for authentication ✅ COMPLETED
+  - [x] **Environment Variables**: `ADMIN_BLOG_PASSWORD` for session-based authentication ✅ COMPLETED
 - [x] **Content Generation Script Updates**: Update prompt and schema to match final Schema.org implementation ✅ COMPLETED
+  - [x] **Two-Step Generation Architecture**: Outline agent (gpt-4o) generates structure, article agent (gpt-4o-mini) writes content ✅ COMPLETED
+  - [x] **Simplified Prompt System**: Centralized prompts in `lib/blog-prompts.js`, removed redundant messaging ✅ COMPLETED
+  - [x] **Format-Specific Guidance**: Dynamic format guidance based on outline format (Guide, List, Comparison, etc.) ✅ COMPLETED
+  - [x] **Template Detection**: Automatic template format detection when keywords indicate user intent ✅ COMPLETED
+  - [x] **Flexible Length Guidance**: Encourage comprehensive, thorough articles without fixed word counts ✅ COMPLETED
   - [x] **Update AI Prompt**: Align with Schema.org BlogPosting requirements ✅ COMPLETED
   - [x] **Update Generated Schema**: Ensure output matches hardcoded vs dynamic property strategy ✅ COMPLETED
   - [x] **Add Featured Image Support**: Gradient-based featured images (reuses BlogCard logic) ✅ COMPLETED
@@ -80,7 +86,11 @@ This document outlines the current state, optimizations, and future roadmap for 
   - [x] **Form Interface**: User-friendly form for topic, keywords, category, and publish options ✅ COMPLETED
   - [x] **Real-time Generation**: Live blog post generation with progress indicators ✅ COMPLETED
   - [x] **Success Handling**: Post-generation success state with link to generated post ✅ COMPLETED
-- [ ] **AI Content Enhancement**: Improve content quality with better prompts
+- [x] **AI Content Enhancement**: Improve content quality with better prompts ✅ COMPLETED
+  - [x] **Two-Step Generation**: Outline-first approach for better structure and format variety ✅ COMPLETED
+  - [x] **Format Variety**: Outline agent can return any format (Guide, List, Comparison, Case Study, Explainer, Template/Toolkit) ✅ COMPLETED
+  - [x] **Length Guidance**: Flexible comprehensive writing instructions for thorough coverage ✅ COMPLETED
+  - [x] **Template Fulfillment**: Critical SEO fix - ensures articles with "template" in title actually include templates ✅ COMPLETED
 - [ ] **Content Scheduling**: Automated publishing system
 - [ ] **Content Templates**: Reusable templates for different post types
 
@@ -265,11 +275,11 @@ This document outlines the current state, optimizations, and future roadmap for 
 
 ---
 
-**Last Updated**: January 2025  
-**Next Review**: April 2025  
+**Last Updated**: November 2025  
+**Next Review**: February 2026  
 **Document Owner**: AI Style Guide Development Team
 
-## ✅ **Recent Completions (January 2025)**
+## ✅ **Recent Completions (November 2025)**
 
 ### **Admin Blog Generation UI**
 - [x] **Password-Protected Admin Interface**: Created secure `/admin/blog` page with login system ✅ COMPLETED
@@ -281,6 +291,10 @@ This document outlines the current state, optimizations, and future roadmap for 
 ### **Content Generation Enhancements**
 - [x] **Year Context in Prompts**: Added "The current year is 2025" to system prompts for accurate date references ✅ COMPLETED
 - [x] **Error Handling**: Improved error handling in API with proper response status checks ✅ COMPLETED
+- [x] **Prompt System Refactor**: Simplified and centralized blog prompts in `lib/blog-prompts.js` ✅ COMPLETED
+  - [x] **Removed Redundant Code**: Eliminated unused `getBlogUserPrompt()` function ✅ COMPLETED
+  - [x] **Format Guidance Helper**: Created `getFormatGuidance()` for format-specific writing instructions ✅ COMPLETED
+  - [x] **Streamlined Prompts**: Removed redundant messaging while preserving critical functionality ✅ COMPLETED
 
 ## 🔍 **Schema.org Enhancement Recommendations**
 

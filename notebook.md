@@ -1,0 +1,2 @@
+- generally explore ways to make the blog posts more dynamic with styling etc.
+- try removing format list (update json)

@@ -1,7 +1,9 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import Header from '@/components/Header'
 import BlogCard from '@/components/blog/BlogCard'
 import Pagination from '@/components/blog/Pagination'
+import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Blog | AI Style Guide - Brand Voice & Content Strategy Insights',
@@ -37,7 +39,7 @@ interface PaginationInfo {
   hasPrev: boolean
 }
 
-async function getBlogPosts(page: number = 1): Promise<{ posts: BlogPost[], pagination: PaginationInfo }> {
+async function getBlogPosts(page: number = 1, category?: string): Promise<{ posts: BlogPost[], pagination: PaginationInfo }> {
   try {
     // Import supabase client directly for server-side rendering
     const { createClient } = await import('@supabase/supabase-js')
@@ -47,15 +49,21 @@ async function getBlogPosts(page: number = 1): Promise<{ posts: BlogPost[], pagi
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     
-    const limit = 9
+    const limit = 10
     const offset = (page - 1) * limit
 
-    const { data: posts, error, count } = await supabase
+    let query = supabase
       .from('blog_posts')
       .select('*', { count: 'exact' })
       .eq('is_published', true)
       .order('published_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+    
+    // Filter by category if provided
+    if (category && category.trim() !== '') {
+      query = query.eq('category', category)
+    }
+    
+    const { data: posts, error, count } = await query.range(offset, offset + limit - 1)
 
     if (error) {
       console.error('Error fetching blog posts:', error)
@@ -63,7 +71,7 @@ async function getBlogPosts(page: number = 1): Promise<{ posts: BlogPost[], pagi
         posts: [],
         pagination: {
           page: 1,
-          limit: 9,
+          limit: 10,
           total: 0,
           totalPages: 0,
           hasNext: false,
@@ -87,28 +95,29 @@ async function getBlogPosts(page: number = 1): Promise<{ posts: BlogPost[], pagi
     }
   } catch (error) {
     console.error('Error fetching blog posts:', error)
-    return {
-      posts: [],
-      pagination: {
-        page: 1,
-        limit: 9,
-        total: 0,
-        totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+      return {
+        posts: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false
+        }
       }
-    }
   }
 }
 
 export default async function BlogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; category?: string }>
 }) {
   const resolvedSearchParams = await searchParams
   const currentPage = parseInt(resolvedSearchParams.page || '1')
-  const { posts, pagination } = await getBlogPosts(currentPage)
+  const selectedCategory = resolvedSearchParams.category
+  const { posts, pagination } = await getBlogPosts(currentPage, selectedCategory)
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,7 +151,7 @@ export default async function BlogPage({
               totalPages={pagination.totalPages}
               hasNext={pagination.hasNext}
               hasPrev={pagination.hasPrev}
-              basePath="/blog"
+              basePath={selectedCategory ? `/blog?category=${encodeURIComponent(selectedCategory)}` : '/blog'}
             />
           </>
         ) : (
@@ -158,14 +167,34 @@ export default async function BlogPage({
         <div className="mt-16 pt-12 border-t">
           <h2 className="text-2xl font-semibold mb-6 text-center">Explore Topics</h2>
           <div className="flex flex-wrap justify-center gap-4">
-            {['Brand Strategy', 'Content Creation', 'Marketing', 'AI Tools', 'Case Studies'].map((category) => (
-              <div
-                key={category}
-                className="px-4 py-2 bg-muted rounded-full text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
-              >
-                {category}
-              </div>
-            ))}
+            <Link
+              href="/blog"
+              className={cn(
+                "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                !selectedCategory
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted hover:bg-primary hover:text-primary-foreground"
+              )}
+            >
+              All
+            </Link>
+            {['Brand Strategy', 'Content Creation', 'Marketing', 'AI Tools', 'Case Studies'].map((category) => {
+              const isActive = selectedCategory === category
+              return (
+                <Link
+                  key={category}
+                  href={`/blog?category=${encodeURIComponent(category)}`}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted hover:bg-primary hover:text-primary-foreground"
+                  )}
+                >
+                  {category}
+                </Link>
+              )
+            })}
           </div>
         </div>
       </main>

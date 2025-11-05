@@ -401,7 +401,7 @@ export default async function BlogPostPage({
                 </div>
                 <Button asChild size="lg" className="text-lg font-bold bg-gradient-to-r from-orange-500 via-orange-600 to-red-500 hover:from-orange-600 hover:via-orange-700 hover:to-red-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200">
                   <Link href="/">
-                    Get Style Guide
+                    Free Style Guide
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>

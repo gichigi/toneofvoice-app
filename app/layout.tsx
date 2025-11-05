@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/next"
+import { PostHogProvider } from "@/components/PostHogProvider"
 
 const geistSans = Geist({ subsets: ["latin"], display: "swap" })
 const geistMono = Geist_Mono({ subsets: ["latin"], display: "swap" })
@@ -74,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
+              function gtag(){dataLayer.push(arguments);} 
               gtag('js', new Date());
               gtag('config', 'AW-943197631');
             `,
@@ -298,12 +299,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${geistMono.className} ${geistSans.className} overflow-x-hidden`}>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          {children}
-          <Toaster />
-        </ThemeProvider>
-        <Analytics />
+      <body className={`${geistMono.className} ${geistSans.className} overflow-x-hidden`}>        
+        <PostHogProvider>
+          <ThemeProvider attribute="class" defaultTheme="light">
+            {children}
+            <Toaster />
+          </ThemeProvider>
+          <Analytics />
+        </PostHogProvider>
       </body>
     </html>
   )

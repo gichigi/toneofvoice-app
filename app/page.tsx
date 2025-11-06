@@ -630,7 +630,7 @@ export default function LandingPage() {
                       <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Enter URL or describe the brand"
+                        placeholder="Enter your website or describe your brand"
                         className={`
                           w-full py-4 pl-10 pr-4 sm:pl-11 sm:pr-4 sm:py-3
                           text-base font-medium 

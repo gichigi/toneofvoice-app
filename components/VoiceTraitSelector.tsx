@@ -12,7 +12,7 @@ const predefinedTraitNames = Object.keys(TRAITS) as TraitName[]
 export default function VoiceTraitSelector({ 
   onChange, 
   suggestedTraits = [],
-  showSuggestions = true
+  showSuggestions = false
 }: { 
   onChange?: (traits: string[]) => void
   suggestedTraits?: string[]
@@ -132,24 +132,29 @@ export default function VoiceTraitSelector({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {predefinedTraitNames.map((name) => {
             const isSuggested = suggestedTraits.includes(name)
+            const isSelected = isPredefinedTraitSelected(name)
             return (
               <button
                 key={name}
                 onClick={() => togglePredefinedTrait(name)}
                 disabled={isPredefinedTraitDisabled(name)}
                 type="button"
-                className={`rounded-full px-4 py-2 text-sm border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                  isPredefinedTraitSelected(name)
+                className={`rounded-full px-4 py-2 text-sm border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 relative ${
+                  isSelected
                     ? "bg-black text-white border-black hover:bg-gray-800 focus:ring-gray-400"
                     : isPredefinedTraitDisabled(name)
                     ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                     : isSuggested && showSuggestions
-                    ? "bg-white text-gray-700 border-blue-400 border-2 hover:bg-gray-50 hover:border-blue-500 focus:ring-blue-300 active:scale-95"
+                    ? "bg-blue-50 text-blue-700 border-blue-400 border-2 border-dashed hover:bg-blue-100 hover:border-solid focus:ring-blue-300 active:scale-95"
                     : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-blue-300 active:scale-95"
                 }`}
-                title={isPredefinedTraitSelected(name) ? "Click to remove" : isSuggested ? "Suggested for your brand" : "Click to select"}
+                title={isSelected ? "Click to remove" : isSuggested && showSuggestions ? "AI suggestion - click to select" : "Click to select"}
               >
                 {name}
+                {isSuggested && showSuggestions && !isSelected && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full border border-white" 
+                        aria-label="AI suggestion" />
+                )}
               </button>
             )
           })}

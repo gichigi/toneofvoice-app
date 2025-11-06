@@ -65,7 +65,7 @@ export default function BrandDetailsPage() {
   const [guideType, setGuideType] = useState(urlGuideType || "core")
   const [selectedTraits, setSelectedTraits] = useState<string[]>([])
   const [suggestedTraits, setSuggestedTraits] = useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(true)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const [paymentComplete, setPaymentComplete] = useState(false)
   const [fadeIn, setFadeIn] = useState(false)
   const [showCharCount, setShowCharCount] = useState(false)
@@ -808,12 +808,12 @@ export default function BrandDetailsPage() {
                         onClick={() => setShowSuggestions(!showSuggestions)}
                         className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs border-2 transition-all duration-200 hover:scale-105 active:scale-95 self-start sm:self-auto ${
                           showSuggestions
-                            ? "bg-transparent text-gray-700 border-blue-400"
-                            : "bg-gray-100 text-gray-500 border-gray-300"
+                            ? "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
+                            : "bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600 shadow-sm"
                         }`}
                         title={showSuggestions ? "Hide AI suggestions" : "Show AI suggestions"}
                       >
-                        AI suggestions
+                        {showSuggestions ? "Hide AI suggestions" : "Show AI suggestions"}
                       </button>
                     )}
                   </div>
@@ -889,3 +889,4 @@ export default function BrandDetailsPage() {
     </div>
   )
 }
+

@@ -1,1 +1,0 @@
-- generally explore ways to make the blog posts more dynamic with styling etc.

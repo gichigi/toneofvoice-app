@@ -140,7 +140,7 @@ export default function LandingPage() {
 
   // Auto-cycle through traits for demo
   useEffect(() => {
-    const traits: TraitName[] = ["Direct", "Sophisticated", "Witty", "Warm"]
+    const traits: TraitName[] = ["Direct", "Refined", "Witty", "Warm"]
 
     // Clear any existing interval first
     if (traitCycleIntervalRef.current) {
@@ -1395,7 +1395,7 @@ export default function LandingPage() {
             <div className="mx-auto max-w-4xl py-10">
               {/* Trait Tabs */}
               <div className="flex flex-wrap gap-2 justify-center mb-6">
-                {(["Direct", "Sophisticated", "Witty", "Warm"] as TraitName[]).map((trait) => {
+                {(["Direct", "Refined", "Witty", "Warm"] as TraitName[]).map((trait) => {
                   const isSelected = selectedTrait === trait
                   return (
                     <button

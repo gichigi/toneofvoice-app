@@ -426,16 +426,16 @@ ${allowedCategories}
 Instructions:
 - Prioritize rules that reflect the type of brand (online/offline, B2B/B2C, etc.) and support the chosen brand voice traits.
 - Each rule must be about writing style, grammar, punctuation, spelling, or formatting.
-- Return STRICT JSON array format: [{"category": "Contractions", "title": "Contractions", "description": "Avoid contractions to maintain our Authoritative tone", "examples": {"good": "We will help you streamline workflows", "bad": "We'll help you streamline workflows"}}]
-- Description must be 8–12 words max. In ~60% of rules, explicitly reference 1–2 of the Selected Traits by name (e.g., "supports our Direct and Thoughtful voice", "reinforces our Authoritative tone").
+- Return STRICT JSON array format: [{"category": "Contractions", "title": "Contractions", "description": "Avoid contractions to maintain our Assertive tone", "examples": {"good": "We will help you streamline workflows", "bad": "We'll help you streamline workflows"}}]
+- Description must be 8–12 words max. In ~60% of rules, explicitly reference 1–2 of the Selected Traits by name (e.g., "supports our Direct and Refined voice", "reinforces our Assertive tone").
 - Examples should be 6–12 words and MUST reflect the brand voice described in the Traits Context above. Write examples as if ${brandDetails.name} is speaking to ${brandDetails.audience}. Include brand/context words where helpful.
 
-Example JSON for TechFlow (a B2B SaaS productivity platform for remote teams - Direct + Supportive + Authoritative traits):
+Example JSON for TechFlow (a B2B SaaS productivity platform for remote teams - Direct + Supportive + Assertive traits):
 [
   {
     "category": "Contractions",
     "title": "Contractions",
-    "description": "Avoid contractions to maintain our Authoritative tone",
+    "description": "Avoid contractions to maintain our Assertive tone",
     "examples": {
       "good": "We will help you streamline workflows",
       "bad": "We'll help you streamline workflows"
@@ -768,7 +768,7 @@ Instructions:
 - Do NOT include general brand, marketing, or content strategy rules.
 - Each rule must:
   1. Start with an H3 heading with sequential number and keyword (e.g., "### 1. Company Name Spelling", "### 2. Proper Nouns").
-  2. Give a **ONE SENTENCE** description of the rule (8–16 words). In ~60% of rules, explicitly reference 1–2 of the Selected Traits by name (e.g., "supports our Direct and Thoughtful voice", "reinforces our Authoritative tone").
+  2. Give a **ONE SENTENCE** description of the rule (8–16 words). In ~60% of rules, explicitly reference 1–2 of the Selected Traits by name (e.g., "supports our Direct and Refined voice", "reinforces our Assertive tone").
   3. Include a ✅ example and a ❌ example on separate lines. Examples MUST reflect the brand voice described in the Traits Context above. Write examples as if ${brandDetails.name} is speaking to ${brandDetails.audience}.
   4. Be formatted in markdown.
 - Do not repeat rules or examples.
@@ -1029,7 +1029,7 @@ Brand Name: ${brandDetails.name || 'Brand'}
 Description: ${brandDetails.brandDetailsDescription || brandDetails.brandDetailsText}
 Audience: ${brandDetails.audience || brandDetails.targetAudience}
 
-Available traits: Authoritative, Witty, Direct, Inspiring, Warm, Inclusive, Optimistic, Passionate, Playful, Supportive, Sophisticated, Thoughtful
+Available traits: Assertive, Witty, Direct, Inspiring, Warm, Inclusive, Playful, Supportive, Refined
 
 Return ONLY a JSON array with exactly 3 trait names, like this:
 ["Warm", "Professional", "Inspiring"]`

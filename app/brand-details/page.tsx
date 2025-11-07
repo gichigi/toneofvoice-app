@@ -9,13 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Slider } from "@/components/ui/slider"
 import Link from "next/link"
-import { ArrowLeft, FileText, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useSearchParams } from "next/navigation"
-import Logo from "@/components/Logo"
 import Header from "@/components/Header"
 import VoiceTraitSelector from "@/components/VoiceTraitSelector"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
@@ -59,22 +57,23 @@ export default function BrandDetailsPage() {
   const [generationStartTime, setGenerationStartTime] = useState<number | null>(null)
   const searchParams = useSearchParams()
   const fromExtraction = searchParams.get("fromExtraction") === "true"
-  const fromPayment = searchParams.get("paymentComplete") === "true"
-  const urlGuideType = searchParams.get("guideType")
   const urlAudience = searchParams.get("audience") || ""
-  const [guideType, setGuideType] = useState(urlGuideType || "core")
   const [selectedTraits, setSelectedTraits] = useState<string[]>([])
   const [suggestedTraits, setSuggestedTraits] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [paymentComplete, setPaymentComplete] = useState(false)
   const [fadeIn, setFadeIn] = useState(false)
   const [showCharCount, setShowCharCount] = useState(false)
-  const descRef = useRef<HTMLTextAreaElement | null>(null)
   const keywordInputRef = useRef<HTMLTextAreaElement | null>(null)
-  const [descriptionHeight, setDescriptionHeight] = useState<number>(144)
   const [email, setEmail] = useState("")
   const [sessionToken, setSessionToken] = useState("")
   const [showEmailCapture, setShowEmailCapture] = useState(false)
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [stepTransitioning, setStepTransitioning] = useState(false)
+  const stepRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)]
+  const touchStartY = useRef<number | null>(null)
+  const touchEndY = useRef<number | null>(null)
+  const minSwipeDistance = 50 // Minimum distance for swipe
 
   // Initialize state with default values to ensure inputs are always controlled
   const [brandDetails, setBrandDetails] = useState({ ...defaultBrandDetails })
@@ -121,19 +120,6 @@ export default function BrandDetailsPage() {
     }
   }, [loading, generationStartTime, loadingWords])
 
-  // Check payment status and guide type from localStorage
-  useEffect(() => {
-    const isComplete = localStorage.getItem("styleGuidePaymentStatus") === "completed" || fromPayment
-    setPaymentComplete(isComplete)
-    
-    // If no URL param for guide type, check localStorage
-    if (!urlGuideType) {
-      const savedGuideType = localStorage.getItem("styleGuidePlan")
-      if (savedGuideType) {
-        setGuideType(savedGuideType)
-      }
-    }
-  }, [fromPayment, urlGuideType])
 
   // Show toast if brand details were filled from extraction
   useEffect(() => {
@@ -153,7 +139,6 @@ export default function BrandDetailsPage() {
       setTimeout(() => {
         textarea.style.height = "auto"
         textarea.style.height = textarea.scrollHeight + "px"
-        setDescriptionHeight(textarea.scrollHeight)
       }, 100)
     }
   }, [brandDetails.brandDetailsDescription])
@@ -267,18 +252,18 @@ export default function BrandDetailsPage() {
     // Validate keyword
     const validation = validateKeyword(term)
     if (!validation.isValid) {
-      setKeywordError(validation.error || "Invalid keyword")
+      setKeywordError(validation.error || "Invalid format")
       return
     }
     
     if (keywordTags.includes(term)) {
-      setKeywordError("Keyword already added")
+      setKeywordError("Already added")
       setKeywordInput("")
       return
     }
     
     if (keywordTags.length >= KEYWORD_LIMIT) {
-      setKeywordError(`Maximum ${KEYWORD_LIMIT} keywords allowed`)
+      setKeywordError(`Max ${KEYWORD_LIMIT} keywords`)
       return
     }
     
@@ -306,7 +291,7 @@ export default function BrandDetailsPage() {
     
     const available = Math.max(0, KEYWORD_LIMIT - keywordTags.length)
     if (available === 0) {
-      setKeywordError(`Maximum ${KEYWORD_LIMIT} keywords allowed`)
+      setKeywordError(`Max ${KEYWORD_LIMIT} keywords`)
       return
     }
     
@@ -316,76 +301,91 @@ export default function BrandDetailsPage() {
     // Show info if some terms were filtered out
     const filtered = terms.length - toAdd.length
     if (filtered > 0) {
-      setKeywordError(`Added ${toAdd.length} keywords. ${filtered} were filtered out (invalid format, duplicates, or limit reached).`)
+      setKeywordError(`Added ${toAdd.length}. ${filtered} filtered (invalid or duplicate).`)
     }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     
-    // Add validation for each field
-    let validatedValue = value
-    
+    // Only handle name field (description is handled inline)
     if (name === "name") {
       // Brand name: max 50 chars, no special chars
-      validatedValue = value.replace(/[^a-zA-Z0-9\s-]/g, "").slice(0, 50)
+      const validatedValue = value.replace(/[^a-zA-Z0-9\s-]/g, "").slice(0, 50)
       validateNameField(validatedValue)
-    } else if (name === "description") {
-      // Description: max 500 chars
-      validatedValue = value.slice(0, 500)
-    } else if (name === "audience") {
-      // Audience: max 500 chars
-      validatedValue = value.slice(0, 500)
-    }
-    
-    setBrandDetails((prev) => {
-      const updatedDetails = { ...prev, [name]: validatedValue }
-      // Save to localStorage
-      localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
-      return updatedDetails
-    })
-  }
+      
+      setBrandDetails((prev) => {
+        const updatedDetails = { ...prev, [name]: validatedValue }
+        // Save to localStorage
+        localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
+        return updatedDetails
+      })
 
-  // Add character count display component
-  const CharacterCount = ({ value, max }: { value: string, max: number }) => {
-    const count = value.length
-    const isNearLimit = count > max * 0.8
-    const isOverLimit = count > max
-    
-    return (
-      <div className={`text-xs mt-1 ${isNearLimit ? 'text-yellow-600' : ''} ${isOverLimit ? 'text-red-600' : 'text-muted-foreground'}`}>
-        {count}/{max} characters
-      </div>
-    )
+      // Clear form error when user starts typing
+      if (formError) {
+        setFormError("")
+      }
+    }
   }
 
   // Validate both name and description fields
-  const [mainError, setMainError] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [keywordError, setKeywordError] = useState("");
+  const [formError, setFormError] = useState("")
+  const [keywordError, setKeywordError] = useState("")
+
+  // Combined validation for step 1 fields
+  const validateStep1Fields = () => {
+    const name = brandDetails.name?.trim() || ""
+    const desc = brandDetails.brandDetailsDescription?.trim() || ""
+    const errors: string[] = []
+
+    if (!name) {
+      errors.push("brand name")
+    } else if (name.length > 50) {
+      errors.push("brand name is too long")
+    }
+
+    if (!desc) {
+      errors.push("description")
+    } else if (desc.length < 20) {
+      errors.push("description must be at least 20 characters")
+    } else if (brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.length > 400) {
+      errors.push("description is too long")
+    }
+
+    if (errors.length > 0) {
+      if (errors.length === 1) {
+        setFormError(`Please enter a ${errors[0]}.`)
+      } else {
+        setFormError(`Please complete: ${errors.join(", ")}.`)
+      }
+      return false
+    }
+
+    setFormError("")
+    return true
+  }
 
   const validateMainField = (value: string) => {
-      if (!value.trim()) {
-      setMainError("Please enter a brand description.");
-      return false;
-      } else if (value.length > 400) {
-      setMainError("Description is too long.");
-      return false;
+    // Just validate description, combined validation happens on submit/blur
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return false
+    } else if (trimmed.length < 20) {
+      return false
+    } else if (value.length > 400) {
+      return false
     }
-    setMainError("");
-    return true;
+    return true
   }
 
   const validateNameField = (value: string) => {
+    // Just validate name, combined validation happens on submit/blur
     if (!value.trim()) {
-      setNameError("Please enter a brand name.");
-      return false;
+      return false
     } else if (value.length > 50) {
-      setNameError("Brand name is too long.");
-      return false;
+      return false
     }
-    setNameError("");
-    return true;
+    return true
   }
 
   // Validate individual keyword
@@ -393,17 +393,17 @@ export default function BrandDetailsPage() {
     const trimmed = keyword.trim()
     
     if (trimmed.length < 2) {
-      return { isValid: false, error: "Keyword must be at least 2 characters" }
+      return { isValid: false, error: "At least 2 characters" }
     }
     
     if (trimmed.length > 20) {
-      return { isValid: false, error: "Keyword must be 20 characters or less" }
+      return { isValid: false, error: "Max 20 characters" }
     }
     
     // Only allow alphanumeric, spaces, hyphens
     const validPattern = /^[a-zA-Z0-9\s\-]+$/
     if (!validPattern.test(trimmed)) {
-      return { isValid: false, error: "Keyword can only contain letters, numbers, spaces, and hyphens" }
+      return { isValid: false, error: "Letters, numbers, spaces, and hyphens only" }
     }
     
     return { isValid: true }
@@ -432,11 +432,13 @@ export default function BrandDetailsPage() {
       
       // Also save to server-side for abandoned cart tracking
       try {
-        console.log('[Email Capture Client] Starting server-side storage...', {
-          sessionToken: sessionToken?.substring(0, 8) + '***',
-          email: trimmedEmail.substring(0, 3) + '***',
-          timestamp: new Date().toISOString()
-        });
+        if (process.env.NODE_ENV !== "production") {
+          console.log('[Email Capture Client] Starting server-side storage...', {
+            sessionToken: sessionToken?.substring(0, 8) + '***',
+            email: trimmedEmail.substring(0, 3) + '***',
+            timestamp: new Date().toISOString()
+          });
+        }
         
         const response = await fetch('/api/capture-email', {
           method: 'POST',
@@ -449,24 +451,30 @@ export default function BrandDetailsPage() {
         
         if (response.ok) {
           const result = await response.json();
-          console.log('[Email Capture Client] Successfully stored server-side:', {
-            success: result.success,
-            captureId: result.captureId,
-            duration: result.duration
-          });
+          if (process.env.NODE_ENV !== "production") {
+            console.log('[Email Capture Client] Successfully stored server-side:', {
+              success: result.success,
+              captureId: result.captureId,
+              duration: result.duration
+            });
+          }
         } else {
           const errorText = await response.text();
-          console.error('[Email Capture Client] Failed to store server-side:', {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorText
-          });
+          if (process.env.NODE_ENV !== "production") {
+            console.error('[Email Capture Client] Failed to store server-side:', {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorText
+            });
+          }
         }
       } catch (error) {
-        console.error('[Email Capture Client] Network error storing server-side:', {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        });
+        if (process.env.NODE_ENV !== "production") {
+          console.error('[Email Capture Client] Network error storing server-side:', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+        }
       }
     } else if (!trimmedEmail) {
       localStorage.removeItem("emailCapture");
@@ -474,6 +482,17 @@ export default function BrandDetailsPage() {
     }
   };
 
+
+  // Step validation functions
+  const isStep1Valid = () => {
+    const nameValid = !!brandDetails.name?.trim() && brandDetails.name.trim().length > 0
+    const descValid = !!brandDetails.brandDetailsDescription?.trim() && brandDetails.brandDetailsDescription.trim().length >= 20
+    return nameValid && descValid
+  }
+
+  const isStep2Valid = () => {
+    return selectedTraits.length === 3
+  }
 
   // Check if core form is ready (without email)
   const isCoreFormReady = () => {
@@ -484,22 +503,75 @@ export default function BrandDetailsPage() {
     )
   }
 
-  // Show email capture when core form is ready
-  useEffect(() => {
-    const formReady = isCoreFormReady()
-    if (formReady && !showEmailCapture) {
-      setShowEmailCapture(true)
-      // Scroll to email section after a brief delay
-      setTimeout(() => {
-        const emailSection = document.getElementById('email-capture-section')
-        if (emailSection) {
-          emailSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-      }, 300)
-    } else if (!formReady && showEmailCapture) {
-      setShowEmailCapture(false) // Reset if form becomes invalid
+  // Navigate to next step with smooth scroll
+  const goToNextStep = () => {
+    if (stepTransitioning) return
+    
+    if (currentStep === 1 && isStep1Valid()) {
+      scrollToStep(2)
     }
-  }, [brandDetails.name, brandDetails.brandDetailsDescription, selectedTraits.length])
+  }
+
+  // Navigate to previous step with smooth scroll
+  const goToPreviousStep = () => {
+    if (stepTransitioning || currentStep === 1) return
+    scrollToStep(currentStep - 1)
+  }
+
+  // Typeform-style smooth slide transition (cards slide up/down)
+  const scrollToStep = (stepNumber: number) => {
+    if (stepTransitioning) return
+    setStepTransitioning(true)
+    
+    // Update step immediately for smooth transition
+    setCurrentStep(stepNumber)
+    
+    // Scroll to top of page after state update
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0)
+    })
+    
+    // Reset transition flag after animation completes
+    setTimeout(() => {
+      setStepTransitioning(false)
+    }, 500)
+  }
+
+  // Show email capture when on step 2
+  useEffect(() => {
+    if (currentStep === 2 && !showEmailCapture) {
+      setShowEmailCapture(true)
+    } else if (currentStep !== 2 && showEmailCapture) {
+      setShowEmailCapture(false)
+    }
+  }, [currentStep, showEmailCapture])
+
+
+  // Keyboard navigation for steps
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+      
+      if (e.key === 'ArrowLeft' && currentStep > 1 && !stepTransitioning) {
+        e.preventDefault()
+        goToPreviousStep()
+      } else if (e.key === 'ArrowRight' && !stepTransitioning) {
+        if (currentStep === 1 && isStep1Valid()) {
+          e.preventDefault()
+          goToNextStep()
+        } else if (currentStep === 2 && isStep2Valid()) {
+          e.preventDefault()
+          goToNextStep()
+        }
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentStep, stepTransitioning, isStep1Valid, isStep2Valid, goToNextStep, goToPreviousStep])
 
   // Update isFormValid function - email is optional, no validation needed
   const isFormValid = () => {
@@ -562,11 +634,15 @@ export default function BrandDetailsPage() {
       }
 
       // Save brand details and preview
-      console.log("[Brand Details] Saving to localStorage:", detailsWithName)
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[Brand Details] Saving to localStorage:", detailsWithName)
+      }
       localStorage.setItem("brandDetails", JSON.stringify(detailsWithName))
       localStorage.setItem("selectedTraits", JSON.stringify(selectedTraits))
       localStorage.setItem("previewContent", data.preview)
-      console.log("[Brand Details] Successfully saved brand details with extracted name")
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[Brand Details] Successfully saved brand details with extracted name")
+      }
 
       setProcessingStep('complete')
       
@@ -609,257 +685,380 @@ export default function BrandDetailsPage() {
       ]} />
       <Header />
       <main
-        className={`flex-1 container py-8 transition-opacity duration-500 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
+        className={`flex-1 container transition-opacity duration-500 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}
       >
         <div className="mx-auto max-w-2xl">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 pt-8"
           >
             <ArrowLeft className="h-4 w-4" /> Back
           </Link>
 
-          {fromExtraction && (
-            <></>
-          )}
+          {/* Persistent Page Title */}
+          <div className="mb-8 px-4" data-header-section>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Brand details</h1>
+            <p className="text-base text-muted-foreground">Tell us about your brand to get started.</p>
+          </div>
 
-          <Card className="shadow-lg border-2 border-gray-200 bg-white/90">
-            <CardHeader>
-              <CardTitle>About the brand</CardTitle>
-              <CardDescription>Tell us about the brand.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="name">Brand Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      placeholder="e.g. Nike"
-                      value={brandDetails.name || ""}
-                      onChange={handleChange}
-                      className="text-base p-4 font-medium placeholder:text-gray-400 placeholder:font-medium"
-                    />
-                    {nameError && (
-                      <div className="text-xs text-red-600 mt-1">{nameError}</div>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-start">
-                    {/* Left: Description (span 2 columns to align with left + middle fields below) */}
-                    <div className="grid gap-2 sm:col-span-2">
-                      <Label htmlFor="brandDetailsDescription">Description</Label>
-                      <Textarea
-                        ref={descRef}
-                        id="brandDetailsDescription"
-                        name="brandDetailsDescription"
-                        placeholder="Describe your brand in a few sentences. What do you do? Who do you serve?"
-                        value={brandDetails.brandDetailsDescription || ""}
-                        onChange={e => {
-                          const value = e.target.value.slice(0, 400)
-                          setBrandDetails(prev => {
-                            const updatedDetails = { ...prev, brandDetailsDescription: value }
-                            localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
-                            return updatedDetails
-                          })
-                          validateMainField(value)
-                          e.target.style.height = "auto"
-                          e.target.style.height = e.target.scrollHeight + "px"
-                          setDescriptionHeight(e.target.scrollHeight)
-                        }}
-                        rows={5}
-                        className="resize-none min-h-[144px] leading-relaxed text-sm p-3 placeholder:text-gray-400"
-                        onFocus={e => setShowCharCount(true)}
-                        onBlur={e => setShowCharCount(!!e.target.value)}
-                      />
-                      {showCharCount && (
-                        <div className={`text-xs mt-1 ${brandDetails.brandDetailsDescription?.length > 350 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{brandDetails.brandDetailsDescription?.length || 0}/400 characters</div>
-                      )}
-                      {mainError && (
-                        <div className="text-xs text-red-600 mt-1">{mainError}</div>
-                      )}
-                    </div>
-                    {/* Right: Keywords (domain terms + lexicon) as tags */}
-                    <div className="grid gap-2">
-                      <Label htmlFor="keywordInput">Keywords (optional)</Label>
-                      {/* Tag list */}
-                      <div
-                        className="flex w-full overflow-y-auto rounded-md border border-input bg-background px-3 py-2 flex-wrap items-start gap-1 content-start"
-                        style={{ height: `${Math.max(144, descriptionHeight)}px` }}
-                        onClick={() => keywordInputRef.current?.focus()}
-                      >
-                        {keywordTags.map(term => (
-                          <span key={term} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 border hover:bg-gray-200">
-                            {term}
-                            <button type="button" aria-label={`Remove ${term}`} onClick={() => removeKeyword(term)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                        {/* Inline input (textarea for wrapping placeholder) */}
-                        <textarea
-                          ref={keywordInputRef}
-                          aria-label="Add keyword"
-                          placeholder={keywordTags.length === 0 ? "Add keywords" : "+ Keyword"}
-                          value={keywordInput}
-                          onChange={e => setKeywordInput(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') { e.preventDefault(); addKeyword(); }
-                            else if (e.key === 'Backspace' && keywordInput === '') { removeKeyword(keywordTags[keywordTags.length - 1]); }
-                            else if (e.key === 'v' && (e.metaKey || e.ctrlKey)) {
-                              // paste handled in onPaste
-                            }
-                          }}
-                          onPaste={e => {
-                            const text = e.clipboardData.getData('text')
-                            const parts = text.split(/\r?\n|,|\t/)
-                            addKeywordsBulk(parts)
-                            e.preventDefault()
-                          }}
-                          rows={1}
-                          className={`${keywordTags.length === 0 ? 'w-full' : 'flex-1 min-w-[8rem]'} bg-transparent text-sm p-1.5 focus:outline-none focus:ring-2 focus:ring-gray-300 placeholder:text-muted-foreground resize-none whitespace-pre-wrap break-words`}
-                        />
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">{keywordTags.length}/{KEYWORD_LIMIT} keywords</div>
-                      {keywordError && (
-                        <div className="text-xs text-red-600 mt-1">{keywordError}</div>
-                      )}
-                      {/* Input + Add button (counter/clear removed per design) */}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
-                    <div className="grid gap-2">
-                      <Label htmlFor="englishVariant">Language</Label>
-                      <Select
-                        onValueChange={(val) => handleVariantChange(val as "american" | "british")}
-                        value={brandDetails.englishVariant}
-                      >
-                        <SelectTrigger id="englishVariant" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="american">American English</SelectItem>
-                          <SelectItem value="british">British English</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="formalityLevel">Formality</Label>
-                      <Select
-                        onValueChange={(val) => {
-                          setBrandDetails(prev => {
-                            const updated = { ...prev, formalityLevel: val }
-                            localStorage.setItem("brandDetails", JSON.stringify(updated))
-                            return updated
-                          })
-                        }}
-                        value={brandDetails.formalityLevel || "Neutral"}
-                      >
-                        <SelectTrigger id="formalityLevel" className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Very Casual">Very Casual</SelectItem>
-                          <SelectItem value="Casual">Casual</SelectItem>
-                          <SelectItem value="Neutral">Neutral</SelectItem>
-                          <SelectItem value="Formal">Formal</SelectItem>
-                          <SelectItem value="Very Formal">Very Formal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="readingLevel">Reading Level</Label>
-                      <Select
-                        onValueChange={(val) => {
-                          setBrandDetails(prev => {
-                            const updated = { ...prev, readingLevel: val as "6-8" | "10-12" | "13+" }
-                            localStorage.setItem("brandDetails", JSON.stringify(updated))
-                            return updated
-                          })
-                        }}
-                        value={brandDetails.readingLevel || "6-8"}
-                      >
-                        <SelectTrigger id="readingLevel" className="w-full [&>span]:text-left [&>span]:justify-start">
-                          <SelectValue placeholder="Select reading level">
-                            {brandDetails.readingLevel === "6-8" && "General Public"}
-                            {brandDetails.readingLevel === "10-12" && "Professional"}
-                            {brandDetails.readingLevel === "13+" && "Technical/Academic"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="6-8">1. General Public</SelectItem>
-                          <SelectItem value="10-12">2. Professional</SelectItem>
-                          <SelectItem value="13+">3. Technical</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+          <form onSubmit={handleSubmit}>
+            {/* Steps Container - Fixed viewport, cards slide up/down */}
+            <div 
+              className="relative h-[calc(100vh-250px)] sm:h-[600px] overflow-visible"
+              onTouchStart={(e) => {
+                // Only track swipe if not interacting with input/textarea
+                const target = e.target as HTMLElement
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('input, textarea')) {
+                  return
+                }
+                touchStartY.current = e.touches[0].clientY
+              }}
+              onTouchMove={(e) => {
+                // Only track swipe if not interacting with input/textarea
+                const target = e.target as HTMLElement
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('input, textarea')) {
+                  return
+                }
+                touchEndY.current = e.touches[0].clientY
+              }}
+              onTouchEnd={(e) => {
+                // Only handle swipe if not interacting with input/textarea
+                const target = e.target as HTMLElement
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('input, textarea')) {
+                  touchStartY.current = null
+                  touchEndY.current = null
+                  return
+                }
+                
+                if (!touchStartY.current || !touchEndY.current || stepTransitioning) return
+                
+                const distance = touchStartY.current - touchEndY.current
+                const isUpSwipe = distance > minSwipeDistance
+                const isDownSwipe = distance < -minSwipeDistance
+                
+                if (isUpSwipe && currentStep === 1 && isStep1Valid()) {
+                  // Swipe up - go to next step
+                  e.preventDefault()
+                  goToNextStep()
+                } else if (isDownSwipe && currentStep === 2) {
+                  // Swipe down - go to previous step
+                  e.preventDefault()
+                  goToPreviousStep()
+                }
+                
+                touchStartY.current = null
+                touchEndY.current = null
+              }}
+            >
+              {/* Step 1: Core Information */}
+              <Card
+                ref={stepRefs[0]}
+                className={`absolute inset-x-0 shadow-lg border-2 border-gray-200 bg-white transition-all duration-500 ease-in-out ${
+                  currentStep === 1
+                    ? "opacity-100 translate-y-0 scale-100 z-10"
+                    : currentStep === 2
+                    ? "opacity-0 translate-y-[-100%] scale-95 z-0"
+                    : "opacity-0 translate-y-[-100%] scale-95 z-0"
+                }`}
+              >
+              {/* Step Badge */}
+              <div className="absolute -top-3 right-6 z-20 pointer-events-none">
+                <span className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-md">
+                  Step 1 of 2
+                </span>
+              </div>
+              <CardContent className="space-y-6 pt-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name" className="text-base font-semibold">Brand Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="e.g. Nike"
+                    value={brandDetails.name || ""}
+                    onChange={handleChange}
+                    onBlur={() => validateStep1Fields()}
+                    className="text-base p-4 font-medium placeholder:text-gray-400 placeholder:font-medium"
+                    autoFocus={currentStep === 1}
+                  />
                 </div>
-                {/* Voice Trait Selector */}
-                <div className="mt-8">
-                  <Label className="text-base font-medium">Brand voice traits</Label>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-1">
-                    <p className="text-sm text-muted-foreground">
-                      Pick 3 traits that define your brand.
-                    </p>
-                    {suggestedTraits.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowSuggestions(!showSuggestions)}
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs border-2 transition-all duration-200 hover:scale-105 active:scale-95 self-start sm:self-auto ${
-                          showSuggestions
-                            ? "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"
-                            : "bg-blue-500 text-white border-blue-500 hover:bg-blue-600 hover:border-blue-600 shadow-sm"
-                        }`}
-                        title={showSuggestions ? "Hide AI suggestions" : "Show AI suggestions"}
-                      >
-                        {showSuggestions ? "Hide AI suggestions" : "Show AI suggestions"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="mt-4">
-                    <VoiceTraitSelector 
-                      onChange={setSelectedTraits} 
-                      suggestedTraits={suggestedTraits}
-                      showSuggestions={showSuggestions}
-                    />
-                  </div>
-                </div>
-
-                {/* Email Capture Section - Progressive Disclosure */}
-                {showEmailCapture && (
-                  <div 
-                    id="email-capture-section"
-                    className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg transition-all duration-300 ease-in-out animate-in slide-in-from-top-2 fade-in"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <Label htmlFor="email" className="text-sm font-medium text-blue-900">
-                          Email me a copy (optional)
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="your@email.com"
-                          value={email}
-                          onChange={handleEmailChange}
-                          onBlur={handleEmailBlur}
-                          className="mt-2 bg-white border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                        />
-                      </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="brandDetailsDescription" className="text-base font-semibold">Description</Label>
+                  <p className="text-sm text-muted-foreground">Describe what your brand does.</p>
+                  <Textarea
+                    id="brandDetailsDescription"
+                    name="brandDetailsDescription"
+                    placeholder="Describe your brand in a few sentences. What do you do? Who do you serve?"
+                    value={brandDetails.brandDetailsDescription || ""}
+                    onChange={e => {
+                      const value = e.target.value.slice(0, 400)
+                      setBrandDetails(prev => {
+                        const updatedDetails = { ...prev, brandDetailsDescription: value }
+                        localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
+                        return updatedDetails
+                      })
+                      validateMainField(value)
+                      e.target.style.height = "auto"
+                      e.target.style.height = e.target.scrollHeight + "px"
+                      // Clear form error when user types
+                      if (formError) {
+                        setFormError("")
+                      }
+                    }}
+                    rows={5}
+                    className="resize-none min-h-[144px] leading-relaxed text-sm p-3 placeholder:text-gray-400"
+                    onFocus={e => setShowCharCount(true)}
+                    onBlur={e => {
+                      setShowCharCount(!!e.target.value)
+                      validateStep1Fields()
+                    }}
+                  />
+                  {showCharCount && (
+                    <div className={`text-xs mt-1 ${
+                      brandDetails.brandDetailsDescription?.length > 400 
+                        ? 'text-red-600' 
+                        : brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.trim().length < 20
+                        ? 'text-red-600'
+                        : brandDetails.brandDetailsDescription?.length > 350 
+                        ? 'text-yellow-600' 
+                        : 'text-muted-foreground'
+                    }`}>
+                      {brandDetails.brandDetailsDescription?.length || 0}/400 characters
+                      {brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.trim().length < 20 && brandDetails.brandDetailsDescription.trim().length > 0 && (
+                        <span className="ml-1">(min 20)</span>
+                      )}
                     </div>
+                  )}
+                </div>
+                {formError && currentStep === 1 && (
+                  <div className="text-xs text-red-600 -mt-2">{formError}</div>
+                )}
+                {currentStep === 1 && (
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (validateStep1Fields()) {
+                          goToNextStep()
+                        }
+                      }}
+                      disabled={!isStep1Valid()}
+                      className="w-full sm:w-auto"
+                    >
+                      Continue
+                    </Button>
                   </div>
                 )}
+              </CardContent>
+              </Card>
 
-                <div className="flex justify-end mt-8">
+              {/* Step 2: Brand Voice Traits */}
+              <Card
+                ref={stepRefs[1]}
+                className={`absolute inset-x-0 shadow-lg border-2 border-gray-200 bg-white transition-all duration-500 ease-in-out ${
+                  currentStep === 2
+                    ? "opacity-100 translate-y-0 scale-100 z-10"
+                    : currentStep === 1
+                    ? "opacity-0 translate-y-[100%] scale-95 z-0"
+                    : "opacity-0 translate-y-[100%] scale-95 z-0"
+                }`}
+              >
+              {/* Step Badge */}
+              <div className="absolute -top-3 right-6 z-20 pointer-events-none">
+                <span className="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-md">
+                  Step 2 of 2
+                </span>
+              </div>
+              <CardHeader>
+                <CardTitle className="text-xl">Brand voice traits</CardTitle>
+                <CardDescription>Pick 3 traits that define your brand's personality.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Voice Traits */}
+                <div className="border border-gray-200 rounded-lg bg-gray-50 p-3 space-y-4">
+                  <VoiceTraitSelector 
+                    onChange={setSelectedTraits} 
+                    suggestedTraits={suggestedTraits}
+                    showSuggestions={showSuggestions}
+                    onToggleSuggestions={() => setShowSuggestions(!showSuggestions)}
+                  />
+                </div>
+
+                {/* Advanced Options - Expandable Accordion */}
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                    className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 transition-colors"
+                  >
+                    <h3 className="text-sm font-medium text-gray-600">Advanced options</h3>
+                    <svg 
+                      className={`h-4 w-4 text-gray-400 transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showAdvancedOptions && (
+                    <div className="p-6 bg-blue-50 space-y-4">
+                      {/* Style Preferences Settings */}
+                      <div className="border border-blue-200 rounded-lg bg-white p-4 space-y-4">
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-900">Style preferences</h4>
+                          <p className="text-xs text-muted-foreground mt-1">Set your language variant, formality and reading level</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="englishVariant" className="text-sm font-medium">Language</Label>
+                            <Select
+                              onValueChange={(val) => handleVariantChange(val as "american" | "british")}
+                              value={brandDetails.englishVariant}
+                            >
+                              <SelectTrigger id="englishVariant" className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="american">US English</SelectItem>
+                                <SelectItem value="british">UK English</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="formalityLevel" className="text-sm font-medium">Formality</Label>
+                            <Select
+                              onValueChange={(val) => {
+                                setBrandDetails(prev => {
+                                  const updated = { ...prev, formalityLevel: val }
+                                  localStorage.setItem("brandDetails", JSON.stringify(updated))
+                                  return updated
+                                })
+                              }}
+                              value={brandDetails.formalityLevel || "Neutral"}
+                            >
+                              <SelectTrigger id="formalityLevel" className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Very Casual">Very Casual</SelectItem>
+                                <SelectItem value="Casual">Casual</SelectItem>
+                                <SelectItem value="Neutral">Neutral</SelectItem>
+                                <SelectItem value="Formal">Formal</SelectItem>
+                                <SelectItem value="Very Formal">Very Formal</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="readingLevel" className="text-sm font-medium">Reading Level</Label>
+                            <Select
+                              onValueChange={(val) => {
+                                setBrandDetails(prev => {
+                                  const updated = { ...prev, readingLevel: val as "6-8" | "10-12" | "13+" }
+                                  localStorage.setItem("brandDetails", JSON.stringify(updated))
+                                  return updated
+                                })
+                              }}
+                              value={brandDetails.readingLevel || "6-8"}
+                            >
+                              <SelectTrigger id="readingLevel" className="w-full [&>span]:text-left [&>span]:justify-start">
+                                <SelectValue placeholder="Select reading level">
+                                  {brandDetails.readingLevel === "6-8" && "General Public"}
+                                  {brandDetails.readingLevel === "10-12" && "Professional"}
+                                  {brandDetails.readingLevel === "13+" && "Technical/Academic"}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="6-8">1. General Public</SelectItem>
+                                <SelectItem value="10-12">2. Professional</SelectItem>
+                                <SelectItem value="13+">3. Technical</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Keywords Section */}
+                      <div className="border border-blue-200 rounded-lg bg-white p-4 space-y-3">
+                        <div>
+                          <Label htmlFor="keywordInput" className="text-sm font-semibold text-gray-900">Keywords</Label>
+                          <p className="text-xs text-muted-foreground mt-1">Key terms we'll use in your style guide.</p>
+                        </div>
+                        <div
+                          className="flex w-full overflow-y-auto rounded-md border bg-white px-3 py-2 flex-wrap items-start gap-1 content-start"
+                          onClick={() => keywordInputRef.current?.focus()}
+                        >
+                          {keywordTags.map(term => (
+                            <span key={term} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-white text-gray-800 border border-blue-200 hover:bg-blue-100">
+                              {term}
+                              <button type="button" aria-label={`Remove ${term}`} onClick={() => removeKeyword(term)} className="text-gray-500 hover:text-gray-700 focus:outline-none">
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                          <textarea
+                            ref={keywordInputRef}
+                            aria-label="Add keyword"
+                            placeholder="+ add"
+                            value={keywordInput}
+                            onChange={e => setKeywordInput(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') { e.preventDefault(); addKeyword(); }
+                              else if (e.key === 'Backspace' && keywordInput === '') { removeKeyword(keywordTags[keywordTags.length - 1]); }
+                            }}
+                            onPaste={e => {
+                              const text = e.clipboardData.getData('text')
+                              const parts = text.split(/\r?\n|,|\t/)
+                              addKeywordsBulk(parts)
+                              e.preventDefault()
+                            }}
+                            rows={1}
+                            className="flex-1 min-w-[8rem] bg-transparent text-sm p-1.5 focus:outline-none focus:ring-2 focus:ring-gray-300 placeholder:text-muted-foreground resize-none whitespace-pre-wrap break-words"
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground">{keywordTags.length}/{KEYWORD_LIMIT} keywords</div>
+                        {keywordError && (
+                          <div className="text-xs text-red-600 mt-1">{keywordError}</div>
+                        )}
+                      </div>
+
+                      {/* Email Capture Section */}
+                      {showEmailCapture && (
+                        <div className="border border-blue-200 rounded-lg bg-white p-4 space-y-3">
+                          <div>
+                            <Label htmlFor="email" className="text-sm font-semibold text-gray-900">
+                              Send a copy
+                            </Label>
+                            <p className="text-xs text-muted-foreground mt-1">Get a copy sent to you or someone else</p>
+                          </div>
+                          <div>
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="your@email.com"
+                              value={email}
+                              onChange={handleEmailChange}
+                              onBlur={handleEmailBlur}
+                              className="w-full bg-white border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={goToPreviousStep}
+                    className="w-full sm:w-auto"
+                  >
+                    Back
+                  </Button>
                   <Button 
                     onClick={handleGenerateClick}
-                    disabled={loading || !!mainError || !!nameError || !isFormValid()} 
+                    disabled={loading || !!formError || !isFormValid()} 
                     className="w-full sm:w-auto"
                   >
                     {processingStep === 'processing' ? (
@@ -874,16 +1073,15 @@ export default function BrandDetailsPage() {
                         </svg>
                         Complete
                       </>
-                    ) : showEmailCapture ? (
-                      "Generate Preview"
                     ) : (
                       "Generate Preview"
                     )}
                   </Button>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+              </CardContent>
+              </Card>
+            </div>
+          </form>
         </div>
       </main>
     </div>

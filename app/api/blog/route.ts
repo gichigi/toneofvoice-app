@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       content, 
       excerpt, 
       keywords = [], 
-      category = 'Brand Strategy',
+      category = 'Tone Of Voice Fundamentals',
       featured_image,
       author_name = 'Tahi Gichigi',
       author_image,

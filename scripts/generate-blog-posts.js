@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js'
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
 import { BLOG_SYSTEM_PROMPT, getBlogOutlinePrompt, getBlogArticlePromptFromOutline } from '../lib/blog-prompts.js'
+import { searchBrief } from '../lib/firecrawl.js'
 
 // Load environment variables from .env file
 dotenv.config()
@@ -125,11 +126,11 @@ const SYSTEM_PROMPT = BLOG_SYSTEM_PROMPT
  * Expected format:
  * - Column 1: title (required)
  * - Column 2: keywords (required, comma-separated)
- * - Column 3: category (optional, defaults to Brand Strategy)
+ * - Column 3: category (optional, defaults to Tone Of Voice Fundamentals)
  * 
  * Example:
  * title,keywords,category
- * Brand Voice Guide,brand voice,marketing,Brand Strategy
+ * Brand Voice Guide,brand voice,marketing,Tone Of Voice Fundamentals
  */
 /**
  * Parse CSV row handling quoted fields with commas
@@ -198,11 +199,11 @@ function createSlug(title) {
 
 // Available categories (matches API endpoint)
 const AVAILABLE_CATEGORIES = [
-  'Brand Strategy',
-  'Content Creation',
-  'Marketing',
-  'AI Tools',
-  'Case Studies'
+  'Tone Of Voice Fundamentals',
+  'Brand Voice Foundations',
+  'Guidelines & Templates',
+  'Examples & Case Studies',
+  'Channel & Execution'
 ]
 
 // Category generation function (matches API endpoint logic)
@@ -235,7 +236,7 @@ Return ONLY the category name that best fits this topic. No explanation, just th
     }
   }
 
-  return 'Brand Strategy' // Fallback
+  return 'Tone Of Voice Fundamentals' // Fallback
 }
 
 // Note: Gradient generation is handled on the frontend (BlogCard component)
@@ -245,6 +246,83 @@ function calculateReadingTime(content) {
   const wordsPerMinute = 200
   const wordCount = content.split(/\s+/).length
   return Math.ceil(wordCount / wordsPerMinute)
+}
+
+/**
+ * Parse content-batch-plan.md to extract link instructions for a topic
+ * @param {string} topicTitle - The topic title to find links for
+ * @param {object} supabase - Supabase client to check existing slugs
+ * @returns {Promise<object>} Link instructions with internal and external links
+ */
+async function getLinkInstructions(topicTitle, supabase) {
+  const contentPlanPath = path.join(__dirname, 'content-batch-plan.md')
+  
+  try {
+    if (!fs.existsSync(contentPlanPath)) {
+      console.log('   ⚠️  Content plan file not found, skipping link instructions')
+      return null
+    }
+
+    const contentPlan = fs.readFileSync(contentPlanPath, 'utf-8')
+    const lines = contentPlan.split('\n')
+    
+    // Find the row matching this topic title
+    let linkPlan = null
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      // Check if this line contains the topic title (in the Working Title column)
+      if (line.includes('|') && line.includes(topicTitle)) {
+        // Extract the Internal Link Plan column (last column before closing |)
+        const columns = line.split('|').map(col => col.trim())
+        if (columns.length >= 6) {
+          linkPlan = columns[5] // Internal Link Plan is the 6th column (index 5)
+          break
+        }
+      }
+    }
+
+    if (!linkPlan) {
+      return null
+    }
+
+    // Parse links from the plan (format: "Up: Title<br>Cross: Title1, Title2")
+    const internalLinks = []
+    const linkPatterns = [
+      { prefix: 'Up:', type: 'up' },
+      { prefix: 'Cross:', type: 'cross' },
+      { prefix: 'Resource:', type: 'resource' }
+    ]
+
+    for (const pattern of linkPatterns) {
+      const regex = new RegExp(`${pattern.prefix}\\s*([^<]+)`, 'gi')
+      let match
+      while ((match = regex.exec(linkPlan)) !== null) {
+        const titles = match[1].split(',').map(t => t.trim()).filter(t => t)
+        for (const title of titles) {
+          // Convert title to slug to check if it exists
+          const slug = createSlug(title)
+          // Check if this slug exists in Supabase
+          const { data } = await supabase
+            .from('blog_posts')
+            .select('slug, title')
+            .eq('slug', slug)
+            .maybeSingle()
+          
+          if (data) {
+            internalLinks.push({ title: data.title, slug: data.slug })
+          }
+        }
+      }
+    }
+
+    return {
+      internal: internalLinks,
+      external: [] // External links will come from Firecrawl research notes
+    }
+  } catch (error) {
+    console.warn(`   ⚠️  Error parsing content plan:`, error.message)
+    return null
+  }
 }
 
 // Function to read blog images directory and return sorted filenames
@@ -325,13 +403,33 @@ async function generateBlogPost(topic) {
       category = await generateCategory(topic.title, keywords)
     }
     if (!AVAILABLE_CATEGORIES.includes(category)) {
-      category = 'Brand Strategy' // Fallback
+      category = 'Tone Of Voice Fundamentals' // Fallback
     }
     console.log(`   📂 Category: ${category}`)
 
+    // Fetch recent context from Firecrawl search before generating outline
+    console.log(`   🔍 Fetching recent context...`)
+    let researchNotes = null
+    try {
+      const searchResult = await searchBrief(topic.title, keywords, 3)
+      if (searchResult && searchResult.success) {
+        researchNotes = {
+          summary: searchResult.summary,
+          urls: searchResult.urls,
+          markdown: searchResult.markdown // Full markdown for writer agent
+        }
+        console.log(`   ✅ Found ${searchResult.urls.length} recent sources`)
+      } else {
+        console.log(`   ⚠️  No search results available (continuing without briefing)`)
+      }
+    } catch (searchError) {
+      console.warn(`   ⚠️  Search briefing failed:`, searchError.message)
+      // Continue without research notes if search fails
+    }
+
     // Step 1: Generate outline using gpt-4o
     console.log(`   📝 Generating outline...`)
-    const outlinePrompt = getBlogOutlinePrompt(topic.title, keywords)
+    const outlinePrompt = getBlogOutlinePrompt(topic.title, keywords, researchNotes)
     const outlineResult = await generateWithOpenAI(
       outlinePrompt,
       SYSTEM_PROMPT,
@@ -356,9 +454,33 @@ async function generateBlogPost(topic) {
     console.log(`   ✅ Outline: "${outline.title}"`)
     console.log(`   📋 Format: ${outline.format}`)
 
+    // Get link instructions from content plan
+    console.log(`   🔗 Gathering link instructions...`)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+    let linkInstructions = await getLinkInstructions(topic.title, supabase)
+    
+    // Add external links from Firecrawl research notes
+    if (researchNotes && researchNotes.urls && researchNotes.urls.length > 0) {
+      if (!linkInstructions) {
+        linkInstructions = { internal: [], external: [] }
+      }
+      linkInstructions.external = researchNotes.urls.map(url => ({
+        title: url.split('/').pop().replace(/-/g, ' ') || 'Source',
+        url: url
+      }))
+    }
+
+    if (linkInstructions && (linkInstructions.internal.length > 0 || linkInstructions.external.length > 0)) {
+      console.log(`   ✅ Found ${linkInstructions.internal.length} internal links, ${linkInstructions.external.length} external links`)
+    }
+
     // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
     console.log(`   ✍️  Generating article from outline...`)
-    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic.title, keywords)
+    // Outline now contains research_excerpts, so we don't need to pass researchNotes separately
+    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic.title, keywords, null, linkInstructions)
     
     // Use gpt-4o-mini with temperature 0.8 for article generation
     const openai = new OpenAI({
@@ -372,7 +494,7 @@ async function generateBlogPost(topic) {
         { role: 'user', content: articlePrompt }
       ],
       temperature: 0.8,
-      max_tokens: 3000
+      max_tokens: 4096
     })
 
     const rawResponse = articleResponse.choices[0]?.message?.content

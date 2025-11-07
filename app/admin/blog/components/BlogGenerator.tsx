@@ -15,11 +15,11 @@ import LogoutButton from './LogoutButton'
 
 // Available categories matching the API endpoint
 const AVAILABLE_CATEGORIES = [
-  'Brand Strategy',
-  'Content Creation', 
-  'Marketing',
-  'AI Tools',
-  'Case Studies'
+  'Tone Of Voice Fundamentals',
+  'Brand Voice Foundations',
+  'Guidelines & Templates',
+  'Examples & Case Studies',
+  'Channel & Execution'
 ]
 
 interface GeneratedPost {

@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import fs from 'fs'
 import path from 'path'
 import { BLOG_SYSTEM_PROMPT, getBlogOutlinePrompt, getBlogArticlePromptFromOutline } from '@/lib/blog-prompts'
+import { searchBrief } from '@/lib/firecrawl'
 import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -12,11 +13,11 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Available categories for blog posts
 const AVAILABLE_CATEGORIES = [
-  'Brand Strategy',
-  'Content Creation',
-  'Marketing',
-  'AI Tools',
-  'Case Studies'
+  'Tone Of Voice Fundamentals',
+  'Brand Voice Foundations',
+  'Guidelines & Templates',
+  'Examples & Case Studies',
+  'Channel & Execution'
 ]
 
 function slugify(title: string): string {
@@ -61,7 +62,7 @@ Return ONLY the category name that best fits this topic. No explanation, just th
   }
 
   // Fallback to default
-  return 'Brand Strategy'
+  return 'Tone Of Voice Fundamentals'
 }
 
 // Function to read blog images directory and return sorted filenames
@@ -88,6 +89,74 @@ async function getBlogImages(): Promise<string[]> {
   } catch (error) {
     console.error('Error reading blog images directory:', error)
     return []
+  }
+}
+
+/**
+ * Parse content-batch-plan.md to extract link instructions for a topic
+ */
+async function getLinkInstructions(topicTitle: string, supabase: any): Promise<{ internal: Array<{ title: string; slug: string }>; external: Array<{ title: string; url: string }> } | null> {
+  const contentPlanPath = path.join(process.cwd(), 'scripts', 'content-batch-plan.md')
+  
+  try {
+    if (!fs.existsSync(contentPlanPath)) {
+      return null
+    }
+
+    const contentPlan = fs.readFileSync(contentPlanPath, 'utf-8')
+    const lines = contentPlan.split('\n')
+    
+    // Find the row matching this topic title
+    let linkPlan: string | null = null
+    for (const line of lines) {
+      if (line.includes('|') && line.includes(topicTitle)) {
+        const columns = line.split('|').map(col => col.trim())
+        if (columns.length >= 6) {
+          linkPlan = columns[5] // Internal Link Plan is the 6th column
+          break
+        }
+      }
+    }
+
+    if (!linkPlan) {
+      return null
+    }
+
+    // Parse links from the plan
+    const internalLinks: Array<{ title: string; slug: string }> = []
+    const linkPatterns = [
+      { prefix: 'Up:' },
+      { prefix: 'Cross:' },
+      { prefix: 'Resource:' }
+    ]
+
+    for (const pattern of linkPatterns) {
+      const regex = new RegExp(`${pattern.prefix}\\s*([^<]+)`, 'gi')
+      let match
+      while ((match = regex.exec(linkPlan)) !== null) {
+        const titles = match[1].split(',').map(t => t.trim()).filter(t => t)
+        for (const title of titles) {
+          const slug = slugify(title)
+          const { data } = await supabase
+            .from('blog_posts')
+            .select('slug, title')
+            .eq('slug', slug)
+            .maybeSingle()
+          
+          if (data) {
+            internalLinks.push({ title: data.title, slug: data.slug })
+          }
+        }
+      }
+    }
+
+    return {
+      internal: internalLinks,
+      external: []
+    }
+  } catch (error) {
+    console.warn('Error parsing content plan:', error)
+    return null
   }
 }
 
@@ -162,14 +231,31 @@ export async function POST(req: NextRequest) {
 
     // Validate category is in allowed list
     if (!AVAILABLE_CATEGORIES.includes(category)) {
-      category = 'Brand Strategy' // Fallback
+      category = 'Tone Of Voice Fundamentals' // Fallback
     }
 
     // Use shared prompts from lib/blog-prompts.js
     const systemPrompt = BLOG_SYSTEM_PROMPT
 
+    // Fetch recent context from Firecrawl search before generating outline
+    let researchNotes = null
+    try {
+      const searchResult = await searchBrief(topic, keywords, 3)
+      if (searchResult && searchResult.success) {
+        researchNotes = {
+          summary: searchResult.summary,
+          urls: searchResult.urls,
+          markdown: searchResult.markdown // Full markdown for writer agent
+        }
+        console.log(`Found ${searchResult.urls.length} recent sources for briefing`)
+      }
+    } catch (searchError) {
+      console.warn('Search briefing failed, continuing without:', searchError instanceof Error ? searchError.message : 'Unknown error')
+      // Continue without research notes if search fails
+    }
+
     // Step 1: Generate outline using gpt-4o
-    const outlinePrompt = getBlogOutlinePrompt(topic, keywords)
+    const outlinePrompt = getBlogOutlinePrompt(topic, keywords, researchNotes)
     const outlineResult = await generateWithOpenAI(
       outlinePrompt,
       systemPrompt,
@@ -198,8 +284,24 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Get link instructions from content plan
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    let linkInstructions = await getLinkInstructions(topic, supabase)
+    
+    // Add external links from Firecrawl research notes
+    if (researchNotes && researchNotes.urls && researchNotes.urls.length > 0) {
+      if (!linkInstructions) {
+        linkInstructions = { internal: [], external: [] }
+      }
+      linkInstructions.external = researchNotes.urls.map(url => ({
+        title: url.split('/').pop()?.replace(/-/g, ' ') || 'Source',
+        url: url
+      }))
+    }
+
     // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
-    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic, keywords)
+    // Outline now contains research_excerpts, so we don't need to pass researchNotes separately
+    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic, keywords, null, linkInstructions)
     
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -212,7 +314,7 @@ export async function POST(req: NextRequest) {
         { role: 'user', content: articlePrompt }
       ],
       temperature: 0.8,
-      max_tokens: 3000
+      max_tokens: 4096
     })
 
     const rawResponse = articleResponse.choices[0]?.message?.content
@@ -281,9 +383,6 @@ export async function POST(req: NextRequest) {
     const slug = slugify(title)
     const word_count = content.split(/\s+/).length
     const reading_time = Math.ceil(word_count / 200)
-
-    // Create Supabase client with service role key
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     // Select featured image using cycling logic
     const featured_image = await selectBlogImage(supabase)

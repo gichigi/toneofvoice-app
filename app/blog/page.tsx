@@ -178,7 +178,7 @@ export default async function BlogPage({
             >
               All
             </Link>
-            {['Brand Strategy', 'Content Creation', 'Marketing', 'AI Tools', 'Case Studies'].map((category) => {
+            {['Tone Of Voice Fundamentals', 'Brand Voice Foundations', 'Guidelines & Templates', 'Examples & Case Studies', 'Channel & Execution'].map((category) => {
               const isActive = selectedCategory === category
               return (
                 <Link

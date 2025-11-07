@@ -85,6 +85,18 @@ pnpm run generate-blog
 - **Error Handling**: Continues on individual failures
 - **Progress Tracking**: Shows detailed progress and statistics
 - **Dry Run Mode**: Test without database writes
+- **Firecrawl Integration**: Automatically fetches recent web context before generating outlines (requires `FIRECRAWL_API_KEY`)
+
+### Firecrawl Search Briefing
+
+The blog generation system includes optional Firecrawl search integration to provide recent context and avoid outdated information:
+
+- **Automatic Research**: Before generating an outline, the system searches for recent articles and resources related to the topic
+- **Context Injection**: Search results are included in the outline prompt to ensure current best practices
+- **Fail-Safe**: If Firecrawl is unavailable or API key is missing, generation continues without briefing
+- **Configuration**: Set `FIRECRAWL_API_KEY` in your `.env` file to enable (optional).
+
+The search briefing helps ensure generated content reflects current industry standards and avoids hallucinated or outdated brand examples.
 
 ## 🔧 API Endpoints
 
@@ -157,80 +169,7 @@ Content-Type: application/json
 
 ## 🚀 Deployment
 
-1. **Environment Variables**: Ensure all required env vars are set in production
-2. **Database Migration**: The blog_posts table is automatically created
-3. **Content Generation**: Run the script to populate initial content
-4. **Static Generation**: Blog pages are statically generated for performance
-
-## 📊 Performance
-
-- **Static Generation**: Blog posts are statically generated
-- **Image Optimization**: Next.js Image component with proper sizing
-- **Lazy Loading**: Pagination prevents loading all posts at once
-- **Caching**: API responses cached for 5 minutes
-
-## 🛠️ Usage Examples
-
-### Manual Blog Post Creation
-```javascript
-const response = await fetch('/api/blog', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    title: 'How to Create Brand Voice Guidelines',
-    slug: 'brand-voice-guidelines',
-    content: '# Your content here...',
-    excerpt: 'Learn how to create effective brand voice guidelines...',
-    keywords: ['brand voice', 'guidelines', 'content strategy'],
-    is_published: true
-  })
-})
-```
-
-### Fetching Blog Posts
-```javascript
-const response = await fetch('/api/blog?page=1&limit=6')
-const { posts, pagination } = await response.json()
-```
-
-## 🔧 Customization
-
-### Adding New Categories
-Update the default category in the database schema and add to the categories filter in the blog listing page.
-
-### Styling Changes
-All styling uses Tailwind CSS classes and CSS custom properties for theming. Modify the BlogContent component for typography changes.
-
-### Content Generation Prompts
-Edit the `BLOG_POST_PROMPT` in `scripts/generate-blog-posts.js` to customize the AI-generated content style and structure.
-
-## 📈 Analytics & Monitoring
-
-The system includes:
-- Word count and reading time calculation
-- Publication and update timestamps
-- Category-based organization
-- Keyword tracking for SEO analysis
-
-## 🎉 Success!
-
-Your blog system is now complete with:
-- ✅ Modern, responsive design
-- ✅ SEO optimization with Schema.org
-- ✅ Automated content generation
-- ✅ Full CRUD API
-- ✅ Pagination and filtering
-- ✅ TypeScript support
-- ✅ Performance optimizations
-
-Visit `/blog` to see your blog in action!
-
-
-
-
-
-
-
-
-
-
+1. **Environment Variables**: Ensure all required env vars are set in production:
+   - `OPENAI_API_KEY` (required)
+   - `FIRECRAWL_API_KEY` (optional, enables search briefing)
+   - `NEXT_PUBLIC_SUPABASE_URL`

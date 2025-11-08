@@ -23,7 +23,7 @@ export default function BlogContent({ children, className = '' }: BlogContentPro
       prose-p:leading-[1.6] prose-p:tracking-[-0.003em] prose-p:text-blog-text prose-p:mb-6
       prose-a:text-primary prose-a:underline prose-a:underline-offset-4 hover:prose-a:underline-offset-2 prose-a:transition-all prose-a:decoration-primary/60 hover:prose-a:decoration-primary
       prose-ul:my-6 prose-ol:my-6 prose-li:my-2 prose-li:leading-8 md:prose-li:leading-9
-      prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:pl-6 prose-blockquote:my-8 prose-blockquote:text-muted-foreground prose-blockquote:italic
+      prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:pl-6 prose-blockquote:my-8 prose-blockquote:text-muted-foreground prose-blockquote:italic prose-blockquote:font-medium
       prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
       prose-pre:bg-muted prose-pre:rounded-lg prose-pre:p-4 prose-pre:my-8
       prose-img:rounded-lg prose-img:my-8 prose-img:shadow-md

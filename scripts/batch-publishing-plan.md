@@ -2,6 +2,22 @@
 
 > **Note:** Before running the generator again, refresh the system prompt with a concise summary of AIStyleGuide as a platform (core features, tone tools, workflow) so articles can reference product capabilities naturally.
 
+### Next Steps
+
+**Before batching:**
+
+1. **Give articles their own voice** so they don't sound so plain. This involves:
+   - Adding personality and distinct voice traits to the writing
+   - Making content more engaging and less generic
+   - Ensuring each article has character while maintaining professionalism
+
+2. **Simplify prompts** - The prompts have grown complex and could be streamlined:
+   - The article prompt shouldn't need too much instruction since it's being passed a detailed outline
+   - Focus on what the writer needs to know that isn't already in the outline
+   - Reduce redundancy between outline and article prompts
+
+**Then proceed with batching** according to the plan below.
+
 ### Retro-Linking Process
 
 After publishing later batches, earlier posts will have missing internal links since target posts didn't exist yet. To add these links retroactively:

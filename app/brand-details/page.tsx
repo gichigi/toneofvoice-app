@@ -28,6 +28,21 @@ const defaultBrandDetails = {
   readingLevel: "6-8" as "6-8" | "10-12" | "13+", // Default to general public (6-8=General Public, 10-12=Professional, 13+=Technical/Academic)
 }
 
+// Token counting function for description validation
+const estimateTokens = (text: string): number => {
+  if (!text.trim()) return 0
+
+  // Simple tokenization: split by whitespace and count words + punctuation
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  const punctuation = (text.match(/[.!?,:;()"-]/g) || []).length
+
+  // Estimate tokens: words + partial tokens for punctuation
+  return words.length + Math.ceil(punctuation * 0.5)
+}
+
+// Token limit for auto-generated descriptions (to ensure they don't exceed 400 char validation)
+const MAX_GENERATION_TOKENS = 60 // Conservative limit for generated descriptions
+
 
 
 
@@ -336,28 +351,29 @@ export default function BrandDetailsPage() {
   const validateStep1Fields = () => {
     const name = brandDetails.name?.trim() || ""
     const desc = brandDetails.brandDetailsDescription?.trim() || ""
-    const errors: string[] = []
 
     if (!name) {
-      errors.push("brand name")
-    } else if (name.length > 50) {
-      errors.push("brand name is too long")
+      setFormError("Brand name is required.")
+      return false
+    }
+
+    if (name.length > 50) {
+      setFormError("Brand name is too long (max 50 characters).")
+      return false
     }
 
     if (!desc) {
-      errors.push("description")
-    } else if (desc.length < 20) {
-      errors.push("description must be at least 20 characters")
-    } else if (brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.length > 400) {
-      errors.push("description is too long")
+      setFormError("Description is required.")
+      return false
     }
 
-    if (errors.length > 0) {
-      if (errors.length === 1) {
-        setFormError(`Please enter a ${errors[0]}.`)
-      } else {
-        setFormError(`Please complete: ${errors.join(", ")}.`)
-      }
+    if (desc.length < 20) {
+      setFormError("Description must be at least 20 characters.")
+      return false
+    }
+
+    if (desc.length > 500) {
+      setFormError("Description is too long (max 500 characters).")
       return false
     }
 
@@ -486,7 +502,7 @@ export default function BrandDetailsPage() {
   // Step validation functions
   const isStep1Valid = () => {
     const nameValid = !!brandDetails.name?.trim() && brandDetails.name.trim().length > 0
-    const descValid = !!brandDetails.brandDetailsDescription?.trim() && brandDetails.brandDetailsDescription.trim().length >= 20
+    const descValid = !!brandDetails.brandDetailsDescription?.trim() && brandDetails.brandDetailsDescription.trim().length >= 20 && brandDetails.brandDetailsDescription.length <= 500
     return nameValid && descValid
   }
 
@@ -790,7 +806,7 @@ export default function BrandDetailsPage() {
                     placeholder="Describe your brand in a few sentences. What do you do? Who do you serve?"
                     value={brandDetails.brandDetailsDescription || ""}
                     onChange={e => {
-                      const value = e.target.value.slice(0, 400)
+                      const value = e.target.value.slice(0, 500)
                       setBrandDetails(prev => {
                         const updatedDetails = { ...prev, brandDetailsDescription: value }
                         localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
@@ -814,15 +830,15 @@ export default function BrandDetailsPage() {
                   />
                   {showCharCount && (
                     <div className={`text-xs mt-1 ${
-                      brandDetails.brandDetailsDescription?.length > 400 
-                        ? 'text-red-600' 
+                      (brandDetails.brandDetailsDescription?.length || 0) > 500
+                        ? 'text-red-600'
                         : brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.trim().length < 20
                         ? 'text-red-600'
-                        : brandDetails.brandDetailsDescription?.length > 350 
-                        ? 'text-yellow-600' 
+                        : (brandDetails.brandDetailsDescription?.length || 0) > 450
+                        ? 'text-yellow-600'
                         : 'text-muted-foreground'
                     }`}>
-                      {brandDetails.brandDetailsDescription?.length || 0}/400 characters
+                      {(brandDetails.brandDetailsDescription?.length || 0)}/500 characters
                       {brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.trim().length < 20 && brandDetails.brandDetailsDescription.trim().length > 0 && (
                         <span className="ml-1">(min 20)</span>
                       )}

@@ -134,7 +134,7 @@ export async function POST(request: Request) {
   - Be creative and distinctive rather than descriptive
 
 - Guidelines
-  - Description must be exactly 300-400 characters (STRICT LIMIT)
+  - Description must be exactly 300-400 characters [50-60 tokens] (STRICT LIMIT)
   - Include what they do, their approach, and what makes them special
   - Use clear, professional language
   - Write in third person

@@ -3,7 +3,7 @@
  * 1. Generate outline first
  * 2. Generate article from outline
  * 
- * This allows us to verify outline includes templates when title promises one
+ * Tests template keyword handling and keyword usage in articles
  */
 
 import dotenv from 'dotenv'
@@ -121,45 +121,11 @@ async function generateOutline(topic, keywords) {
   const hasTemplateKeyword = topic.toLowerCase().includes('template') || 
                              keywords.some(k => k.toLowerCase().includes('template'))
   
-  const outlinePrompt = `Generate a detailed outline for a blog post about: ${topic}
-
-Target Keywords: ${keywords.join(', ') || 'none provided'}
-
-${hasTemplateKeyword ? `CRITICAL: The topic or keywords mention "template". This indicates user intent to find an actual template. You MUST:
-1. Use "Template/Toolkit" format
-2. Include "template" in the title (users expect to find one)
-3. Set includes_template to true
-4. Provide a detailed description of what the template will contain
-5. The template should be a complete, ready-to-use document with:
-   - Detailed sections with clear instructions
-   - Example content showing how to fill it out
-   - Copyable structure that users can immediately adapt
-   - Not just placeholders - include guidance and examples` : `If the topic mentions "template", you can either:
-1. Include an actual usable template in the article (use Template/Toolkit format)
-2. Use Guide format if not providing a template (avoid "template" in title)`}
-
-Create an outline that includes:
-1. Main title (keep under 60 characters${hasTemplateKeyword ? ', include "template" if providing one' : ''})
-2. Proposed article format (Guide, List, Comparison, Question-based, Case Study, Explainer, or Template/Toolkit)
-3. Main sections with H2 headings (if Template/Toolkit format, include a section for the actual template)
-4. Key points for each section
-5. If including a template, describe what it will contain in detail
-
-Return as JSON with this structure:
-{
-  "title": "proposed title",
-  "format": "format type",
-  "sections": [
-    {
-      "heading": "H2 heading",
-      "key_points": ["point 1", "point 2", ...]
-    }
-  ],
-  "includes_template": true/false,
-  "template_description": "detailed description of template structure, sections, and example content if included, or null"
-}`
+  // Use the actual prompt function
+  const outlinePrompt = getBlogOutlinePrompt(topic, keywords, null)
 
   console.log(`\n📝 Generating outline for: "${topic}"`)
+  console.log(`   Template keyword detected: ${hasTemplateKeyword}`)
   
   const result = await generateWithOpenAI(
     outlinePrompt,
@@ -180,10 +146,6 @@ Return as JSON with this structure:
     console.log(`\n📋 Outline Generated:`)
     console.log(`   Title: "${outline.title}"`)
     console.log(`   Format: ${outline.format}`)
-    console.log(`   Includes Template: ${outline.includes_template || false}`)
-    if (outline.template_description) {
-      console.log(`   Template: ${outline.template_description}`)
-    }
     console.log(`   Sections: ${outline.sections?.length || 0}`)
     
     // Check template keyword presence
@@ -191,21 +153,13 @@ Return as JSON with this structure:
                              keywords.some(k => k.toLowerCase().includes('template'))
     const titleHasTemplate = outline.title.toLowerCase().includes('template')
     
-    if (topicHasTemplate && !outline.includes_template) {
-      console.log(`   ⚠️  WARNING: Topic/keywords mention template but outline doesn't include one!`)
-      console.log(`   ⚠️  User intent expects a template - this may hurt SEO`)
+    if (topicHasTemplate && !titleHasTemplate) {
+      console.log(`   ⚠️  WARNING: Topic/keywords mention template but title doesn't include it!`)
+      console.log(`   ⚠️  This may hurt SEO - users searching for templates won't find this`)
     }
     
-    if (topicHasTemplate && outline.includes_template) {
-      console.log(`   ✅ Good: Topic mentions template and outline includes one`)
-    }
-    
-    if (titleHasTemplate && !outline.includes_template) {
-      console.log(`   ⚠️  WARNING: Title promises template but outline doesn't include one!`)
-    }
-    
-    if (titleHasTemplate && outline.includes_template) {
-      console.log(`   ✅ Good: Title promises template and outline includes one`)
+    if (topicHasTemplate && titleHasTemplate) {
+      console.log(`   ✅ Good: Topic mentions template and title includes it for SEO`)
     }
     
     return outline
@@ -220,26 +174,8 @@ Return as JSON with this structure:
  * Generate article from outline
  */
 async function generateArticleFromOutline(outline, topic, keywords) {
-  const articlePrompt = `Write a comprehensive blog post based on this outline:
-
-Title: ${outline.title}
-Format: ${outline.format}
-${outline.includes_template ? `Template Description: ${outline.template_description}` : ''}
-
-Sections:
-${outline.sections.map((s, i) => `${i + 1}. ${s.heading}\n   ${s.key_points.join('\n   ')}`).join('\n\n')}
-
-Target Keywords: ${keywords.join(', ') || 'none provided'}
-
-${outline.includes_template ? `IMPORTANT: Include the actual template described above. The template should be:
-- Complete and ready-to-use (not just placeholders)
-- Include example content showing how sections should be filled out
-- Have detailed instructions within each section
-- Be structured so users can copy and immediately adapt it
-- Show both the structure AND examples of completed sections` : ''}
-
-Write the full article following the outline. Use the same format instructions from the blog post generation prompt.
-Return as JSON with: title, content (in markdown), excerpt, keywords array.`
+  // Use the actual prompt function
+  const articlePrompt = getBlogArticlePromptFromOutline(outline, keywords, null)
 
   console.log(`\n✍️  Generating article from outline...`)
   
@@ -247,8 +183,8 @@ Return as JSON with: title, content (in markdown), excerpt, keywords array.`
     articlePrompt,
     BLOG_SYSTEM_PROMPT,
     'json',
-    3000,
-    'gpt-4o'
+    4096,
+    'gpt-4o-mini'
   )
 
   if (!result.success || !result.content) {
@@ -259,39 +195,30 @@ Return as JSON with: title, content (in markdown), excerpt, keywords array.`
   try {
     const article = JSON.parse(result.content)
     
-    // Check if article actually includes a template section
+    // Check keyword usage in article
     const contentLower = article.content.toLowerCase()
-    const hasTemplateSection = contentLower.includes('template') && (
-      contentLower.includes('##') && contentLower.match(/##\s*.*template/i) ||
-      contentLower.includes('downloadable') ||
-      contentLower.includes('copy this') ||
-      contentLower.includes('use this template')
-    )
+    const keywordsLower = keywords.map(k => k.toLowerCase())
+    const keywordUsage = keywordsLower.map(kw => {
+      const count = (contentLower.match(new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length
+      return { keyword: kw, count }
+    })
     
     console.log(`\n✅ Article Generated:`)
     console.log(`   Title: "${article.title}"`)
     console.log(`   Word Count: ${article.content.split(/\s+/).length}`)
-    console.log(`   Has Template Section: ${hasTemplateSection ? 'Yes' : 'No'}`)
+    console.log(`   Keyword Usage:`)
+    keywordUsage.forEach(({ keyword, count }) => {
+      const status = count > 0 ? '✅' : '⚠️'
+      console.log(`     ${status} "${keyword}": ${count} times`)
+    })
     
-    if (outline.includes_template && !hasTemplateSection) {
-      console.log(`   ⚠️  WARNING: Outline promised template but article doesn't include it!`)
-    }
-    
-    // Show full content for template-related topics
+    // Check if template keyword is used when present
     const topicHasTemplate = topic.toLowerCase().includes('template') || 
                              keywords.some(k => k.toLowerCase().includes('template'))
     if (topicHasTemplate) {
-      console.log(`\n📄 FULL ARTICLE CONTENT:`)
-      console.log(`─`.repeat(60))
-      console.log(article.content)
-      console.log(`─`.repeat(60))
-      
-      // Check if template section exists
-      const templateSectionMatch = article.content.match(/##\s+.*[Tt]emplate.*/i)
-      if (templateSectionMatch) {
-        console.log(`\n✅ Found template section: ${templateSectionMatch[0]}`)
-      } else {
-        console.log(`\n⚠️  No template section found in content (checked for "## ... Template")`)
+      const templateKeywordUsed = keywordUsage.some(kw => kw.keyword.includes('template') && kw.count > 0)
+      if (!templateKeywordUsed) {
+        console.log(`   ⚠️  WARNING: Template keyword not used in article content!`)
       }
     }
     

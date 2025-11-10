@@ -110,9 +110,7 @@ async function main() {
     try {
       const articlePrompt = getBlogArticlePromptFromOutline(
         outputs.outline.raw,
-        topic.title,
         topic.keywords,
-        null, // researchNotes no longer needed
         null  // linkInstructions
       )
 

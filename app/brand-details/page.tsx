@@ -251,9 +251,14 @@ export default function BrandDetailsPage() {
   }, [])
 
   // Persist keywords to localStorage when tags change
+  // Also clear cached preview content when keywords change (to force regeneration)
   useEffect(() => {
     try {
       localStorage.setItem("brandKeywords", keywordTags.join("\n"))
+      // Clear cached preview content when keywords change to ensure fresh generation
+      localStorage.removeItem("previewContent")
+      localStorage.removeItem("generatedPreviewTraits")
+      localStorage.removeItem("previewTraitsTimestamp")
     } catch {}
   }, [keywordTags])
 
@@ -615,6 +620,12 @@ export default function BrandDetailsPage() {
     setLoadingMessage(loadingWords[0])
 
     try {
+      // Clear any cached preview content before generating new preview
+      // This ensures fresh generation with updated keywords/description
+      localStorage.removeItem("previewContent")
+      localStorage.removeItem("generatedPreviewTraits")
+      localStorage.removeItem("previewTraitsTimestamp")
+      
       // Use the required brand name field
       const brandName = brandDetails.name?.trim() || ""
 

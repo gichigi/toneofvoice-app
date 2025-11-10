@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 1: Generate outline using gpt-4o
-    const outlinePrompt = getBlogOutlinePrompt(topic, keywords, researchNotes)
+    const outlinePrompt = getBlogOutlinePrompt(topic, keywords, researchNotes || undefined)
     const outlineResult = await generateWithOpenAI(
       outlinePrompt,
       systemPrompt,
@@ -301,7 +301,7 @@ export async function POST(req: NextRequest) {
 
     // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
     // Outline now contains research_excerpts, so we don't need to pass researchNotes separately
-    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic, keywords, null, linkInstructions)
+    const articlePrompt = getBlogArticlePromptFromOutline(outline, keywords, linkInstructions || undefined)
     
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,

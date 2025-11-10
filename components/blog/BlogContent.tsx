@@ -12,6 +12,16 @@ interface BlogContentProps {
 
 export default function BlogContent({ children, className = '' }: BlogContentProps) {
   const content = typeof children === 'string' ? children : String(children || '')
+  
+  // Wrap quoted text in emphasis tags for italic styling
+  const processedContent = content.replace(
+    /"([^"]+)"/g,
+    (match, quoteText) => {
+      // Don't wrap if already in markdown emphasis/bold
+      if (match.includes('*') || match.includes('_')) return match
+      return `_"${quoteText}"_`
+    }
+  )
 
   return (
     <div
@@ -32,7 +42,7 @@ export default function BlogContent({ children, className = '' }: BlogContentPro
       ${className}`}
     >
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-        {content}
+        {processedContent}
       </ReactMarkdown>
     </div>
   )

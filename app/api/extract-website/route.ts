@@ -173,7 +173,7 @@ export async function POST(request: Request) {
           // Generate audience first for keyword context
           const audienceResult = await generateAudienceSummary({ 
             name: brandDetails.name, 
-            description: brandDetails.description 
+            brandDetailsDescription: brandDetails.description 
           }).catch(err => ({ success: false, error: err.message }))
           
           // Process audience with error handling
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
           // Generate keywords with audience context
           const keywordsResult = await generateKeywords({ 
             name: brandDetails.name, 
-            description: brandDetails.description,
+            brandDetailsDescription: brandDetails.description,
             audience: audienceStr || 'general audience'
           }).catch(err => ({ success: false, error: err.message }))
           
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
             Logger.info("Generating trait suggestions for:", { brandName: brandDetails.name, audience: audienceStr })
             const traitsResult = await generateTraitSuggestions({
               name: brandDetails.name,
-              description: brandDetails.description,
+              brandDetailsDescription: brandDetails.description || brandDetails.brandDetailsDescription,
               audience: audienceStr
             })
             
@@ -469,7 +469,7 @@ ${summary}`
     // Generate audience first, then keywords with audience context
     const audienceResult = await generateAudienceSummary({ 
       name: brandName || 'Brand', 
-      description: brandDetailsDescription 
+      brandDetailsDescription: brandDetailsDescription 
     }).catch(err => ({ success: false, error: err.message }))
 
     // Process audience with error handling
@@ -481,7 +481,7 @@ ${summary}`
     // Generate keywords with audience context
     const keywordsResult = await generateKeywords({ 
       name: brandName || 'Brand', 
-      description: brandDetailsDescription,
+      brandDetailsDescription: brandDetailsDescription,
       audience: audience || 'general audience'
     }).catch(err => ({ success: false, error: err.message }))
 
@@ -500,7 +500,7 @@ ${summary}`
       Logger.info("Generating trait suggestions for:", { brandName, audience })
       const traitsResult = await generateTraitSuggestions({
         name: brandName,
-        description: brandDetailsDescription,
+        brandDetailsDescription: brandDetailsDescription,
         audience: audience
       })
       

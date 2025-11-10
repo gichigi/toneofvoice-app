@@ -480,7 +480,7 @@ async function generateBlogPost(topic) {
     // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
     console.log(`   ✍️  Generating article from outline...`)
     // Outline now contains research_excerpts, so we don't need to pass researchNotes separately
-    const articlePrompt = getBlogArticlePromptFromOutline(outline, topic.title, keywords, null, linkInstructions)
+    const articlePrompt = getBlogArticlePromptFromOutline(outline, keywords, linkInstructions)
     
     // Use gpt-4o-mini with temperature 0.8 for article generation
     const openai = new OpenAI({

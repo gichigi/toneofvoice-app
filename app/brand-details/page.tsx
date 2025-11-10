@@ -1089,6 +1089,8 @@ export default function BrandDetailsPage() {
                         </svg>
                         Complete
                       </>
+                    ) : !isStep2Valid() ? (
+                      `Pick ${3 - selectedTraits.length} trait${3 - selectedTraits.length !== 1 ? 's' : ''}`
                     ) : (
                       "Generate Preview"
                     )}

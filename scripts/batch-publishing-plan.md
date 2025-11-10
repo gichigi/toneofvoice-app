@@ -1,38 +1,6 @@
 ## Batch Publishing Plan
 
-> **Note:** Before running the generator again, refresh the system prompt with a concise summary of AIStyleGuide as a platform (core features, tone tools, workflow) so articles can reference product capabilities naturally.
-
 ### Next Steps
-
-**Before batching:**
-
-1. **Give articles their own voice** so they don't sound so plain. This involves:
-   - Adding personality and distinct voice traits to the writing
-   - Making content more engaging and less generic
-   - Ensuring each article has character while maintaining professionalism
-
-2. **Simplify prompts** - The prompts have grown complex and could be streamlined:
-   - The article prompt shouldn't need too much instruction since it's being passed a detailed outline
-   - Focus on what the writer needs to know that isn't already in the outline
-   - Reduce redundancy between outline and article prompts
-
-**Then proceed with batching** according to the plan below.
-
-### Retro-Linking Process
-
-After publishing later batches, earlier posts will have missing internal links since target posts didn't exist yet. To add these links retroactively:
-
-1. **Option: Patch Script** - Create a script that:
-   - Reads `content-batch-plan.md` to get planned links for each published post
-   - Checks which target slugs now exist in Supabase
-   - Updates the post's markdown content to insert missing internal links naturally within relevant sections
-   - Preserves existing content while adding the planned links
-
-2. **Option: Regenerate** - Re-run the generator for earlier topics (dry-run first to preview):
-   - The generator will now find existing target slugs and include them automatically
-   - Review and publish updated content
-
-The link mapping lives in `content-batch-plan.md`, so once target posts exist, either approach can use that plan to update earlier posts.
 
 ### Batch 1 — Launch Hubs & Core Definitions
 - Hubs: Tone Fundamentals, Brand Voice Foundations, Guidelines & Templates, Examples & Case Studies, Channel & Execution
@@ -55,3 +23,18 @@ The link mapping lives in `content-batch-plan.md`, so once target posts exist, e
 - Posts: tone of voice for social media, social media brand voice, tone of voice in communication, tone of voice marketing, tone of voice in branding, tone of voice for a brand, tone of voice options, tone of voice in advertising, tone of voice in emails, tone of voice strategy
 - Internal links: maintain hub up-link + two cross-links; highlight new additions within relevant hubs and re-surface key templates/resources.
 
+### Retro-Linking Process
+
+After publishing later batches, earlier posts will have missing internal links since target posts didn't exist yet. To add these links retroactively:
+
+1. **Option: Patch Script** - Create a script that:
+   - Reads `content-batch-plan.md` to get planned links for each published post
+   - Checks which target slugs now exist in Supabase
+   - Updates the post's markdown content to insert missing internal links naturally within relevant sections
+   - Preserves existing content while adding the planned links
+
+2. **Option: Regenerate** - Re-run the generator for earlier topics (dry-run first to preview):
+   - The generator will now find existing target slugs and include them automatically
+   - Review and publish updated content
+
+The link mapping lives in `content-batch-plan.md`, so once target posts exist, either approach can use that plan to update earlier posts.

@@ -885,7 +885,7 @@ export default function BrandDetailsPage() {
                 </span>
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Brand voice traits</CardTitle>
+                <CardTitle className="text-xl">Select 3 traits</CardTitle>
                 <CardDescription>Pick 3 traits that define your brand's personality.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

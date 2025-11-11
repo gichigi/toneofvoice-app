@@ -40,7 +40,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import dynamic from "next/dynamic"
-import { validateInput, sanitizeInput } from "@/lib/input-utils"
+import { validateInput, sanitizeInput, detectInputType } from "@/lib/input-utils"
 import BrandBanner from "@/components/BrandBanner"
 import Logo from "@/components/Logo"
 import Header from "@/components/Header"
@@ -77,6 +77,7 @@ export default function LandingPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("")
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
+  const [descriptionProgress, setDescriptionProgress] = useState<number | null>(null)
   const [showSolutions, setShowSolutions] = useState(false) // Toggle state for brand voice section
   const [selectedTrait, setSelectedTrait] = useState<TraitName>("Direct") // Selected trait for preview
   const [traitCyclePaused, setTraitCyclePaused] = useState(false) // Pause auto-cycle when user clicks
@@ -647,8 +648,22 @@ export default function LandingPage() {
                         `}
                         value={url}
                         onChange={(e) => {
-                          const sanitizedValue = sanitizeInput(e.target.value, url)
-                          setUrl(sanitizedValue)
+                        const sanitizedValue = sanitizeInput(e.target.value, url)
+                        setUrl(sanitizedValue)
+
+                        if (!sanitizedValue.trim()) {
+                          setDescriptionProgress(null)
+                        } else {
+                          const detection = detectInputType(sanitizedValue)
+                          const hasSpace = sanitizedValue.includes(" ")
+                          const trimmedLength = sanitizedValue.trim().length
+                          if (detection.inputType === "description" && hasSpace && trimmedLength < 25) {
+                            setDescriptionProgress(Math.min(trimmedLength, 25))
+                          } else {
+                            setDescriptionProgress(null)
+                          }
+                        }
+
                           if (error) {
                             setError("")
                             setErrorType(null)
@@ -702,6 +717,15 @@ export default function LandingPage() {
                     </Button>
                   </div>
                   
+                  {descriptionProgress !== null && !error && (
+                    <div
+                      className="absolute left-1 -bottom-10 text-sm font-medium text-muted-foreground"
+                      role="status"
+                    >
+                      {descriptionProgress}/25
+                    </div>
+                  )}
+
                   {/* Inline error display */}
                   {error && (
                     <div 
@@ -718,7 +742,7 @@ export default function LandingPage() {
                   )}
                   
                   {/* Manual entry link at bottom right outside the container */}
-                  <div className={`absolute right-6 ${error ? '-bottom-11' : '-bottom-7'}`}>
+                  <div className={`absolute right-6 ${(error || descriptionProgress !== null) ? '-bottom-11' : '-bottom-7'}`}>
                     <Link 
                       href="/brand-details" 
                       onClick={() => track('Manual Entry Clicked', { location: 'hero' })}

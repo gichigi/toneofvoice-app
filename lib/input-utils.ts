@@ -129,7 +129,7 @@ export function validateInput(input: string): InputValidationResult {
         isValid: false,
         cleanInput: detection.cleanInput,
         inputType: 'description',
-        error: "Enter at least 5 words to describe your brand"
+        error: "Write at least 25 characters about your brand"
       }
     }
 

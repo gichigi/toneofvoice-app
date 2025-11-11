@@ -155,11 +155,35 @@ export default async function BlogPage({
             />
           </>
         ) : (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-semibold mb-4">No blog posts found</h2>
-            <p className="text-muted-foreground">
-              Check back soon for new content about brand voice and content strategy.
-            </p>
+          <div className="max-w-xl mx-auto">
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-muted bg-muted/40 px-8 py-12 text-center shadow-sm">
+              <svg
+                className="h-12 w-12 text-muted-foreground"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M7 3h4.5L13 5.5h5A2.5 2.5 0 0 1 20.5 8v10A2.5 2.5 0 0 1 18 20.5H7A2.5 2.5 0 0 1 4.5 18V5.5A2.5 2.5 0 0 1 7 3z" />
+                <path d="M8 11h8" />
+                <path d="M8 15h5" />
+              </svg>
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Nothing to read here yet</h2>
+                <p className="text-muted-foreground">
+                  Check back soon for fresh brand tone of voice and style guide content—we’re getting the good stuff ready.
+                </p>
+              </div>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Explore the AI Style Guide
+              </Link>
+            </div>
           </div>
         )}
 

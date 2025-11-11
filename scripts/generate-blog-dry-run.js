@@ -104,7 +104,7 @@ async function main() {
   let researchNotes = null
   try {
     console.log('🔍 Fetching recent context...')
-    const searchResult = await searchBrief(topic, keywords, 3)
+    const searchResult = await searchBrief(topic, keywords, 5)
     if (searchResult && searchResult.success) {
       researchNotes = {
         summary: searchResult.summary,
@@ -225,6 +225,7 @@ async function main() {
         }
         
         if (!article) {
+          fs.writeFileSync(path.join(__dirname, 'raw-article-response.txt'), rawResponse)
           throw new Error('Could not parse valid JSON from response')
         }
       } else {
@@ -234,11 +235,13 @@ async function main() {
     
     // Validate article has required fields
     if (!article.content) {
+      fs.writeFileSync(path.join(__dirname, 'raw-article-response.txt'), rawResponse)
       console.error('❌ Article JSON missing content field')
       console.error('Article keys:', Object.keys(article))
       process.exit(1)
     }
   } catch (parseError) {
+    fs.writeFileSync(path.join(__dirname, 'raw-article-response.txt'), rawResponse)
     console.error('❌ Failed to parse article JSON:', parseError.message)
     console.error('Raw response (first 1000 chars):', rawResponse.substring(0, 1000))
     process.exit(1)
@@ -268,7 +271,20 @@ ${outline.sections.map((s, i) => `${i + 1}. **${s.heading}**\n   Topics: ${(s.to
 
 ${outline.research_excerpts && outline.research_excerpts.length > 0 ? `### Research Excerpts
 
-${outline.research_excerpts.map((excerpt, i) => `${i + 1}. **${excerpt.context}**\n   Source: ${excerpt.source_url}\n   Excerpt: "${excerpt.excerpt}"`).join('\n\n')}
+${outline.research_excerpts.map((source, i) => {
+  const snippets = Array.isArray(source.snippets) && source.snippets.length > 0
+    ? source.snippets
+    : (source.excerpt || source.context)
+      ? [{ excerpt: source.excerpt, context: source.context, section: source.section }]
+      : []
+
+  const snippetText = snippets.map((snippet, idx) => {
+    const sectionLine = snippet.section ? `\n      Section: ${snippet.section}` : ''
+    return `   - Snippet ${idx + 1}: ${snippet.context || 'Context not provided'}${sectionLine}\n      "${snippet.excerpt || ''}"`
+  }).join('\n')
+
+  return `${i + 1}. Source: ${source.source_url || 'unknown'}\n${snippetText || '   - (No snippets provided)'}`
+}).join('\n\n')}
 
 ` : ''}---
 

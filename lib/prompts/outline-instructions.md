@@ -34,11 +34,23 @@ Return as JSON with this structure:
     {
       "source_number": 1,
       "source_url": "url from the research sources",
-      "excerpt": "the specific text, quote, statistic, or insight and who said it",
-      "context": "brief note on how this supports the article (e.g., 'brand example for section 3', 'statistic for introduction')"
+      "snippets": [
+        {
+          "excerpt": "specific quote / statistic / insight",
+          "context": "how to use it (e.g. 'statistic for introduction', 'quote for section 3 comparison')",
+          "section": "section heading or number this supports"
+        }
+      ]
     }
   ]
 }
 ```
+
+### Research Excerpt Guidelines
+- Surface insights from **every research source provided** (aim for 4-5 entries). Only skip a source if it contains no useful information.
+- For each source, include **2-3 high-impact snippets** that surface distinct insights (quotes, stats, frameworks, counterpoints).
+- Each snippet must specify how it should be used (`context`) and which section it supports (`section`) so the writer can go deeper with confidence.
+- Keep snippets concise (1-2 sentences). Only include unique insights that add depth beyond the outline.
+- If a source only yields one worthwhile insight, return a single snippet and skip duplicates.
 
 ---

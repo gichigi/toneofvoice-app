@@ -45,7 +45,7 @@ async function main() {
   console.log('Step 1: Fetching research from Firecrawl...')
   let researchNotes = null
   try {
-    const searchResult = await searchBrief(topic.title, topic.keywords, 3)
+    const searchResult = await searchBrief(topic.title, topic.keywords, 5)
     if (searchResult && searchResult.success) {
       researchNotes = {
         summary: searchResult.summary,
@@ -208,10 +208,26 @@ function formatOutputsAsMarkdown(outputs) {
 
     if (outline.research_excerpts && outline.research_excerpts.length > 0) {
       md += `### Research Excerpts Extracted\n\n`
-      outline.research_excerpts.forEach((excerpt, i) => {
-        md += `${i + 1}. **${excerpt.context}**\n`
-        md += `   - Source: ${excerpt.source_url}\n`
-        md += `   - Excerpt: "${excerpt.excerpt.substring(0, 200)}${excerpt.excerpt.length > 200 ? '...' : ''}"\n\n`
+      outline.research_excerpts.forEach((source, i) => {
+        const snippets = Array.isArray(source.snippets) && source.snippets.length > 0
+          ? source.snippets
+          : (source.excerpt || source.context)
+            ? [{ excerpt: source.excerpt, context: source.context, section: source.section }]
+            : []
+        md += `${i + 1}. Source: ${source.source_url}\n`
+        if (snippets.length === 0) {
+          md += `   - (No snippets provided)\n\n`
+          return
+        }
+        snippets.forEach((snippet, idx) => {
+          const excerptPreview = (snippet.excerpt || '').substring(0, 200)
+          md += `   - Snippet ${idx + 1}: ${snippet.context || 'Context not provided'}\n`
+          if (snippet.section) {
+            md += `     Section: ${snippet.section}\n`
+          }
+          md += `     "${excerptPreview}${(snippet.excerpt || '').length > 200 ? '...' : ''}"\n`
+        })
+        md += `\n`
       })
     }
   } else {

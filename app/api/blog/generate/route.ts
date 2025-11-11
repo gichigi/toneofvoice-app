@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
     // Fetch recent context from Firecrawl search before generating outline
     let researchNotes = null
     try {
-      const searchResult = await searchBrief(topic, keywords, 3)
+      const searchResult = await searchBrief(topic, keywords, 5)
       if (searchResult && searchResult.success) {
         researchNotes = {
           summary: searchResult.summary,

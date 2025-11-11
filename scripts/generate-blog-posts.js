@@ -411,7 +411,7 @@ async function generateBlogPost(topic) {
     console.log(`   🔍 Fetching recent context...`)
     let researchNotes = null
     try {
-      const searchResult = await searchBrief(topic.title, keywords, 3)
+      const searchResult = await searchBrief(topic.title, keywords, 5)
       if (searchResult && searchResult.success) {
         researchNotes = {
           summary: searchResult.summary,

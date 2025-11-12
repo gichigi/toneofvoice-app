@@ -88,6 +88,12 @@ export default function LandingPage() {
   const [inputAnimating, setInputAnimating] = useState(false) // Track input animation state
   const inputRef = useRef<HTMLInputElement>(null) // Ref for input field
 
+  const getDescriptionCounterColor = (value: number) => {
+    if (value >= 24) return "text-muted-foreground"
+    if (value >= 20) return "text-yellow-600"
+    return "text-red-600"
+  }
+
   // Handle "Get Started" button click - animate and focus input
   useEffect(() => {
     const animateAndFocusInput = () => {
@@ -620,7 +626,7 @@ export default function LandingPage() {
 
               <form onSubmit={handleExtraction} className="w-full max-w-2xl">
                 {/* Mobile-optimized input layout */}
-                <div className="relative w-full max-w-2xl mx-auto mt-4 mb-6">
+                <div className="w-full max-w-2xl mx-auto mt-4 mb-6">
                   {/* Mobile: Stack vertically, Desktop: Side by side */}
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-1 sm:p-1 sm:rounded-xl sm:bg-white sm:border sm:border-blue-200 sm:shadow-sm">
                     <div className="relative flex-1">
@@ -717,20 +723,11 @@ export default function LandingPage() {
                     </Button>
                   </div>
                   
-                  {descriptionProgress !== null && !error && (
-                    <div
-                      className="absolute left-1 -bottom-10 text-sm font-medium text-muted-foreground"
-                      role="status"
-                    >
-                      {descriptionProgress}/25
-                    </div>
-                  )}
-
                   {/* Inline error display */}
                   {error && (
                     <div 
                       id="input-error" 
-                      className="absolute left-1 -bottom-10 text-red-600 text-sm font-medium flex items-start gap-1 leading-5 max-w-lg"
+                      className="mt-3 text-red-600 text-sm font-medium flex items-start gap-1 leading-5 max-w-lg"
                       role="alert"
                       aria-live="polite"
                     >
@@ -741,12 +738,21 @@ export default function LandingPage() {
                     </div>
                   )}
                   
-                  {/* Manual entry link at bottom right outside the container */}
-                  <div className={`absolute right-6 ${(error || descriptionProgress !== null) ? '-bottom-11' : '-bottom-7'}`}>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="flex-1 text-left">
+                      {descriptionProgress !== null && !error && (
+                        <span
+                          className={`text-xs sm:text-sm font-medium tabular-nums ${getDescriptionCounterColor(descriptionProgress)}`}
+                          role="status"
+                        >
+                          {descriptionProgress}/25
+                        </span>
+                      )}
+                    </div>
                     <Link 
                       href="/brand-details" 
                       onClick={() => track('Manual Entry Clicked', { location: 'hero' })}
-                      className="text-gray-400 underline font-medium text-sm whitespace-nowrap" 
+                      className="text-gray-500 underline font-medium text-sm whitespace-nowrap" 
                       style={{ textTransform: 'lowercase' }}
                     >
                       or add brand details manually

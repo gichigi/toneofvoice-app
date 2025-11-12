@@ -10,6 +10,7 @@
 - `scripts/batch-publishing-plan.md` - High-level batch plan (5 batches)
 - `scripts/content-batch-plan.md` - Detailed content plan with titles, keywords, internal links
 - `scripts/README-batch-publish.md` - Batch script documentation
+- `scripts/ai-link-automation-plan.md` - Plan for AI-assisted retro-link updates (OpenAI + Supabase MCP)
 
 ## API Endpoints
 - `app/api/blog/generate/route.ts` - Main blog generation API endpoint

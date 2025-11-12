@@ -64,9 +64,9 @@ function parseContentPlan(content) {
       .map((part) => part.trim())
       .filter((part) => part.length > 0)
 
-    if (fields.length < 6) continue
+    if (fields.length < 7) continue
 
-    const [index, pillar, primaryKeyword, workingTitle, supporting, internalPlan] = fields
+    const [index, pillar, primaryKeyword, workingTitle, articleUrl, supporting, internalPlan] = fields
 
     rows.push({
       index,
@@ -74,6 +74,7 @@ function parseContentPlan(content) {
       pillar,
       primaryKeyword,
       workingTitle,
+      articleUrl,
       supporting,
       internalPlan,
     })
@@ -91,18 +92,24 @@ function extractLinkTargets(internalPlan) {
   const targets = { up: [], cross: [], resource: [] }
 
   for (const block of blocks) {
-    const [label, rest] = block.split(':')
-    if (!rest) continue
-    const values = rest
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
+    const parts = block.split(':')
+    if (parts.length < 2) continue
+    const label = parts.shift()
+    const rest = parts.join(':')
+    const values = rest.split(',').map((item) => item.trim()).filter(Boolean)
 
     const key = label.trim().toLowerCase()
     if (key.startsWith('up')) {
       targets.up.push(...values)
     } else if (key.startsWith('cross')) {
-      targets.cross.push(...values)
+      for (const value of values) {
+        const [rawLabel, rawAnchor] = value.split('|').map((part) => part.trim())
+        if (!rawLabel) continue
+        targets.cross.push({
+          label: rawLabel,
+          anchor: rawAnchor || null,
+        })
+      }
     } else if (key.startsWith('resource')) {
       targets.resource.push(...values)
     }
@@ -129,6 +136,20 @@ function createSupabaseClient() {
     throw new Error('Missing Supabase credentials in environment.')
   }
   return createClient(url, key)
+}
+
+const CROSS_INTROS = [
+  'Next steps: explore',
+  'Next steps: dive into',
+  'Next steps: bookmark',
+  'Next steps: build on',
+  'Next steps: continue with',
+]
+
+function pickCrossIntro(slug) {
+  if (!slug) return CROSS_INTROS[0]
+  const hash = [...slug].reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  return CROSS_INTROS[hash % CROSS_INTROS.length]
 }
 
 async function main() {
@@ -182,9 +203,30 @@ async function main() {
   const pillarHub = new Map()
 
   for (const row of allPlanRows) {
-    const keywordKey = normalize(row.primaryKeyword)
-    const candidates = keywordMap.get(keywordKey) || []
-    const selected = candidates.find((post) => (slugFilter ? post.slug === slugFilter : post.is_published))
+    let selected = null
+    let slugFromUrl = null
+
+    if (row.articleUrl) {
+      const slugMatch = row.articleUrl.match(/\/blog\/([^/?#]+)/)
+      if (slugMatch) {
+        slugFromUrl = slugMatch[1]
+        if (postBySlug.has(slugFromUrl)) {
+          selected = postBySlug.get(slugFromUrl)
+        }
+      }
+    }
+
+    if (!selected) {
+      const keywordKey = normalize(row.primaryKeyword)
+      const candidates = keywordMap.get(keywordKey) || []
+      if (slugFilter) {
+        selected =
+          candidates.find((post) => post.slug === slugFilter) ||
+          candidates.find((post) => post.is_published)
+      } else {
+        selected = candidates.find((post) => post.is_published)
+      }
+    }
 
     if (selected) {
       planRowToPostAll.set(row, selected)
@@ -194,9 +236,22 @@ async function main() {
     }
   }
 
+  const postToPlanRow = new Map()
+  for (const [row, post] of planRowToPostAll.entries()) {
+    if (!postToPlanRow.has(post.slug)) {
+      postToPlanRow.set(post.slug, row)
+    }
+  }
+
   const planRowsWithPosts = selectedPlanRows.filter((row) => {
     if (!planRowToPostAll.has(row)) return false
     if (!slugFilter) return true
+    if (row.articleUrl) {
+      const slugMatch = row.articleUrl.match(/\/blog\/([^/?#]+)/)
+      if (slugMatch && slugMatch[1] === slugFilter) {
+        return true
+      }
+    }
     const post = planRowToPostAll.get(row)
     return post?.slug === slugFilter
   })
@@ -206,9 +261,27 @@ async function main() {
     return
   }
 
-  const findTargetPost = (label) => {
+  const resolveTarget = (label) => {
     const normalizedLabel = normalize(label)
     if (!normalizedLabel) return null
+
+    if (/^https?:\/\//.test(label)) {
+      const slugMatch = label.match(/\/blog\/([^/?#]+)/)
+      if (slugMatch) {
+        const slug = slugMatch[1]
+        if (postBySlug.has(slug)) {
+          return postBySlug.get(slug)
+        }
+        if (postToPlanRow.has(slug)) {
+          const planRow = postToPlanRow.get(slug)
+          return planRowToPostAll.get(planRow)
+        }
+        return {
+          slug,
+          title: slug.replace(/-/g, ' '),
+        }
+      }
+    }
 
     const directMatch = allPlanRows.find((row) => normalize(row.workingTitle).includes(normalizedLabel))
     if (directMatch && planRowToPostAll.has(directMatch)) {
@@ -244,38 +317,51 @@ async function main() {
     const linkTargets = extractLinkTargets(row.internalPlan)
 
     // Up link
-    if (linkTargets.up.length) {
-      const hub = pillarHub.get(row.pillar)
-      if (hub && hub.slug !== post.slug) {
-        const blockquote = `> This playbook pairs with our [${hub.title}](https://aistyleguide.com/blog/${hub.slug}); give that primer a skim if you want to see how the strategy, examples, and governance connect.`
-        const alreadyLinked = updatedContent.includes(`](https://aistyleguide.com/blog/${hub.slug})`) ||
-          updatedContent.includes(`/blog/${hub.slug}`)
-        if (!alreadyLinked) {
-          const paragraphs = updatedContent.split('\n\n')
-          if (paragraphs.length > 1) {
-            paragraphs.splice(1, 0, blockquote)
-            updatedContent = paragraphs.join('\n\n')
-          } else {
-            updatedContent = `${blockquote}\n\n${updatedContent}`
-          }
+    const explicitHub = linkTargets.up
+      .map((label) => resolveTarget(label))
+      .find(Boolean)
+    const hub = explicitHub || pillarHub.get(row.pillar)
+    if (hub && hub.slug !== post.slug) {
+      const blockquote = `> This playbook pairs with our [${hub.title}](https://aistyleguide.com/blog/${hub.slug}); give that primer a skim if you want to see how the strategy, examples, and governance connect.`
+      updatedContent = updatedContent
+        .split('\n\n')
+        .filter(
+          (paragraph) =>
+            !paragraph.startsWith('> This playbook pairs with our [') ||
+            paragraph.includes(`/blog/${hub.slug}`)
+        )
+        .join('\n\n')
+      if (!updatedContent.includes(`/blog/${hub.slug}`)) {
+        const paragraphs = updatedContent.split('\n\n')
+        if (paragraphs.length > 1) {
+          paragraphs.splice(1, 0, blockquote)
+          updatedContent = paragraphs.join('\n\n')
+        } else {
+          updatedContent = `${blockquote}\n\n${updatedContent}`
         }
       }
     }
 
     // Cross links
     const crossTargets = []
-    for (const label of linkTargets.cross) {
-      const targetPost = findTargetPost(label)
+    for (const entry of linkTargets.cross) {
+      const targetPost = resolveTarget(entry.label)
       if (!targetPost || targetPost.slug === post.slug) continue
       if (updatedContent.includes(`/blog/${targetPost.slug}`)) continue
-      crossTargets.push(targetPost)
+      crossTargets.push({
+        post: targetPost,
+        anchor: entry.anchor,
+      })
     }
+
 
     if (crossTargets.length) {
       const linkFragments = crossTargets.map(
-        (target) => `[${target.title}](https://aistyleguide.com/blog/${target.slug})`
+        ({ post: target, anchor }) =>
+          `[${anchor || target.title}](https://aistyleguide.com/blog/${target.slug})`
       )
-      const sentence = sentenceWithLinks('For next steps, explore', linkFragments) + '.'
+      const sentence =
+        sentenceWithLinks(pickCrossIntro(post.slug), linkFragments) + '.'
 
       if (updatedContent.includes('\n\n## Conclusion')) {
         updatedContent = updatedContent.replace(

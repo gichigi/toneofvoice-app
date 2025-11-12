@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
     // Fetch recent context from Firecrawl search before generating outline
     let researchNotes = null
     try {
-      const searchResult = await searchBrief(topic, keywords, 5)
+      const searchResult = await searchBrief(topic, keywords, 8)
       if (searchResult && searchResult.success) {
         researchNotes = {
           summary: searchResult.summary,
@@ -308,7 +308,7 @@ export async function POST(req: NextRequest) {
     })
     
     const articleResponse = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: articlePrompt }

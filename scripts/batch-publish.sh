@@ -14,6 +14,36 @@ ADMIN_PASSWORD="${ADMIN_BLOG_PASSWORD}"
 LOG_FILE="scripts/batch-publish.log"
 PLAN_FILE="scripts/batch-publishing-plan.md"
 CONTENT_PLAN_FILE="scripts/content-batch-plan.md"
+FIELD_DELIMITER=$'\x1F'
+LIMIT=""
+FILTER=""
+
+trim() {
+  local var="$1"
+  var="${var#"${var%%[![:space:]]*}"}"
+  var="${var%"${var##*[![:space:]]}"}"
+  printf '%s' "$var"
+}
+
+to_lower() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+json_escape() {
+  node -e 'process.stdout.write(JSON.stringify(process.argv[1] || ""))' "$1"
+}
+
+map_pillar_to_category() {
+  case "$1" in
+    "Tone Fundamentals") echo "Tone Of Voice Fundamentals" ;;
+    "Tone Of Voice Fundamentals") echo "Tone Of Voice Fundamentals" ;;
+    "Brand Voice Foundations") echo "Brand Voice Foundations" ;;
+    "Guidelines & Templates") echo "Guidelines & Templates" ;;
+    "Examples & Case Studies") echo "Examples & Case Studies" ;;
+    "Channel & Execution") echo "Channel & Execution" ;;
+    *) echo "" ;;
+  esac
+}
 
 # Parse arguments
 for arg in "$@"; do
@@ -24,6 +54,14 @@ for arg in "$@"; do
       ;;
     --delay=*)
       DELAY="${arg#*=}"
+      shift
+      ;;
+    --limit=*)
+      LIMIT="${arg#*=}"
+      shift
+      ;;
+    --filter=*)
+      FILTER="${arg#*=}"
       shift
       ;;
     *)
@@ -101,10 +139,24 @@ extract_batch_topics() {
         
         # Parse pipe-separated values
         IFS='|' read -ra fields <<< "$line"
-        if [ ${#fields[@]} -ge 4 ]; then
-          local title=$(echo "${fields[3]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-          if [ -n "$title" ] && [[ ! "$title" =~ Working\ Title ]] && [[ ! "$title" =~ ^[[:space:]]*$ ]]; then
-            topics+=("$title")
+        if [ ${#fields[@]} -ge 6 ]; then
+          local number
+          number=$(trim "${fields[1]}")
+          local pillar
+          pillar=$(trim "${fields[2]}")
+          local primary
+          primary=$(trim "${fields[3]}")
+          local title
+          title=$(trim "${fields[4]}")
+          local supporting
+          supporting=$(trim "${fields[5]}")
+          local internal_plan=""
+          if [ ${#fields[@]} -ge 7 ]; then
+            internal_plan=$(trim "${fields[6]}")
+          fi
+
+          if [ -n "$title" ] && [[ ! "$title" =~ ^#[[:space:]]*$ ]] && [[ ! "$title" =~ ^Working\ Title$ ]]; then
+            topics+=("${title}${FIELD_DELIMITER}${primary}${FIELD_DELIMITER}${supporting}${FIELD_DELIMITER}${internal_plan}${FIELD_DELIMITER}${pillar}${FIELD_DELIMITER}${number}")
           fi
         fi
       fi
@@ -134,7 +186,13 @@ extract_batch_topics() {
         for post in "${POSTS[@]}"; do
           post=$(echo "$post" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
           if [ -n "$post" ]; then
-            topics+=("$post")
+            local title="$post"
+            local primary="$post"
+            local supporting=""
+            local internal_plan=""
+            local pillar=""
+            local number=""
+            topics+=("${title}${FIELD_DELIMITER}${primary}${FIELD_DELIMITER}${supporting}${FIELD_DELIMITER}${internal_plan}${FIELD_DELIMITER}${pillar}${FIELD_DELIMITER}${number}")
           fi
         done
       fi
@@ -146,9 +204,14 @@ extract_batch_topics() {
 
 # Get topics for this batch
 echo "📋 Extracting topics for Batch $BATCH_NUM..."
-TOPICS=($(extract_batch_topics "$BATCH_NUM"))
+TOPIC_RECORDS=()
+while IFS= read -r topic_line; do
+  if [ -n "$topic_line" ]; then
+    TOPIC_RECORDS+=("$topic_line")
+  fi
+done < <(extract_batch_topics "$BATCH_NUM")
 
-if [ ${#TOPICS[@]} -eq 0 ]; then
+if [ ${#TOPIC_RECORDS[@]} -eq 0 ]; then
   echo "❌ No topics found for Batch $BATCH_NUM"
   echo "   Please check:"
   echo "   - $CONTENT_PLAN_FILE (preferred - structured table format)"
@@ -156,25 +219,108 @@ if [ ${#TOPICS[@]} -eq 0 ]; then
   exit 1
 fi
 
-echo "✅ Found ${#TOPICS[@]} topics"
-echo "✅ Found ${#TOPICS[@]} topics" >> "$LOG_FILE"
+if [ -n "$FILTER" ]; then
+  FILTER_LOWER=$(to_lower "$FILTER")
+  FILTERED_RECORDS=()
+  for record in "${TOPIC_RECORDS[@]}"; do
+    IFS=$FIELD_DELIMITER read -r WORKING_TITLE _ <<< "$record"
+    TITLE_LOWER=$(to_lower "$WORKING_TITLE")
+    if [[ "$TITLE_LOWER" == *"$FILTER_LOWER"* ]]; then
+      FILTERED_RECORDS+=("$record")
+    fi
+  done
+  TOPIC_RECORDS=("${FILTERED_RECORDS[@]}")
+fi
 
-# Generate keywords from topic (simple extraction)
-generate_keywords() {
-  local topic="$1"
-  # Convert to lowercase, replace spaces/punctuation with commas
-  echo "$topic" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/ /g' | tr -s ' ' | sed 's/ /, /g'
-}
+if [ ${#TOPIC_RECORDS[@]} -eq 0 ]; then
+  echo "❌ No topics matched the provided filters"
+  echo "❌ No topics matched the provided filters" >> "$LOG_FILE"
+  exit 1
+fi
+
+if [ -n "$LIMIT" ]; then
+  LIMITED_RECORDS=()
+  COUNT=0
+  for record in "${TOPIC_RECORDS[@]}"; do
+    if [ "$COUNT" -ge "$LIMIT" ]; then
+      break
+    fi
+    LIMITED_RECORDS+=("$record")
+    COUNT=$((COUNT + 1))
+  done
+  TOPIC_RECORDS=("${LIMITED_RECORDS[@]}")
+fi
+
+echo "✅ Found ${#TOPIC_RECORDS[@]} topics"
+echo "✅ Found ${#TOPIC_RECORDS[@]} topics" >> "$LOG_FILE"
 
 # Publish each topic
 SUCCESSFUL=0
 FAILED=0
 SKIPPED=0
-TOTAL=${#TOPICS[@]}
+TOTAL=${#TOPIC_RECORDS[@]}
 
-for i in "${!TOPICS[@]}"; do
-  TOPIC="${TOPICS[$i]}"
-  KEYWORDS=$(generate_keywords "$TOPIC")
+for i in "${!TOPIC_RECORDS[@]}"; do
+  RECORD="${TOPIC_RECORDS[$i]}"
+  IFS=$FIELD_DELIMITER read -r WORKING_TITLE PRIMARY_KEYWORD SUPPORTING_KEYWORDS INTERNAL_PLAN PILLAR POST_NUMBER <<< "$RECORD"
+
+  TOPIC=$(trim "$WORKING_TITLE")
+  PRIMARY_KEYWORD=$(trim "$PRIMARY_KEYWORD")
+  SUPPORTING_KEYWORDS=$(echo "$SUPPORTING_KEYWORDS" | sed 's/<br>/, /gi' | sed 's/[“”]/"/g')
+  PILLAR=$(trim "$PILLAR")
+
+  KEYWORDS_ARRAY=()
+
+  add_keyword() {
+    local candidate
+    candidate=$(trim "$1")
+    if [ -z "$candidate" ]; then
+      return
+    fi
+    local candidate_lower
+    candidate_lower=$(to_lower "$candidate")
+    for existing in "${KEYWORDS_ARRAY[@]}"; do
+      local existing_lower
+      existing_lower=$(to_lower "$existing")
+      if [ "$existing_lower" = "$candidate_lower" ]; then
+        return
+      fi
+    done
+    KEYWORDS_ARRAY+=("$candidate")
+  }
+
+  if [ -n "$PRIMARY_KEYWORD" ]; then
+    add_keyword "$PRIMARY_KEYWORD"
+  fi
+
+  TEMP_SUPPORT="$SUPPORTING_KEYWORDS"
+  while [[ "$TEMP_SUPPORT" == *\"*\"* ]]; do
+    TEMP_SUPPORT="${TEMP_SUPPORT#*\"}"
+    QUOTED_VALUE="${TEMP_SUPPORT%%\"*}"
+    add_keyword "$QUOTED_VALUE"
+    TEMP_SUPPORT="${TEMP_SUPPORT#*\"}"
+  done
+
+  if [ ${#KEYWORDS_ARRAY[@]} -eq 0 ] && [ -n "$TOPIC" ]; then
+    add_keyword "$TOPIC"
+  fi
+
+  KEYWORDS_JSON="["
+  for idx in "${!KEYWORDS_ARRAY[@]}"; do
+    KEYWORD_JSON=$(json_escape "${KEYWORDS_ARRAY[$idx]}")
+    if [ "$idx" -gt 0 ]; then
+      KEYWORDS_JSON+=", "
+    fi
+    KEYWORDS_JSON+="$KEYWORD_JSON"
+  done
+  KEYWORDS_JSON+="]"
+
+  CATEGORY_OVERRIDE=$(map_pillar_to_category "$PILLAR")
+  CATEGORY_JSON=""
+  if [ -n "$CATEGORY_OVERRIDE" ]; then
+    CATEGORY_JSON=$(json_escape "$CATEGORY_OVERRIDE")
+  fi
+
   INDEX=$((i + 1))
   
   echo ""
@@ -187,36 +333,67 @@ for i in "${!TOPICS[@]}"; do
     PUBLISH_VALUE="true"
   fi
   
-  BODY="{\"topic\": \"$TOPIC\", \"publish\": $PUBLISH_VALUE"
-  if [ -n "$KEYWORDS" ]; then
-    KEYWORDS_JSON=$(echo "$KEYWORDS" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
+  TOPIC_JSON=$(json_escape "$TOPIC")
+  BODY="{\"topic\": $TOPIC_JSON, \"publish\": $PUBLISH_VALUE"
+  if [ ${#KEYWORDS_ARRAY[@]} -gt 0 ]; then
     BODY="$BODY, \"keywords\": $KEYWORDS_JSON"
+    echo "  🔑 Keywords: $KEYWORDS_JSON"
+    echo "  🔑 Keywords: $KEYWORDS_JSON" >> "$LOG_FILE"
+  fi
+  if [ -n "$CATEGORY_JSON" ]; then
+    BODY="$BODY, \"category\": $CATEGORY_JSON"
   fi
   BODY="$BODY}"
   
   # Make API call
-  RESPONSE=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE_URL/api/blog/generate" \
-    -H "Content-Type: application/json" \
-    -d "$BODY")
-  
-  # Check response
-  if echo "$RESPONSE" | grep -q "\"success\":true"; then
-    SLUG=$(echo "$RESPONSE" | grep -o '"slug":"[^"]*' | cut -d'"' -f4 || echo "unknown")
-    TITLE=$(echo "$RESPONSE" | grep -o '"title":"[^"]*' | cut -d'"' -f4 || echo "$TOPIC")
+  ATTEMPT=1
+  MAX_ATTEMPTS=3
+  POST_STATUS="failed"
+  while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+    RESPONSE=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE_URL/api/blog/generate" \
+      -H "Content-Type: application/json" \
+      -d "$BODY")
     
-    echo "  ✅ Success: $TITLE"
-    echo "  🔗 Slug: $SLUG"
-    echo "  ✅ Success: $TITLE (slug: $SLUG)" >> "$LOG_FILE"
-    SUCCESSFUL=$((SUCCESSFUL + 1))
-  elif echo "$RESPONSE" | grep -q "already exists\|duplicate\|409"; then
-    echo "  ⚠️  Skipped (duplicate slug)"
-    echo "  ⚠️  Skipped (duplicate slug)" >> "$LOG_FILE"
+    if [ "$DRY_RUN" = true ]; then
+      mkdir -p tmp
+      echo "$RESPONSE" > "tmp/response-${BATCH_NUM}-${INDEX}-attempt${ATTEMPT}.json"
+    fi
+    
+    if echo "$RESPONSE" | grep -q "\"success\":true"; then
+      SLUG=$(echo "$RESPONSE" | grep -o '"slug":"[^"]*' | cut -d'"' -f4 || echo "unknown")
+      TITLE=$(echo "$RESPONSE" | grep -o '"title":"[^"]*' | cut -d'"' -f4 || echo "$TOPIC")
+      
+      echo "  ✅ Success: $TITLE"
+      echo "  🔗 Slug: $SLUG"
+      echo "  ✅ Success: $TITLE (slug: $SLUG)" >> "$LOG_FILE"
+      SUCCESSFUL=$((SUCCESSFUL + 1))
+      POST_STATUS="succeeded"
+      break
+    elif echo "$RESPONSE" | grep -q "already exists\|duplicate\|409"; then
+      echo "  ⚠️  Skipped (duplicate slug)"
+      echo "  ⚠️  Skipped (duplicate slug)" >> "$LOG_FILE"
+      SKIPPED=$((SKIPPED + 1))
+      POST_STATUS="skipped"
+      break
+    else
+      ERROR_MSG=$(echo "$RESPONSE" | grep -o '"error":"[^"]*' | cut -d'"' -f4 || echo "$RESPONSE")
+      echo "  ❌ Attempt $ATTEMPT failed: $ERROR_MSG"
+      echo "  ❌ Attempt $ATTEMPT failed: $ERROR_MSG" >> "$LOG_FILE"
+      ATTEMPT=$((ATTEMPT + 1))
+      if [ $ATTEMPT -le $MAX_ATTEMPTS ]; then
+        echo "  🔁 Retrying in ${DELAY}s..."
+        echo "  🔁 Retrying in ${DELAY}s..." >> "$LOG_FILE"
+        sleep "$DELAY"
+      else
+        POST_STATUS="failed"
+      fi
+    fi
+  done
+  
+  if [ "$POST_STATUS" = "failed" ]; then
+    echo "  ⚠️  Skipped after ${MAX_ATTEMPTS} attempts"
+    echo "  ⚠️  Skipped after ${MAX_ATTEMPTS} attempts" >> "$LOG_FILE"
     SKIPPED=$((SKIPPED + 1))
-  else
-    ERROR_MSG=$(echo "$RESPONSE" | grep -o '"error":"[^"]*' | cut -d'"' -f4 || echo "$RESPONSE")
-    echo "  ❌ Failed: $ERROR_MSG"
-    echo "  ❌ Failed: $ERROR_MSG" >> "$LOG_FILE"
-    FAILED=$((FAILED + 1))
   fi
   
   # Rate limiting (except for last item)

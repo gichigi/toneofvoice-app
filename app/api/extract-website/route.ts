@@ -137,7 +137,7 @@ export async function POST(request: Request) {
   - Description must be exactly 300-400 characters [50-60 tokens] (STRICT LIMIT)
   - Include what they do, their approach, and what makes them special
   - Use clear, professional language
-  - Write in third person
+  - Write in first person plural (use we/our language consistently)
   - Focus on current offerings, not history
   - CRITICAL: Never truncate mid-sentence. If approaching 400 characters, end at the last complete sentence before the limit.
   - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
@@ -422,7 +422,7 @@ export async function POST(request: Request) {
   - Specify target audience
   - Mention what makes them unique (if identifiable)
   - Use professional, clear language
-  - Write in third person
+  - Write in first person plural (use we/our language consistently)
   - Focus on current offerings, not history
   - CRITICAL: Never truncate mid-sentence. If approaching 400 characters, end at the last complete sentence before the limit.
   - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.

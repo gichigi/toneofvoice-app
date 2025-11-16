@@ -77,7 +77,6 @@ export default function LandingPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState("")
   const [extractionStartTime, setExtractionStartTime] = useState<number | null>(null)
-  const [descriptionProgress, setDescriptionProgress] = useState<number | null>(null)
   const [showSolutions, setShowSolutions] = useState(false) // Toggle state for brand voice section
   const [selectedTrait, setSelectedTrait] = useState<TraitName>("Direct") // Selected trait for preview
   const [traitCyclePaused, setTraitCyclePaused] = useState(false) // Pause auto-cycle when user clicks
@@ -87,12 +86,6 @@ export default function LandingPage() {
   const [hasAnimated, setHasAnimated] = useState(false) // Track if counter has animated
   const [inputAnimating, setInputAnimating] = useState(false) // Track input animation state
   const inputRef = useRef<HTMLInputElement>(null) // Ref for input field
-
-  const getDescriptionCounterColor = (value: number) => {
-    if (value >= 24) return "text-muted-foreground"
-    if (value >= 20) return "text-yellow-600"
-    return "text-red-600"
-  }
 
   // Handle "Get Started" button click - animate and focus input
   useEffect(() => {
@@ -257,12 +250,22 @@ export default function LandingPage() {
     return () => clearInterval(interval)
   }, [isExtracting, extractionStartTime, url, urlWords, descriptionWords])
 
+  // Helper to clamp descriptions to 200 chars for validation/submission
+  const getEffectiveInput = (raw: string) => {
+    const trimmed = raw.trim()
+    const detection = detectInputType(trimmed)
+    if (detection.inputType === 'description' && trimmed.length > 200) {
+      return trimmed.slice(0, 200)
+    }
+    return trimmed
+  }
+
   // Check if input is valid for submission
   const isInputValid = () => {
-    const trimmedInput = url.trim()
-    if (!trimmedInput) return false
+    const effective = getEffectiveInput(url)
+    if (!effective) return false
     
-    const validation = validateInput(trimmedInput)
+    const validation = validateInput(effective)
     return validation.isValid
   }
 
@@ -446,8 +449,11 @@ export default function LandingPage() {
     console.log(`[HOMEPAGE] Starting extraction process`)
     const extractionStart = performance.now()
 
+    // Get effective input (clamped to 200 for descriptions)
+    const effective = getEffectiveInput(url)
+    
     // Validate input using our utility
-    const validation = handleInputValidation(url)
+    const validation = handleInputValidation(effective)
     if (!validation) return
 
     console.log(`[HOMEPAGE] Input validation passed:`, {
@@ -637,7 +643,7 @@ export default function LandingPage() {
                       <input
                         ref={inputRef}
                         type="text"
-                        placeholder="Enter your website or describe your brand"
+                        placeholder="Enter URL or short description"
                         className={`
                           w-full py-4 pl-10 pr-4 sm:pl-11 sm:pr-4 sm:py-3
                           text-base font-medium 
@@ -654,21 +660,8 @@ export default function LandingPage() {
                         `}
                         value={url}
                         onChange={(e) => {
-                        const sanitizedValue = sanitizeInput(e.target.value, url)
-                        setUrl(sanitizedValue)
-
-                        if (!sanitizedValue.trim()) {
-                          setDescriptionProgress(null)
-                        } else {
-                          const detection = detectInputType(sanitizedValue)
-                          const hasSpace = sanitizedValue.includes(" ")
-                          const trimmedLength = sanitizedValue.trim().length
-                          if (detection.inputType === "description" && hasSpace && trimmedLength < 25) {
-                            setDescriptionProgress(Math.min(trimmedLength, 25))
-                          } else {
-                            setDescriptionProgress(null)
-                          }
-                        }
+                          const sanitizedValue = sanitizeInput(e.target.value, url)
+                          setUrl(sanitizedValue)
 
                           if (error) {
                             setError("")
@@ -714,12 +707,23 @@ export default function LandingPage() {
                           <CheckCircle className="mr-2 h-5 w-5" />
                           <span>Done!</span>
                         </>
-                      ) : (
-                        <>
-                          <span>Generate</span> 
-                          <ArrowRight className="ml-2 h-5 w-5" />
-                        </>
-                      )}
+                      ) : (() => {
+                        const trimmed = url.trim()
+                        const hasSpace = trimmed.includes(" ")
+                        const detection = detectInputType(trimmed)
+                        const isDesc = detection.inputType === "description" && hasSpace
+                        
+                        if (isDesc && trimmed.length < 25) {
+                          return <span>Min. 25 characters</span>
+                        }
+                        
+                        return (
+                          <>
+                            <span>Generate</span> 
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                          </>
+                        )
+                      })()}
                     </Button>
                   </div>
                   
@@ -740,22 +744,40 @@ export default function LandingPage() {
                   
                   <div className="mt-3 flex items-center gap-3">
                     <div className="flex-1 text-left">
-                      {descriptionProgress !== null && !error && (
-                        <span
-                          className={`text-xs sm:text-sm font-medium tabular-nums ${getDescriptionCounterColor(descriptionProgress)}`}
-                          role="status"
-                        >
-                          {descriptionProgress}/25
-                        </span>
-                      )}
+                      {(() => {
+                        const trimmed = url.trim()
+                        const hasSpace = trimmed.includes(" ")
+                        const detection = detectInputType(trimmed)
+                        const isDesc = detection.inputType === "description" && hasSpace
+                        
+                        if (!isDesc || error) return null
+                        
+                        const len = trimmed.length
+                        const colorClass = len < 25
+                          ? "text-red-600"
+                          : len > 200
+                          ? "text-red-600"
+                          : len >= 180
+                          ? "text-yellow-600"
+                          : "text-muted-foreground"
+                        
+                        return (
+                          <span
+                            className={`text-xs sm:text-sm font-medium tabular-nums ${colorClass}`}
+                            role="status"
+                          >
+                            {len <= 200 ? `${len}/200 characters` : "Using first 200 characters"}
+                          </span>
+                        )
+                      })()}
                     </div>
                     <Link 
                       href="/brand-details" 
                       onClick={() => track('Manual Entry Clicked', { location: 'hero' })}
-                      className="text-gray-500 underline font-medium text-sm whitespace-nowrap" 
+                      className="text-gray-500 underline font-medium text-xs whitespace-nowrap" 
                       style={{ textTransform: 'lowercase' }}
                     >
-                      or add brand details manually
+                      add manually
                     </Link>
                   </div>
                 </div>

@@ -753,17 +753,10 @@ export default function LandingPage() {
                         if (!isDesc || error) return null
                         
                         const len = trimmed.length
-                        const colorClass = len < 25
-                          ? "text-red-600"
-                          : len > 200
-                          ? "text-red-600"
-                          : len >= 180
-                          ? "text-yellow-600"
-                          : "text-muted-foreground"
                         
                         return (
                           <span
-                            className={`text-xs sm:text-sm font-medium tabular-nums ${colorClass}`}
+                            className="text-xs sm:text-sm font-medium tabular-nums text-muted-foreground"
                             role="status"
                           >
                             {len <= 200 ? `${len}/200 characters` : "Using first 200 characters"}

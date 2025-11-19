@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { BookOpen, ListChecks, MessageCircle, CheckSquare, Info } from "lucide-react"
+import { BookOpen, ListChecks, MessageCircle, CheckSquare, Info, ArrowLeft } from "lucide-react"
 
 const accentBar = "absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-2xl";
 const iconClass = "text-blue-600 mr-2 inline-block";
@@ -9,6 +9,19 @@ export default function DemoPage() {
   return (
     <main className="min-h-screen bg-white flex flex-col items-center justify-center py-16 px-2">
       <section className="relative w-full max-w-3xl flex flex-col gap-8">
+        {/* Back button */}
+        <div className="mb-4">
+          <Button
+            asChild
+            variant="ghost"
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <Link href="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Home
+            </Link>
+          </Button>
+        </div>
         {/* Demo badge */}
         <div className="absolute top-6 right-6 z-10">
           <span className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm">Demo</span>

@@ -626,10 +626,10 @@ export default function LandingPage() {
                 AI-Powered Brand Voice Guidelines
               </div>
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4">
-                Stop asking ChatGPT to make it sound better
+                Get ChatGPT to <em>finally</em> sound like you
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
-                Create a professional brand tone of voice and complete content style guide, so you always sound like you.  
+                Create a professional brand tone of voice and content style guide to use with AI so you always sound like you.  
               </p>
 
               <form onSubmit={handleExtraction} className="w-full max-w-2xl">

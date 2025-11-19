@@ -2,8 +2,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { BookOpen, ListChecks, MessageCircle, CheckSquare, Info } from "lucide-react"
 
-const accentBar = "absolute left-0 top-0 h-full w-1.5 bg-orange-500 rounded-l-2xl";
-const iconClass = "text-orange-500 mr-2 inline-block";
+const accentBar = "absolute left-0 top-0 h-full w-1.5 bg-blue-600 rounded-l-2xl";
+const iconClass = "text-blue-600 mr-2 inline-block";
 
 export default function DemoPage() {
   return (
@@ -11,7 +11,7 @@ export default function DemoPage() {
       <section className="relative w-full max-w-3xl flex flex-col gap-8">
         {/* Demo badge */}
         <div className="absolute top-6 right-6 z-10">
-          <span className="bg-orange-100 text-orange-700 px-4 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm">Demo</span>
+          <span className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm">Demo</span>
         </div>
         {/* Title */}
         <header className="flex flex-col items-center gap-2 mb-2">
@@ -247,7 +247,7 @@ export default function DemoPage() {
           <div className="w-full bg-gray-50 border border-gray-200 rounded-lg py-4 px-6 text-center text-gray-500 text-base font-medium">
             Questions? Contact the Nike content team.
           </div>
-          <div className="w-full bg-orange-50 border border-orange-200 rounded-lg py-2 px-4 text-center text-orange-700 text-sm font-semibold">
+          <div className="w-full bg-blue-50 border border-blue-200 rounded-lg py-2 px-4 text-center text-blue-700 text-sm font-semibold">
             Export and download options are disabled in demo mode.
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function DemoPage() {
       {/* Sticky CTA Button - always visible at bottom */}
       <div className="fixed bottom-0 left-0 w-full flex justify-center z-50 pointer-events-none">
         <div className="w-full max-w-3xl px-4 pb-4 pointer-events-auto">
-          <Button asChild size="lg" className="w-full max-w-xs text-lg font-bold shadow-md transition-all duration-200 bg-orange-500 hover:bg-orange-600 hover:scale-105 focus:bg-orange-600 focus:scale-105 text-white">
+          <Button asChild size="lg" className="w-full max-w-xs text-lg font-bold shadow-md transition-all duration-200 bg-blue-600 hover:bg-blue-700 hover:scale-105 focus:bg-blue-700 focus:scale-105 text-white">
             <Link href="/">Generate Your Own Style Guide</Link>
           </Button>
         </div>

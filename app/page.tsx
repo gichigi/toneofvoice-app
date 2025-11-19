@@ -37,6 +37,8 @@ import {
   Zap,
   ShieldOff,
   Hash,
+  Eye,
+  BookOpen,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import dynamic from "next/dynamic"
@@ -794,6 +796,24 @@ export default function LandingPage() {
                   </Button>
                 )}
               </form>
+              
+              {/* Secondary CTA: View Demo */}
+              <div className="mt-6 flex justify-center">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 border-0"
+                >
+                  <Link 
+                    href="/demo"
+                    onClick={() => track('View Demo Clicked', { location: 'hero' })}
+                    className="flex items-center gap-2"
+                  >
+                    <BookOpen className="h-5 w-5" />
+                    See Example
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </section>

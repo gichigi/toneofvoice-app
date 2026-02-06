@@ -1,3 +1,5 @@
+// Design system: see DESIGN_SYSTEM.md for typography/spacing decisions
+
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
@@ -18,7 +20,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
     .replace(/"\s*\n\s*\(/g, '" (') // Fix quotes before parentheses
 
   return (
-    <div className={cn("prose prose-gray max-w-none", className)}>
+    <div className={cn("prose prose-gray max-w-none style-guide-document", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
@@ -33,7 +35,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
           const isTraitHeading = childrenText.toLowerCase().includes('brand voice')
           return (
             <>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-16" style={{ fontFamily: 'var(--font-display), serif', letterSpacing: '-0.02em' }}>
                 {children}
               </h2>
               {isTraitHeading && selectedTraits.length > 0 && (
@@ -52,7 +54,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
           )
         },
         h3: ({ children }) => (
-          <h3 className="text-xl font-medium text-gray-800 mb-3 mt-6" style={{ hyphens: 'none', wordBreak: 'keep-all' }}>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4 mt-8" style={{ fontFamily: 'var(--font-display), serif', hyphens: 'none', wordBreak: 'keep-all', letterSpacing: '-0.02em' }}>
             {children}
           </h3>
         ),
@@ -64,7 +66,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
         
         // Custom paragraph styles with proper line spacing
         p: ({ children }) => (
-          <p className="text-gray-700 mb-4 leading-relaxed" style={{ orphans: 2, widows: 2 }}>
+          <p className="text-gray-700 mb-4 leading-8" style={{ orphans: 2, widows: 2 }}>
             {children}
           </p>
         ),
@@ -115,9 +117,9 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
           <em className="italic text-gray-700">{children}</em>
         ),
         
-        // Custom horizontal rule
+        // Custom horizontal rule - elegant section divider
         hr: () => (
-          <hr className="border-gray-300 my-8" />
+          <hr className="border-gray-200 my-12" />
         ),
         
         // Custom table styles (from remark-gfm) - open, airy layout

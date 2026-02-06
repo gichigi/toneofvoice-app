@@ -97,12 +97,12 @@ export async function POST(req: Request) {
     }
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.2",
       messages: [
         { role: "system", content: prompts.system },
         { role: "user", content: prompts.user(text, context) },
       ],
-      temperature: 0.4,
+      reasoning_effort: "low",
       max_tokens: 500,
     });
 

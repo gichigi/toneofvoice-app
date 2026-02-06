@@ -1,0 +1,136 @@
+"use client"
+
+import Link from "next/link"
+import { FileText, Trash2 } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
+
+interface GuideCardProps {
+  id: string
+  title: string
+  planType: string
+  updatedAt: string
+}
+
+export function GuideCard({ id, title, planType, updatedAt }: GuideCardProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/delete-style-guide?guideId=${id}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to delete guide")
+      }
+
+      toast({
+        title: "Guide deleted",
+        description: "The style guide has been permanently deleted.",
+      })
+
+      // Refresh the page to update the list
+      router.refresh()
+    } catch (error) {
+      console.error("Delete error:", error)
+      toast({
+        title: "Failed to delete guide",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteDialog(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="group relative flex flex-col rounded-lg border bg-white p-4 transition hover:border-gray-300 dark:bg-gray-950 dark:hover:border-gray-700">
+        <Link
+          href={`/full-access?guideId=${id}`}
+          className="flex flex-col flex-1"
+        >
+          <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
+          <h3 className="font-medium">{title || "Untitled guide"}</h3>
+          <p className="mt-1 text-xs text-muted-foreground capitalize">
+            {planType} • Updated{" "}
+            {formatDistanceToNow(new Date(updatedAt), {
+              addSuffix: true,
+            })}
+          </p>
+        </Link>
+        
+        {/* Delete button - appears on hover */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleDelete}
+          aria-label="Delete guide"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete style guide?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete "{title}". This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}

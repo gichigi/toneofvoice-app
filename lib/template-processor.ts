@@ -1,11 +1,10 @@
-import { generateBrandVoiceTraits, generateBrandVoiceTraitsPreview, generatePreviewRules, generateBeforeAfterSamples, generateWithOpenAI, generateFullCoreStyleGuide, generateCompleteStyleGuide, generateAudienceSummary } from "./openai"
+import { generateBrandVoiceTraits, generateWithOpenAI, generateFullCoreStyleGuide, generateCompleteStyleGuide, generateAudienceSummary } from "./openai"
 
 // Configuration for preview limits - easy to adjust for A/B testing
+// Rules and before/after no longer generated in preview (ContentGate hides them)
 export const PREVIEW_CONFIG = {
   VISIBLE_TRAITS_FULL: 1,     // number of traits shown with full descriptions
   VISIBLE_TRAITS_NAMES: 2,    // number of additional trait names shown
-  VISIBLE_RULES: 3,           // number of style rules shown
-  VISIBLE_BEFORE_AFTER: 3,    // number of before/after samples shown
 }
 
 // Auto-retry utility with logging
@@ -721,20 +720,14 @@ export async function renderPreviewStyleGuide({
   brandDetails,
   fullTraitCount = PREVIEW_CONFIG.VISIBLE_TRAITS_FULL,
   nameTraitCount = PREVIEW_CONFIG.VISIBLE_TRAITS_NAMES,
-  rulesCount = PREVIEW_CONFIG.VISIBLE_RULES,
-  beforeAfterCount = PREVIEW_CONFIG.VISIBLE_BEFORE_AFTER
 }: {
   brandDetails: any,
   fullTraitCount?: number,
   nameTraitCount?: number,
-  rulesCount?: number,
-  beforeAfterCount?: number
 }): Promise<string> {
   console.log(`[renderPreviewStyleGuide] Called with:`, {
     fullTraitCount,
     nameTraitCount,
-    rulesCount,
-    beforeAfterCount,
     hasBrandDetails: !!brandDetails,
     brandName: brandDetails?.name || 'not set'
   })
@@ -775,106 +768,37 @@ export async function renderPreviewStyleGuide({
       keywords: Array.isArray(brandDetails.keywords) ? brandDetails.keywords : [],
     };
     
-    const rulesDetails = {
-      ...validatedDetails,
-      formalityLevel: brandDetails.formalityLevel || '',
-      readingLevel: brandDetails.readingLevel || '',
-      englishVariant: brandDetails.englishVariant || '',
-    };
-
-    // Generate traits with retry
+    // Generate all 3 traits fully (not just 1 + 2 names) for the wow effect
+    // Design system: see DESIGN_SYSTEM.md - all traits shown to create conversion moment
     const traitsResult = await withRetry(
-      () => generateBrandVoiceTraitsPreview(validatedDetails, fullTraitCount, nameTraitCount),
+      () => generateBrandVoiceTraits(validatedDetails),
       3,
       'Brand Voice Traits'
     );
 
     let fullTraitContent = "";
-    let traitsContextForRules: string | undefined;
 
     if (traitsResult?.success && traitsResult.content) {
-      const parsedTraits = JSON.parse(traitsResult.content);
-      fullTraitContent = parsedTraits.fullTraits.join('\n\n');
-      // Prepend explicit selected trait names so the rules prompt can reference them
-      const traitNames = Array.isArray(validatedDetails.traits)
-        ? validatedDetails.traits.map((t: any) => (typeof t === 'string' ? t : t?.name)).filter(Boolean)
-        : [];
-      const traitNamesLine = traitNames.length ? `Selected Traits: ${traitNames.join(', ')}` : '';
-      const combinedContext = [traitNamesLine, fullTraitContent].filter(Boolean).join('\n\n');
-      traitsContextForRules = combinedContext.slice(0, 4000);
+      fullTraitContent = traitsResult.content;
     }
 
-    // Generate rules with retry
-    const rulesResult = await withRetry(
-      () => generatePreviewRules(rulesDetails, traitsContextForRules, rulesCount),
-      3,
-      'Preview Rules'
-    );
-
-    let rulesContent = "";
-    if (rulesResult?.success && rulesResult.content) {
-      rulesContent = formatMarkdownContent(rulesResult.content);
-    } else {
-      // No content generated - show empty content (paywall is in template)
-      rulesContent = "";
-    }
-
-    // Generate before/after with retry
-    const beforeAfterResult = await withRetry(
-      () => generateBeforeAfterSamples(rulesDetails, traitsContextForRules, beforeAfterCount),
-      3,
-      'Before/After Samples'
-    );
-
-    let beforeAfterContent = "";
-    if (beforeAfterResult?.success && beforeAfterResult.content) {
-      // Parse JSON and format as table
-      try {
-        const data = JSON.parse(beforeAfterResult.content) as { examples: Array<{ before: string; after: string }> };
-        const formattedPairs = [];
-        
-        if (data.examples && Array.isArray(data.examples)) {
-          for (const example of data.examples.slice(0, beforeAfterCount)) {
-            if (example.before && example.after) {
-              formattedPairs.push(`| ${example.before} | ${example.after} |`);
-            }
-          }
-        }
-
-        if (formattedPairs.length > 0) {
-          beforeAfterContent = `| Before (Generic) | After (On-Brand) |\n|------------------|------------------|\n${formattedPairs.join('\n')}`;
-        } else {
-          // No valid examples - leave empty; template handles paywall rendering
-          beforeAfterContent = "";
-        }
-      } catch (error) {
-        // JSON parsing failed - show paywall
-        console.error("Failed to parse before/after JSON response:", error);
-        // Leave empty; template includes paywall under the section header
-        beforeAfterContent = "";
-      }
-    } else {
-      // No content generated - leave empty; template includes paywall
-      beforeAfterContent = "";
-    }
+    // No longer generating rules or before/after for preview.
+    // ContentGate hides everything below the Brand Voice section.
+    // This saves 2 API calls per preview generation.
 
     // Replace template placeholders
     result = result
-      .replace(/{{voice_trait_1_full}}/g, formatMarkdownContent(fullTraitContent))
-      .replace(/{{preview_rules}}/g, rulesContent)
-      .replace(/{{before_after_samples}}/g, beforeAfterContent);
+      .replace(/{{brand_voice_traits}}/g, formatMarkdownContent(fullTraitContent))
+      .replace(/{{voice_trait_1_full}}/g, formatMarkdownContent(fullTraitContent)) // Fallback for old template
       
   } catch (error) {
     console.error('[renderPreviewStyleGuide] Critical error during generation:', error);
-    // Even if everything fails, show paywalls for all sections
     result = result
-      .replace(/{{voice_trait_1_full}}/g, "")
-      .replace(/{{preview_rules}}/g, "")
-      .replace(/{{before_after_samples}}/g, "");
+      .replace(/{{brand_voice_traits}}/g, "")
+      .replace(/{{voice_trait_1_full}}/g, "") // Fallback for old template
   }
 
-  // Remove 'General Guidelines' section for preview
-  result = result.replace(/## General Guidelines[\s\S]*?(?=\n## |$)/, '');
+  // General Guidelines is now kept in preview (no longer removed)
   
   return await prepareMarkdownContent(result);
 }

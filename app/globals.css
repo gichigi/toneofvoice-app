@@ -315,7 +315,86 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Use Geist Sans for all headings */
+/* Design system: see DESIGN_SYSTEM.md for typography/spacing decisions */
+
+/* Style guide document shared styles - applied to both MarkdownRenderer and Plate.js editor */
+.style-guide-document {
+  /* Premium display font for headings */
+  --font-display: var(--font-display, 'Playfair Display', serif);
+}
+
+.style-guide-document h1,
+.style-guide-document h2,
+.style-guide-document h3,
+.style-guide-document h4,
+.style-guide-document h5,
+.style-guide-document h6 {
+  font-family: var(--font-display), serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* H2 sections - spacious with generous margins */
+.style-guide-document h2 {
+  font-size: 1.875rem; /* text-3xl */
+  margin-top: 4rem; /* mt-16 */
+  margin-bottom: 1.5rem; /* mb-6 */
+  color: #111827; /* gray-900 */
+  line-height: 2.25rem;
+}
+
+/* H3 subsections - clean hierarchy */
+.style-guide-document h3 {
+  font-size: 1.5rem; /* text-2xl */
+  margin-top: 2rem; /* mt-8 */
+  margin-bottom: 1rem; /* mb-4 */
+  color: #111827; /* gray-900 */
+  line-height: 2rem;
+}
+
+/* Body text - generous line-height for readability */
+.style-guide-document p {
+  line-height: 2rem; /* leading-8 */
+  margin-bottom: 1rem; /* mb-4 */
+  color: #374151; /* gray-700 */
+}
+
+/* Elegant section dividers */
+.style-guide-document hr {
+  border: none;
+  border-top: 1px solid #e5e7eb; /* gray-200 */
+  margin: 3rem 0; /* my-12 */
+}
+
+/* Trait cards - dos/don'ts styling */
+.style-guide-document .trait-dos {
+  border-left: 4px solid #10b981; /* green-500 */
+  background-color: rgba(239, 246, 252, 0.3); /* green-50/30 */
+  padding-left: 1rem; /* pl-4 */
+}
+
+.style-guide-document .trait-donts {
+  border-left: 4px solid #ef4444; /* red-500 */
+  background-color: rgba(254, 242, 242, 0.3); /* red-50/30 */
+  padding-left: 1rem; /* pl-4 */
+}
+
+/* Rule examples - good/bad visual treatment */
+.style-guide-document .example-good {
+  border-left: 4px solid #10b981; /* green-500 */
+  background-color: #f0fdf4; /* green-50 */
+  padding: 0.75rem; /* p-3 */
+  margin-top: 1rem; /* mt-4 */
+}
+
+.style-guide-document .example-bad {
+  border-left: 4px solid #ef4444; /* red-500 */
+  background-color: #fef2f2; /* red-50 */
+  padding: 0.75rem; /* p-3 */
+  margin-top: 1rem; /* mt-4 */
+}
+
+/* Use Geist Sans for all headings (fallback for non-document areas) */
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }

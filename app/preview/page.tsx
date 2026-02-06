@@ -17,10 +17,11 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// Tabs removed - subscription-only payment dialog no longer needs tabs
 import Logo from "@/components/Logo"
 import { StyleGuideHeader } from "@/components/StyleGuideHeader"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
+import { ContentGate } from "@/components/ContentGate"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 
 // (MiniPaywallBanner removed)
@@ -133,7 +134,7 @@ function PreviewContent() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [processingPlan, setProcessingPlan] = useState<"pro" | "team" | null>(null)
   const [previewContent, setPreviewContent] = useState<string | null>(null)
   const [fadeIn, setFadeIn] = useState(false)
   const [brandDetails, setBrandDetails] = useState<any>(null)
@@ -284,10 +285,10 @@ function PreviewContent() {
 
   const handleSubscription = async (plan: "pro" | "team") => {
     try {
-      setIsProcessingPayment(true)
+      setProcessingPlan(plan)
       if (!user) {
         router.push(`/sign-up?redirectTo=${encodeURIComponent(`/preview?subscribe=${plan}`)}`)
-        setIsProcessingPayment(false)
+        setProcessingPlan(null)
         return
       }
       const res = await fetch("/api/create-subscription-session", {
@@ -296,13 +297,31 @@ function PreviewContent() {
         body: JSON.stringify({ plan }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to start checkout")
-      if (data.url) window.location.href = data.url
+      if (!res.ok) {
+        const errorMsg = data.error || `Failed to start checkout (${res.status})`
+        console.error("[handleSubscription] API error:", {
+          status: res.status,
+          error: data.error,
+          code: data.code,
+          type: data.type,
+        })
+        throw new Error(errorMsg)
+      }
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error("No checkout URL returned")
+      }
     } catch (e) {
       console.error("Subscription error:", e)
-      toast({ title: "Could not start checkout", variant: "destructive" })
+      const errorMessage = e instanceof Error ? e.message : "Could not start checkout"
+      toast({ 
+        title: "Could not start checkout", 
+        description: errorMessage,
+        variant: "destructive" 
+      })
     } finally {
-      setIsProcessingPayment(false)
+      setProcessingPlan(null)
     }
   }
 
@@ -492,17 +511,11 @@ function PreviewContent() {
           <DialogHeader className="space-y-4">
             <DialogTitle className="text-base sm:text-xl">Get your full style guide</DialogTitle>
             <DialogDescription className="text-xs sm:text-base">
-              One-time purchase or subscribe for more guides
+              Subscribe to unlock all rules, editing, and exports
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="subscribe" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="subscribe">Subscribe (Best Value)</TabsTrigger>
-              <TabsTrigger value="onetime">One-Time</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="subscribe" className="mt-4 space-y-4">
+          <div className="mt-4 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border p-4">
                   <h4 className="font-semibold">Pro — $29/mo</h4>
@@ -512,11 +525,11 @@ function PreviewContent() {
                       track("Payment Started", { plan: "pro", type: "subscription" })
                       handleSubscription("pro")
                     }}
-                    disabled={isProcessingPayment}
+                    disabled={processingPlan !== null}
                     className="mt-3 w-full"
                   >
-                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    Subscribe & Save
+                    {processingPlan === "pro" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Subscribe
                   </Button>
                 </div>
                 <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
@@ -528,61 +541,21 @@ function PreviewContent() {
                       track("Payment Started", { plan: "team", type: "subscription" })
                       handleSubscription("team")
                     }}
-                    disabled={isProcessingPayment}
+                    disabled={processingPlan !== null}
                     className="mt-3 w-full"
                   >
-                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    Subscribe & Save
+                    {processingPlan === "team" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Subscribe
                   </Button>
                 </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="onetime" className="mt-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold">Core — $99</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">25 rules, single guide, no account</p>
-                  <Button
-                    onClick={() => {
-                      track("Payment Started", { guideType: "core", price: 99, type: "onetime" })
-                      handlePayment("core")
-                    }}
-                    disabled={isProcessingPayment}
-                    className="mt-3 w-full"
-                  >
-                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                    Buy Once
-                  </Button>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold">Complete — $149</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">99+ rules, single guide</p>
-                  <Button
-                    onClick={() => {
-                      track("Payment Started", { guideType: "complete", price: 149, type: "onetime" })
-                      handlePayment("complete")
-                    }}
-                    disabled={isProcessingPayment}
-                    className="mt-3 w-full"
-                  >
-                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                    Buy Once
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-green-600 rounded-lg bg-green-50 p-3">
-                <CheckCircle className="h-4 w-4 shrink-0" />
-                <span>30-day money-back guarantee • No subscription</span>
-              </div>
-            </TabsContent>
-          </Tabs>
+          </div>
 
           <DialogFooter className="sm:justify-start">
             <Button
               variant="secondary"
               onClick={() => setPaymentDialogOpen(false)}
-              disabled={isProcessingPayment}
+              disabled={processingPlan !== null}
               className="w-full text-base sm:text-lg py-4 sm:py-6"
             >
               Cancel
@@ -615,8 +588,16 @@ function PreviewContent() {
                 <div className="p-8 bg-white">
                   <div className="max-w-2xl mx-auto space-y-12">
                     <div className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base">
-                      <MarkdownRenderer 
+                      <ContentGate
                         content={previewContent || ""}
+                        showUpgradeCTA={true}
+                        onUpgrade={() => {
+                          track('Paywall Clicked', { 
+                            location: 'preview-page',
+                            action: 'unlock-style-guide'
+                          });
+                          setPaymentDialogOpen(true);
+                        }}
                         selectedTraits={(() => {
                           try {
                             const savedTraits = localStorage.getItem("selectedTraits")
@@ -643,45 +624,6 @@ function PreviewContent() {
                         © 2025 AI Style Guide. All rights reserved.
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Final paywall banner - outside PDF content */}
-            <div className="p-8 bg-white">
-              <div className="max-w-2xl mx-auto">
-                <div className="my-6 mb-20 p-6 sm:p-8 bg-blue-50 border border-blue-100 rounded-lg shadow-sm text-center">
-                  <div className="max-w-md mx-auto">
-                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mx-auto mb-4 shadow-sm">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                      Unlock Your Complete Style Guide
-                    </h3>
-                    <p className="text-sm sm:text-base text-gray-600 mb-4 leading-relaxed">
-                      Get access to all writing rules, detailed examples, and professional formats to create a consistent brand voice.
-                    </p>
-                    
-                    <Button
-                      onClick={() => {
-                        // Track paywall button click
-                        track('Paywall Clicked', { 
-                          location: 'preview-page',
-                          action: 'unlock-style-guide'
-                        });
-                        setPaymentDialogOpen(true);
-                      }}
-                      className="w-full sm:w-auto text-base sm:text-lg py-3 sm:py-4 px-6 sm:px-8 bg-gray-900 hover:bg-gray-800 text-white shadow-sm hover:shadow-md transition-all duration-200"
-                    >
-                      <CreditCard className="h-4 w-4 mr-2" /> 
-                      Unlock Style Guide
-                    </Button>
-                    <p className="text-xs text-green-600 mt-4">
-                      ✓ Instant access ✓ 30-day guarantee ✓ No subscriptions
-                    </p>
                   </div>
                 </div>
               </div>

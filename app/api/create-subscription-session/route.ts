@@ -29,6 +29,15 @@ const TEAM_PRICE_ID =
 /** Create Stripe Checkout session for subscription (Pro or Team). User must be logged in. */
 export async function POST(req: Request) {
   try {
+    // Check Stripe configuration first
+    if (!STRIPE_SECRET_KEY) {
+      console.error("[create-subscription-session] Missing STRIPE_SECRET_KEY");
+      return NextResponse.json(
+        { error: "Payment service not configured. Please check Stripe API key." },
+        { status: 500 }
+      );
+    }
+
     const supabase = await createClient();
     const { data, error: authError } = await supabase.auth.getUser();
     const user = data?.user;
@@ -49,13 +58,19 @@ export async function POST(req: Request) {
 
     const priceId = plan === "pro" ? PRO_PRICE_ID : TEAM_PRICE_ID;
     if (!priceId) {
-      console.error(`Missing STRIPE_${plan.toUpperCase()}_PRICE_ID env var`);
+      const envVarName = mode === "test" 
+        ? `STRIPE_TEST_${plan.toUpperCase()}_PRICE_ID` 
+        : `STRIPE_${plan.toUpperCase()}_PRICE_ID`;
+      console.error(`[create-subscription-session] Missing ${envVarName} env var`);
       return NextResponse.json(
-        { error: "Subscription not configured" },
+        { error: `Subscription not configured. Missing ${envVarName}.` },
         { status: 500 }
       );
     }
 
+    console.log(`[create-subscription-session] Creating session for plan: ${plan}, priceId: ${priceId}, mode: ${mode}`);
+
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -75,15 +90,53 @@ export async function POST(req: Request) {
       customer_email: user.email ?? undefined,
     });
 
+    console.log(`[create-subscription-session] Session created: ${session.id}`);
     return NextResponse.json({ url: session.url });
   } catch (e) {
     if (e instanceof MissingSupabaseConfigError) {
       return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
     }
-    if (e instanceof Error && (e.message?.includes("Stripe") || e.message?.includes("apiKey"))) {
-      return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+    
+    // Handle Stripe errors specifically
+    if (e instanceof Stripe.errors.StripeError) {
+      console.error(`[create-subscription-session] Stripe error:`, {
+        type: e.type,
+        code: e.code,
+        message: e.message,
+        statusCode: e.statusCode,
+      });
+      return NextResponse.json(
+        { 
+          error: `Stripe error: ${e.message}`,
+          code: e.code,
+          type: e.type,
+        },
+        { status: e.statusCode || 500 }
+      );
     }
-    console.error("[create-subscription-session] Error:", e);
+    
+    if (e instanceof Error) {
+      console.error("[create-subscription-session] Error:", {
+        message: e.message,
+        stack: e.stack,
+        name: e.name,
+      });
+      
+      // Check for common configuration errors
+      if (e.message?.includes("apiKey") || e.message?.includes("Stripe")) {
+        return NextResponse.json(
+          { error: "Payment service configuration error. Please check Stripe API key." },
+          { status: 503 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: e.message || "Failed to create checkout session" },
+        { status: 500 }
+      );
+    }
+    
+    console.error("[create-subscription-session] Unknown error:", e);
     return NextResponse.json(
       { error: "Failed to create checkout session" },
       { status: 500 }

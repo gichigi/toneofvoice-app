@@ -106,10 +106,11 @@ export async function generateWithOpenAI(
   systemPrompt: string,
   responseFormat: ResponseFormat = "json",
   max_tokens: number = 2000,
-  model: string = "gpt-4o-mini" // Default to faster model
+  model: string = "gpt-5.2", // Default to GPT-5.2 with reasoning
+  reasoningEffort: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" = "medium"
 ): Promise<GenerationResult> {
   const maxAttempts = 3
-  Logger.info("Starting OpenAI generation", { prompt: prompt.substring(0, 100) + "...", format: responseFormat, model })
+  Logger.info("Starting OpenAI generation", { prompt: prompt.substring(0, 100) + "...", format: responseFormat, model, reasoningEffort })
   Logger.debug("Full prompt", { prompt })
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -117,15 +118,24 @@ export async function generateWithOpenAI(
       Logger.debug(`OpenAI attempt ${attempt}/${maxAttempts}`)
       
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      const response = await openai.chat.completions.create({
+      const requestParams: any = {
         model: model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt }
         ],
-        temperature: 0.4,
         max_tokens: max_tokens
-      })
+      }
+      
+      // Add reasoning_effort for GPT-5.2 (reasoning models)
+      if (model === "gpt-5.2" || model.startsWith("gpt-5")) {
+        requestParams.reasoning_effort = reasoningEffort
+      } else {
+        // For older models, use temperature
+        requestParams.temperature = 0.4
+      }
+      
+      const response = await openai.chat.completions.create(requestParams)
 
       const rawResponse = response.choices[0]?.message?.content
       if (!rawResponse) {
@@ -240,7 +250,7 @@ Important constraints for the ONE SENTENCE description (3 rules):
 
 Each "What It Doesn't Mean" should show how its corresponding "What It Means" could be taken too far - the same concept but pushed to an extreme. Focus on writing style, tone, and language use. Use → (unicode arrow) and ✗ (unicode cross) exactly as shown.`;
 
-  const result = await generateWithOpenAI(prompt, "You are a brand voice expert creating specific, actionable communication style guidelines.", "markdown", 800, "gpt-4o");
+  const result = await generateWithOpenAI(prompt, "You are a brand voice expert creating specific, actionable communication style guidelines.", "markdown", 800, "gpt-5.2", "medium");
   
   if (result.success && result.content) {
     return result.content.trim()
@@ -475,8 +485,9 @@ Return ONLY valid JSON array with exactly ${count} rules.`
       prompt,
         "You are a writing style guide expert. Return strict JSON only.",
         "json",
-      2000,
-      "gpt-4o"
+        2000,
+      "gpt-5.2",
+      "medium"
     )
 
     if (!result.success || !result.content) {
@@ -618,7 +629,8 @@ Create ${count} similar transformations that feel natural for ${brandDetails.nam
       "You are an expert copywriter who transforms generic content into distinctive brand voice. Return strict JSON only.",
       "json",
       400,
-      "gpt-4o"
+      "gpt-5.2",
+      "medium"
     )
 
     if (!result.success || !result.content) {
@@ -720,7 +732,8 @@ REQUIREMENTS:
         "You are a writing style guide expert. Generate clean markdown with exactly 25 numbered rules.",
         "markdown",
         5000,
-        "gpt-4o"
+        "gpt-5.2",
+        "medium"
       )
 
       if (!result.success || !result.content) {
@@ -957,7 +970,7 @@ Put the person before their condition or characteristic to show respect and dign
 - Make each rule unique, clear, and actionable.
 - Focus on how to write, edit, and format text for this brand.
 `;
-  return generateWithOpenAI(prompt, "You are a writing style guide expert.", "markdown", 9000, "gpt-4o");
+  return generateWithOpenAI(prompt, "You are a writing style guide expert.", "markdown", 9000, "gpt-5.2", "medium");
 }
 
 // Generate keywords for content marketing and brand voice
@@ -988,7 +1001,8 @@ export async function generateKeywords(params: { name: string; brandDetailsDescr
     "You are a keyword expert focused on content marketing terms.",
     "json",
     400,
-    "gpt-4o-mini"
+    "gpt-5.2",
+    "low"
   )
 }
 
@@ -1012,13 +1026,13 @@ What they do: ${brandDetailsDescription}`
 // Function to generate a concise brand summary from a single textarea
 export async function generateBrandSummary(brandDetails: any): Promise<GenerationResult> {
   const prompt = `Write a single paragraph (30–40 words) that starts with the brand name and summarizes the brand using all key info, keywords, and terms from the input below.\n\nBrand Info:\n${brandDetails.brandDetailsText}`;
-  return generateWithOpenAI(prompt, "You are a brand strategist.", "markdown");
+  return generateWithOpenAI(prompt, "You are a brand strategist.", "markdown", 2000, "gpt-5.2", "low");
 }
 
 // Function to extract just the brand name from brandDetailsText
 export async function extractBrandName(brandDetails: any): Promise<GenerationResult> {
   const prompt = `Extract only the brand name from the text below. Return just the brand name, nothing else.\n\nBrand Info:\n${brandDetails.brandDetailsText}`;
-  return generateWithOpenAI(prompt, "You are a brand analyst. Extract only the brand name from the given text.", "markdown");
+  return generateWithOpenAI(prompt, "You are a brand analyst. Extract only the brand name from the given text.", "markdown", 2000, "gpt-5.2", "low");
 }
 
 // Generate trait suggestions based on brand information
@@ -1039,6 +1053,7 @@ Return ONLY a JSON array with exactly 3 trait names, like this:
     "You are a brand voice expert. Choose the 3 most fitting traits for this brand.",
     "json",
     100,
-    "gpt-4o"
+    "gpt-5.2",
+    "medium"
   )
 }

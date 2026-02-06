@@ -18,6 +18,8 @@ import { generateFile, FileFormat } from "@/lib/file-generator"
 import Header from "@/components/Header"
 import { StyleGuideHeader } from "@/components/StyleGuideHeader"
 import { StyleGuideEditor, type StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
+import { MarkdownRenderer } from "@/components/MarkdownRenderer"
+import { ContentGate } from "@/components/ContentGate"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { createErrorDetails, ErrorDetails } from "@/lib/api-utils"
 import { useAuth } from "@/components/AuthProvider"
@@ -45,6 +47,8 @@ function FullAccessContent() {
   const [hasEdits, setHasEdits] = useState(false)
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(null)
+  const [subscriptionTier, setSubscriptionTier] = useState<string>("free")
+  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
   const editorRef = useRef<StyleGuideEditorRef>(null)
 
   // Function to generate the style guide (can be called multiple times)
@@ -171,32 +175,76 @@ function FullAccessContent() {
         router.replace(`/sign-in?redirectTo=${encodeURIComponent(`/full-access?guideId=${guideId}`)}`)
         return
       }
-      fetch(`/api/load-style-guide?guideId=${guideId}`)
-        .then((r) => {
-          if (!r.ok) {
-            if (r.status === 404) router.replace("/dashboard")
-            else throw new Error("Failed to load guide")
-            return null
+      
+      // Check if user just completed subscription (from redirect)
+      const subscriptionSuccess = searchParams.get("subscription") === "success"
+      
+      const loadGuide = async (retryCount = 0) => {
+        try {
+          // Fetch guide and subscription tier in parallel for accuracy
+          const [guideResponse, tierResponse] = await Promise.all([
+            fetch(`/api/load-style-guide?guideId=${guideId}`),
+            fetch(`/api/user-subscription-tier`)
+          ])
+          
+          if (!guideResponse.ok) {
+            if (guideResponse.status === 404) {
+              router.replace("/dashboard")
+              return
+            }
+            throw new Error("Failed to load guide")
           }
-          return r.json()
-        })
-        .then((guide) => {
+          
+          const guide = await guideResponse.json()
+          const tierData = tierResponse.ok ? await tierResponse.json() : { subscription_tier: "free" }
+          
           if (!guide) return
+          
           setGeneratedStyleGuide(guide.content_md || "")
           setBrandDetails(guide.brand_details || { name: guide.brand_name || "Brand" })
           setGuideType(guide.plan_type || "core")
+          
+          // Use the directly fetched tier, fallback to guide's tier, then "free"
+          const tier = tierData?.subscription_tier || (guide as any).subscription_tier || "free"
+          setSubscriptionTier(tier)
+          
+          // If subscription just succeeded but tier is still free, retry after a delay
+          // (webhook might not have processed yet)
+          if (subscriptionSuccess && tier === "free" && retryCount < 3) {
+            console.log(`[Full Access] Subscription success but tier still free, retrying... (${retryCount + 1}/3)`)
+            setTimeout(() => loadGuide(retryCount + 1), 2000 * (retryCount + 1)) // Exponential backoff
+            return
+          }
+          
+          // If subscription just succeeded and tier is now paid, show success message
+          if (subscriptionSuccess && tier !== "free") {
+            toast({
+              title: "Subscription activated!",
+              description: "You now have full access to edit and export your style guides.",
+            })
+            // Clean up URL
+            router.replace(`/full-access?guideId=${guideId}`, { scroll: false })
+          }
+          
           setSavedToAccount(true)
           setCurrentGuideId(guide.id)
           setIsLoading(false)
-        })
-        .catch(() => {
+        } catch (error) {
+          console.error("[Full Access] Error loading guide:", error)
           toast({ title: "Could not load guide", variant: "destructive" })
           router.replace("/dashboard")
-        })
+        }
+      }
+      
+      loadGuide()
       return
     }
 
-    // Standard flow: localStorage + generation
+    // Standard flow: localStorage + generation (user arrived from payment)
+    // If we reach here without a guideId, the user came through the payment flow
+    // and is a paid subscriber - set tier accordingly
+    setSubscriptionTier("pro")
+    
     const alreadyGenerated = searchParams.get("generated") === "true"
     const savedBrandDetails = localStorage.getItem("brandDetails")
     const savedGuideType = localStorage.getItem("styleGuidePlan")
@@ -228,7 +276,9 @@ function FullAccessContent() {
   }, [router, searchParams, toast, guideId, user, authLoading])
 
   // Save existing guide to account when user logs in (e.g. returning visitor)
+  // Only runs for the localStorage flow (no guideId) — guides loaded by ID are already saved
   useEffect(() => {
+    if (guideId) return // Already in the database, don't re-save
     if (!user || !generatedStyleGuide || savedToAccount) return
     const savedBrandDetails = localStorage.getItem("brandDetails")
     const savedGuideType = localStorage.getItem("styleGuidePlan")
@@ -248,7 +298,7 @@ function FullAccessContent() {
     })
       .then((r) => r.ok && setSavedToAccount(true))
       .catch(() => {})
-  }, [user, generatedStyleGuide, savedToAccount, currentGuideId])
+  }, [user, generatedStyleGuide, savedToAccount, currentGuideId, guideId])
 
   // Auto-save edits to existing guide (debounced 2s)
   useEffect(() => {
@@ -553,21 +603,45 @@ function FullAccessContent() {
         containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
         rightContent={
           <div className="flex items-center gap-3">
+            {/* Edit/Preview toggle for paid users */}
+            {subscriptionTier !== "free" && (
+              <div className="flex items-center gap-1 border border-gray-200 rounded-md p-1 bg-white">
+                <Button
+                  onClick={() => setViewMode('edit')}
+                  variant={viewMode === 'edit' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={() => setViewMode('preview')}
+                  variant={viewMode === 'preview' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-8 px-3"
+                >
+                  Preview
+                </Button>
+              </div>
+            )}
+            
             {/* Retry button in case user wants to regenerate */}
-            <Button
-              onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
-              disabled={isRetrying}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              {isRetrying ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3 w-3" />
-              )}
-              Regenerate
-            </Button>
+            {subscriptionTier !== "free" && (
+              <Button
+                onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
+                disabled={isRetrying}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                {isRetrying ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+                Regenerate
+              </Button>
+            )}
             
             <Button
               onClick={() => setShowDownloadOptions(true)}
@@ -676,24 +750,46 @@ function FullAccessContent() {
                 )}
                 
                 <div className={`max-w-2xl mx-auto space-y-12 transition-opacity duration-300 ${isRetrying ? "opacity-50" : "opacity-100"}`}>
-                  <StyleGuideEditor
-                    key={generatedStyleGuide ?? "init"}
-                    ref={editorRef}
-                    markdown={guideContent ?? ""}
-                    onChange={(md) => {
-                      setHasEdits(true)
-                      setGeneratedStyleGuide(md)
-                      if (typeof window !== "undefined") {
+                  {subscriptionTier === "free" ? (
+                    // Free tier: show read-only view with ContentGate
+                    <ContentGate
+                      content={guideContent ?? ""}
+                      showUpgradeCTA={true}
+                      onUpgrade={() => {
+                        // Redirect to payment or show upgrade dialog
+                        router.push("/dashboard/billing")
+                      }}
+                      selectedTraits={(() => {
                         try {
-                          localStorage.setItem("generatedStyleGuide", md)
-                        } catch {
-                          // ignore
+                          const savedTraits = localStorage.getItem("selectedTraits")
+                          return savedTraits ? JSON.parse(savedTraits) : []
+                        } catch (e) {
+                          return []
                         }
-                      }
-                    }}
-                    storageKey={brandDetails?.name?.replace(/\s+/g, "-")}
-                    className="style-guide-editor"
-                  />
+                      })()}
+                    />
+                  ) : (
+                    // Paid tier: show editor with edit/preview toggle
+                    <StyleGuideEditor
+                      key={generatedStyleGuide ?? "init"}
+                      ref={editorRef}
+                      markdown={guideContent ?? ""}
+                      readOnly={viewMode === 'preview'}
+                      onChange={(md) => {
+                        setHasEdits(true)
+                        setGeneratedStyleGuide(md)
+                        if (typeof window !== "undefined") {
+                          try {
+                            localStorage.setItem("generatedStyleGuide", md)
+                          } catch {
+                            // ignore
+                          }
+                        }
+                      }}
+                      storageKey={brandDetails?.name?.replace(/\s+/g, "-")}
+                      className="style-guide-editor"
+                    />
+                  )}
                 </div>
               </div>
             </div>

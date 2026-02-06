@@ -3,9 +3,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Plus } from "lucide-react";
 import { NewGuideButton } from "@/components/dashboard/NewGuideButton";
+import { AutoSaveGuide } from "@/components/dashboard/AutoSaveGuide";
+import { GuideCard } from "@/components/dashboard/GuideCard";
+import { SubscriptionRefresh } from "@/components/dashboard/SubscriptionRefresh";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -38,6 +40,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      <AutoSaveGuide />
+      <SubscriptionRefresh />
       <Header
         containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
         rightContent={
@@ -56,27 +60,24 @@ export default async function DashboardPage() {
           <p className="mt-1 text-muted-foreground">
             {profile?.subscription_tier === "free"
               ? "Free plan"
-              : `${profile?.subscription_tier ?? "Free"} plan`}{" "}
+              : profile?.subscription_tier === "pro"
+              ? "Pro plan"
+              : profile?.subscription_tier === "team"
+              ? "Team plan"
+              : "Free plan"}{" "}
             — {used} of {limit} guides
           </p>
 
           {guides && guides.length > 0 ? (
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {guides.map((g) => (
-                <Link
+                <GuideCard
                   key={g.id}
-                  href={`/full-access?guideId=${g.id}`}
-                  className="flex flex-col rounded-lg border bg-white p-4 transition hover:border-gray-300 dark:bg-gray-950 dark:hover:border-gray-700"
-                >
-                  <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
-                  <h3 className="font-medium">{g.title || "Untitled guide"}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground capitalize">
-                    {g.plan_type} • Updated{" "}
-                    {formatDistanceToNow(new Date(g.updated_at!), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </Link>
+                  id={g.id}
+                  title={g.title || "Untitled guide"}
+                  planType={g.plan_type || "core"}
+                  updatedAt={g.updated_at || new Date().toISOString()}
+                />
               ))}
               {used < limit && (
                 <NewGuideButton variant="card" limit={limit} used={used} />

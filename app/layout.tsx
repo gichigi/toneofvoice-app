@@ -1,5 +1,5 @@
 import type React from "react"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
@@ -9,6 +9,13 @@ import { AuthProvider } from "@/components/AuthProvider"
 
 const geistSans = Geist({ subsets: ["latin"], display: "swap" })
 const geistMono = Geist_Mono({ subsets: ["latin"], display: "swap" })
+// Design system: see DESIGN_SYSTEM.md for typography/spacing decisions
+const playfairDisplay = Playfair_Display({ 
+  subsets: ["latin"], 
+  display: "swap",
+  variable: "--font-display",
+  weight: ["400", "700", "900"]
+})
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'),
@@ -300,7 +307,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${geistMono.className} ${geistSans.className} overflow-x-hidden`}>        
+      <body className={`${geistMono.className} ${geistSans.className} ${playfairDisplay.variable} overflow-x-hidden`}>        
         <PostHogProvider>
           <AuthProvider>
             <ThemeProvider attribute="class" defaultTheme="light">

@@ -1,0 +1,1 @@
+Push all previous work from the previous commit to Github in one command. Make sure that the commit message is detailed, but not too long. And the title is scannable.

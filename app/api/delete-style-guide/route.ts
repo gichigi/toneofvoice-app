@@ -1,8 +1,8 @@
 import { createClient, MissingSupabaseConfigError } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
-/** Load a style guide by ID. User must own it. */
-export async function GET(req: Request) {
+/** Delete a style guide by ID. User must own it. */
+export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const guideId = searchParams.get("guideId");
@@ -22,38 +22,44 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: guide, error } = await supabase
+    // Verify user owns the guide before deleting
+    const { data: guide, error: checkError } = await supabase
       .from("style_guides")
-      .select("id, title, brand_name, content_md, plan_type, brand_details")
+      .select("id")
       .eq("id", guideId)
       .eq("user_id", user.id)
       .single();
 
-    if (error || !guide) {
+    if (checkError || !guide) {
       return NextResponse.json(
         { error: "Guide not found or access denied" },
         { status: 404 }
       );
     }
 
-    // Get user's subscription tier
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("subscription_tier")
-      .eq("id", user.id)
-      .single();
+    // Delete the guide
+    const { error: deleteError } = await supabase
+      .from("style_guides")
+      .delete()
+      .eq("id", guideId)
+      .eq("user_id", user.id);
 
-    return NextResponse.json({
-      ...guide,
-      subscription_tier: profile?.subscription_tier || "free"
-    });
+    if (deleteError) {
+      console.error("[delete-style-guide] Delete error:", deleteError);
+      return NextResponse.json(
+        { error: deleteError.message || "Failed to delete guide" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
   } catch (e) {
     if (e instanceof MissingSupabaseConfigError) {
       return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
     }
-    console.error("[load-style-guide] Error:", e);
+    console.error("[delete-style-guide] Error:", e);
     return NextResponse.json(
-      { error: "Failed to load guide" },
+      { error: "Failed to delete guide" },
       { status: 500 }
     );
   }

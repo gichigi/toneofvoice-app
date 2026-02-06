@@ -81,7 +81,7 @@ async function handleSubscriptionCheckout(stripeClient: Stripe, session: Stripe.
         : null;
     }
 
-    const { error } = await getSupabaseAdmin()
+    const { data, error } = await getSupabaseAdmin()
       .from("profiles")
       .update({
         subscription_tier: plan,
@@ -92,13 +92,20 @@ async function handleSubscriptionCheckout(stripeClient: Stripe, session: Stripe.
         current_period_end: currentPeriodEnd,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", userId);
+      .eq("id", userId)
+      .select("subscription_tier, guides_limit");
 
     if (error) {
       console.error("[webhook] Failed to update profile for subscription:", error);
       return;
     }
-    console.log("[webhook] Profile updated for subscription:", userId, plan);
+    
+    console.log("[webhook] Profile updated for subscription:", {
+      userId,
+      plan,
+      subscription_tier: data?.[0]?.subscription_tier,
+      guides_limit: data?.[0]?.guides_limit,
+    });
   } catch (e) {
     console.error("[webhook] handleSubscriptionCheckout error:", e);
   }

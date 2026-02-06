@@ -5,6 +5,7 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/next"
 import { PostHogProvider } from "@/components/PostHogProvider"
+import { AuthProvider } from "@/components/AuthProvider"
 
 const geistSans = Geist({ subsets: ["latin"], display: "swap" })
 const geistMono = Geist_Mono({ subsets: ["latin"], display: "swap" })
@@ -301,10 +302,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${geistMono.className} ${geistSans.className} overflow-x-hidden`}>        
         <PostHogProvider>
-          <ThemeProvider attribute="class" defaultTheme="light">
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="light">
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </AuthProvider>
           <Analytics />
         </PostHogProvider>
       </body>

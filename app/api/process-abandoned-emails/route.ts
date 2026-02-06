@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabase-admin"
+import { getSupabaseAdmin } from "@/lib/supabase-admin"
 
 // Core processing logic shared between GET and POST
 async function processAbandonedEmails() {
@@ -8,7 +8,7 @@ async function processAbandonedEmails() {
   // Get all email captures where payment was not completed after 2 hours
   const twoHoursAgo = new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString();
   
-  const { data: abandonedCaptures, error } = await supabaseAdmin
+  const { data: abandonedCaptures, error } = await getSupabaseAdmin()
     .from('email_captures')
     .select('*')
     .eq('payment_completed', false)
@@ -54,7 +54,7 @@ async function processAbandonedEmails() {
       
       if (emailResult.success) {
         // Mark as abandoned email sent
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await getSupabaseAdmin()
           .from('email_captures')
           .update({ abandoned_email_sent: true })
           .eq('id', capture.id);

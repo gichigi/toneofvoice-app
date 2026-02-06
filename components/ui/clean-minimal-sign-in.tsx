@@ -25,7 +25,7 @@ const SignIn2 = () => {
       return;
     }
     setError("");
-    alert("Sign in successful! (Demo)");
+    // Component is deprecated - use /sign-in page with real Supabase auth
   };
  
   return (

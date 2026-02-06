@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
 import { emailService } from "@/lib/email-service"
+import { getSupabaseAdmin } from "@/lib/supabase-admin"
 
 // Pick the right Stripe secret key and webhook secret based on STRIPE_MODE
 type StripeMode = 'test' | 'live';
@@ -14,9 +15,10 @@ const STRIPE_WEBHOOK_SECRET =
     ? process.env.STRIPE_TEST_WEBHOOK_SECRET
     : process.env.STRIPE_WEBHOOK_SECRET;
 
-const stripe = new Stripe(STRIPE_SECRET_KEY!, {
-  apiVersion: "2023-10-16",
-})
+function getStripe() {
+  if (!STRIPE_SECRET_KEY) throw new Error("Stripe not configured");
+  return new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2023-10-16" });
+}
 
 // Store sent emails to prevent spam (in production, use a database)
 const sentEmails = new Set<string>();
@@ -56,7 +58,53 @@ function normalizeWebhookUrl(url: string): string {
   }
 }
 
-// Handle successful payment
+// Handle subscription checkout completed — update profile
+async function handleSubscriptionCheckout(stripeClient: Stripe, session: Stripe.Checkout.Session) {
+  try {
+    const userId = session.metadata?.user_id;
+    const plan = session.metadata?.plan as string;
+    const subId = session.subscription as string | null;
+    const customerId = session.customer as string | null;
+
+    if (!userId || !["pro", "team"].includes(plan)) {
+      console.error("[webhook] Subscription checkout missing user_id or invalid plan");
+      return;
+    }
+
+    const guidesLimit = plan === "pro" ? 5 : 99;
+    let currentPeriodEnd: string | null = null;
+
+    if (subId) {
+      const sub = await stripeClient.subscriptions.retrieve(subId);
+      currentPeriodEnd = sub.current_period_end
+        ? new Date(sub.current_period_end * 1000).toISOString()
+        : null;
+    }
+
+    const { error } = await getSupabaseAdmin()
+      .from("profiles")
+      .update({
+        subscription_tier: plan,
+        subscription_status: "active",
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subId,
+        guides_limit: guidesLimit,
+        current_period_end: currentPeriodEnd,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (error) {
+      console.error("[webhook] Failed to update profile for subscription:", error);
+      return;
+    }
+    console.log("[webhook] Profile updated for subscription:", userId, plan);
+  } catch (e) {
+    console.error("[webhook] handleSubscriptionCheckout error:", e);
+  }
+}
+
+// Handle successful one-time payment
 async function handlePaymentSuccess(session: Stripe.Checkout.Session) {
   try {
     console.log('Processing successful payment:', session.id);
@@ -175,6 +223,71 @@ async function handleSessionExpired(session: Stripe.Checkout.Session) {
   }
 }
 
+// Map Stripe price to plan tier — must respect STRIPE_MODE to match correct IDs
+function priceIdToPlan(priceId: string | undefined): "pro" | "team" | null {
+  const proId = mode === "test" ? process.env.STRIPE_TEST_PRO_PRICE_ID : process.env.STRIPE_PRO_PRICE_ID;
+  const teamId = mode === "test" ? process.env.STRIPE_TEST_TEAM_PRICE_ID : process.env.STRIPE_TEAM_PRICE_ID;
+  if (priceId === proId) return "pro";
+  if (priceId === teamId) return "team";
+  return null;
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  try {
+    const subId = subscription.id;
+    const status = subscription.status;
+    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const plan = priceIdToPlan(priceId);
+    const periodEnd = subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : null;
+    const guidesLimit = plan === "pro" ? 5 : plan === "team" ? 99 : 1;
+
+    const { error } = await getSupabaseAdmin()
+      .from("profiles")
+      .update({
+        subscription_status: status === "active" || status === "trialing" ? "active" : "inactive",
+        subscription_tier: plan || "free",
+        guides_limit: guidesLimit,
+        current_period_end: periodEnd,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subId);
+
+    if (error) console.error("[webhook] handleSubscriptionUpdated error:", error);
+    else console.log("[webhook] Subscription updated:", subId);
+  } catch (e) {
+    console.error("[webhook] handleSubscriptionUpdated error:", e);
+  }
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  try {
+    const subId = subscription.id;
+    const { error } = await getSupabaseAdmin()
+      .from("profiles")
+      .update({
+        subscription_tier: "free",
+        subscription_status: "cancelled",
+        stripe_subscription_id: null,
+        current_period_end: null,
+        guides_limit: 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subId);
+
+    if (error) console.error("[webhook] handleSubscriptionDeleted error:", error);
+    else console.log("[webhook] Subscription cancelled:", subId);
+  } catch (e) {
+    console.error("[webhook] handleSubscriptionDeleted error:", e);
+  }
+}
+
+async function handleInvoicePaymentFailed(_invoice: Stripe.Invoice) {
+  // Log for monitoring; plan: add grace period, downgrade after 3 days
+  console.log("[webhook] Invoice payment failed:", _invoice.id);
+}
+
 export async function POST(request: Request) {
   // Get the original URL
   const originalUrl = request.url
@@ -200,31 +313,43 @@ export async function POST(request: Request) {
     const event = stripe.webhooks.constructEvent(
       payloadBuffer,
       sig,
-      STRIPE_WEBHOOK_SECRET!
+      STRIPE_WEBHOOK_SECRET
     )
 
     // Log successful verification
     console.log(`Webhook verified: ${event.id} (${event.type})`)
 
     switch (event.type) {
-      case "checkout.session.completed":
-        // Handle successful payment
-        console.log("Payment successful:", event.data.object.id)
-        await handlePaymentSuccess(event.data.object as Stripe.Checkout.Session)
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session
+        if (session.mode === "subscription") {
+          await handleSubscriptionCheckout(stripe, session)
+        } else {
+          await handlePaymentSuccess(session)
+        }
         break
-        
+      }
+
       case "checkout.session.async_payment_succeeded":
-        // Handle delayed payment success (bank transfers, etc.)
-        console.log("Async payment successful:", event.data.object.id)
         await handlePaymentSuccess(event.data.object as Stripe.Checkout.Session)
         break
-        
+
       case "checkout.session.expired":
-        // Handle expired session (abandoned cart)
-        console.log("Session expired:", event.data.object.id)
         await handleSessionExpired(event.data.object as Stripe.Checkout.Session)
         break
-        
+
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
+        break
+
+      case "customer.subscription.deleted":
+        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+        break
+
+      case "invoice.payment_failed":
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
+        break
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }

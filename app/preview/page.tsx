@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, CreditCard, Loader2, CheckCircle, Download, ChevronDown } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { ArrowLeft, CreditCard, Loader2, CheckCircle, Download } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useAuth } from "@/components/AuthProvider"
 import { track } from "@vercel/analytics"
 import {
   Dialog,
@@ -126,8 +127,10 @@ const processPreviewContent = (content: string, brandName: string = "") => {
   return tempDiv.innerHTML;
 };
 
-export default function PreviewPage() {
+function PreviewContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { user } = useAuth()
   const { toast } = useToast()
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
@@ -253,6 +256,55 @@ export default function PreviewPage() {
       isMounted = false
     }
   }, [brandDetails, toast])
+
+  const subscribeTriggered = useRef(false)
+  // After sign-up/sign-in with subscribe param, start subscription checkout
+  useEffect(() => {
+    const sub = searchParams.get("subscribe")
+    if (!sub || (sub !== "pro" && sub !== "team") || !user || subscribeTriggered.current) return
+    subscribeTriggered.current = true
+    const run = async () => {
+      setIsProcessingPayment(true)
+      try {
+        const res = await fetch("/api/create-subscription-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: sub }),
+        })
+        const data = await res.json()
+        if (res.ok && data.url) window.location.href = data.url
+        else toast({ title: "Could not start checkout", variant: "destructive" })
+      } finally {
+        setIsProcessingPayment(false)
+      }
+    }
+    run()
+    router.replace("/preview", { scroll: false })
+  }, [searchParams.get("subscribe"), user, router, toast])
+
+  const handleSubscription = async (plan: "pro" | "team") => {
+    try {
+      setIsProcessingPayment(true)
+      if (!user) {
+        router.push(`/sign-up?redirectTo=${encodeURIComponent(`/preview?subscribe=${plan}`)}`)
+        setIsProcessingPayment(false)
+        return
+      }
+      const res = await fetch("/api/create-subscription-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to start checkout")
+      if (data.url) window.location.href = data.url
+    } catch (e) {
+      console.error("Subscription error:", e)
+      toast({ title: "Could not start checkout", variant: "destructive" })
+    } finally {
+      setIsProcessingPayment(false)
+    }
+  }
 
   const handlePayment = async (guideType: 'core' | 'complete') => {
     try {
@@ -436,149 +488,92 @@ export default function PreviewPage() {
 
       {/* Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] text-sm sm:text-base">
+        <DialogContent className="sm:max-w-[640px] text-sm sm:text-base">
           <DialogHeader className="space-y-4">
-            <DialogTitle className="text-base sm:text-xl">Complete your purchase</DialogTitle>
+            <DialogTitle className="text-base sm:text-xl">Get your full style guide</DialogTitle>
             <DialogDescription className="text-xs sm:text-base">
-              Choose your style guide package
+              One-time purchase or subscribe for more guides
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="core" className="w-full">
+          <Tabs defaultValue="subscribe" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="core">Core Guide</TabsTrigger>
-              <TabsTrigger value="complete">Complete Guide</TabsTrigger>
+              <TabsTrigger value="subscribe">Subscribe (Best Value)</TabsTrigger>
+              <TabsTrigger value="onetime">One-Time</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="core" className="mt-4 space-y-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg sm:text-2xl font-bold">Preview Style Guide</h3>
-                  <div className="mt-1 text-xl sm:text-3xl font-bold">$99</div>
+            <TabsContent value="subscribe" className="mt-4 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-semibold">Pro — $29/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">5 guides, core rules, AI editing</p>
+                  <Button
+                    onClick={() => {
+                      track("Payment Started", { plan: "pro", type: "subscription" })
+                      handleSubscription("pro")
+                    }}
+                    disabled={isProcessingPayment}
+                    className="mt-3 w-full"
+                  >
+                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Subscribe & Save
+                  </Button>
                 </div>
-
-                <div className="rounded-lg bg-blue-50 p-4 space-y-2">
-                  <h4 className="font-semibold text-blue-700 text-base sm:text-lg">25 Essential Rules</h4>
-                  <p className="text-xs sm:text-sm text-blue-600">Perfect for startups and small teams</p>
+                <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
+                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900">RECOMMENDED</span>
+                  <h4 className="mt-1 font-semibold">Team — $79/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, complete rules</p>
+                  <Button
+                    onClick={() => {
+                      track("Payment Started", { plan: "team", type: "subscription" })
+                      handleSubscription("team")
+                    }}
+                    disabled={isProcessingPayment}
+                    className="mt-3 w-full"
+                  >
+                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Subscribe & Save
+                  </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Brand voice definition</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>25 essential writing rules</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Grammar & mechanics</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Do's and don'ts with examples</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>PDF & Markdown formats</span>
-                  </div>
-                </div>
-
-                {/* Add guarantee */}
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg p-3">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <span className="font-medium">30-day money-back guarantee</span>
-                </div>
-
-                <Button
-                  onClick={() => {
-                    // Track payment button click
-                    track('Payment Started', { 
-                      guideType: 'core',
-                      price: 99,
-                      location: 'payment-dialog'
-                    });
-                    handlePayment('core');
-                  }}
-                  disabled={isProcessingPayment}
-                  className="w-full text-base sm:text-lg py-4 sm:py-6"
-                >
-                  {isProcessingPayment ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="mr-2 h-4 w-4" />
-                  )}
-                  Unlock Full Guide
-                </Button>
               </div>
             </TabsContent>
 
-            <TabsContent value="complete" className="mt-4 space-y-4">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg sm:text-2xl font-bold">Complete Style Guide</h3>
-                  <div className="mt-1 text-xl sm:text-3xl font-bold">$149</div>
+            <TabsContent value="onetime" className="mt-4 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-semibold">Core — $99</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">25 rules, single guide, no account</p>
+                  <Button
+                    onClick={() => {
+                      track("Payment Started", { guideType: "core", price: 99, type: "onetime" })
+                      handlePayment("core")
+                    }}
+                    disabled={isProcessingPayment}
+                    className="mt-3 w-full"
+                  >
+                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                    Buy Once
+                  </Button>
                 </div>
-
-                <div className="rounded-lg bg-purple-50 p-4 space-y-2">
-                  <h4 className="font-semibold text-purple-700 text-base sm:text-lg">99+ Comprehensive Rules</h4>
-                  <p className="text-xs sm:text-sm text-purple-600">Ideal for established brands and larger teams</p>
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-semibold">Complete — $149</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">99+ rules, single guide</p>
+                  <Button
+                    onClick={() => {
+                      track("Payment Started", { guideType: "complete", price: 149, type: "onetime" })
+                      handlePayment("complete")
+                    }}
+                    disabled={isProcessingPayment}
+                    className="mt-3 w-full"
+                  >
+                    {isProcessingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                    Buy Once
+                  </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Everything in Core Guide</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>99+ modern writing rules</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Used by Apple, Spotify, BBC</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Formatting standards</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Unlimited downloads in multiple formats</span>
-                  </div>
-                </div>
-
-                {/* Add guarantee */}
-                <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg p-3">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                  <span className="font-medium">30-day money-back guarantee</span>
-                </div>
-
-                <Button
-                  onClick={() => {
-                    // Track payment button click
-                    track('Payment Started', { 
-                      guideType: 'complete',
-                      price: 149,
-                      location: 'payment-dialog'
-                    });
-                    handlePayment('complete');
-                  }}
-                  disabled={isProcessingPayment}
-                  className="w-full text-base sm:text-lg py-4 sm:py-6"
-                >
-                  {isProcessingPayment ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CreditCard className="mr-2 h-4 w-4" />
-                  )}
-                  Unlock Full Guide
-                </Button>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-green-600 rounded-lg bg-green-50 p-3">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                <span>30-day money-back guarantee • No subscription</span>
               </div>
             </TabsContent>
           </Tabs>
@@ -696,6 +691,14 @@ export default function PreviewPage() {
       </main>
       </div>
     </>
+  )
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+      <PreviewContent />
+    </Suspense>
   )
 }
 

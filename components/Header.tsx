@@ -6,6 +6,7 @@ import Logo from "@/components/Logo"
 import { ReactNode } from "react"
 import { PhoneCall } from "lucide-react"
 import { track } from "@vercel/analytics"
+import { HeaderAuth } from "@/components/HeaderAuth"
 
 interface HeaderProps {
   showNavigation?: boolean
@@ -57,14 +58,7 @@ export default function Header({
                 Book a Call
               </Link>
             </Button>
-            <Button asChild>
-              <Link 
-                href="/sign-up"
-                onClick={() => track('Sign In Clicked', { location: 'header' })}
-              >
-                Sign In
-              </Link>
-            </Button>
+            <HeaderAuth />
           </div>
         )}
         

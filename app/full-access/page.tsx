@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowLeft, FileText, Loader2, Check, X, ChevronDown, RefreshCw } from "lucide-react"
@@ -17,13 +17,16 @@ import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
 import Header from "@/components/Header"
 import { StyleGuideHeader } from "@/components/StyleGuideHeader"
-import { MarkdownRenderer } from "@/components/MarkdownRenderer"
+import { StyleGuideEditor, type StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { createErrorDetails, ErrorDetails } from "@/lib/api-utils"
+import { useAuth } from "@/components/AuthProvider"
 
 function FullAccessContent() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
+  const guideId = searchParams.get("guideId")
   const { toast } = useToast()
   const [copied, setCopied] = useState(false)
   const [showNotionInstructions, setShowNotionInstructions] = useState(false)
@@ -32,12 +35,17 @@ function FullAccessContent() {
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadFormat, setDownloadFormat] = useState<string | null>(null)
   const [showDownloadOptions, setShowDownloadOptions] = useState(false)
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const [fadeIn, setFadeIn] = useState(false)
   const [guideType, setGuideType] = useState<string>("core")
   const [isLoading, setIsLoading] = useState(true)
   const [isRetrying, setIsRetrying] = useState(false)
   const [apiError, setApiError] = useState<ErrorDetails | null>(null)
   const [contentUpdated, setContentUpdated] = useState(false)
+  const [hasEdits, setHasEdits] = useState(false)
+  const [savedToAccount, setSavedToAccount] = useState(false)
+  const [currentGuideId, setCurrentGuideId] = useState<string | null>(null)
+  const editorRef = useRef<StyleGuideEditorRef>(null)
 
   // Function to generate the style guide (can be called multiple times)
   const generateStyleGuide = async () => {
@@ -94,6 +102,31 @@ function FullAccessContent() {
       // Success - save and display the guide
       setGeneratedStyleGuide(data.styleGuide)
       localStorage.setItem("generatedStyleGuide", data.styleGuide)
+
+      // Save to account if user is logged in
+      if (user) {
+        try {
+          const res = await fetch("/api/save-style-guide", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              guide_id: currentGuideId || undefined,
+              title: `${parsedBrandDetails.name} Style Guide`,
+              brand_name: parsedBrandDetails.name,
+              content_md: data.styleGuide,
+              plan_type: savedGuideType === "complete" ? "complete" : "core",
+              brand_details: parsedBrandDetails,
+            }),
+          })
+          if (res.ok) {
+            setSavedToAccount(true)
+            const json = await res.json()
+            if (json.guide?.id) setCurrentGuideId(json.guide.id)
+          }
+        } catch {
+          // ignore save errors
+        }
+      }
       
       // Show content updated indicator
       setContentUpdated(true)
@@ -131,14 +164,44 @@ function FullAccessContent() {
   }
 
   useEffect(() => {
-    // Check if already generated
+    // Loading existing guide by ID (from dashboard)
+    if (guideId) {
+      if (authLoading) return
+      if (!user) {
+        router.replace(`/sign-in?redirectTo=${encodeURIComponent(`/full-access?guideId=${guideId}`)}`)
+        return
+      }
+      fetch(`/api/load-style-guide?guideId=${guideId}`)
+        .then((r) => {
+          if (!r.ok) {
+            if (r.status === 404) router.replace("/dashboard")
+            else throw new Error("Failed to load guide")
+            return null
+          }
+          return r.json()
+        })
+        .then((guide) => {
+          if (!guide) return
+          setGeneratedStyleGuide(guide.content_md || "")
+          setBrandDetails(guide.brand_details || { name: guide.brand_name || "Brand" })
+          setGuideType(guide.plan_type || "core")
+          setSavedToAccount(true)
+          setCurrentGuideId(guide.id)
+          setIsLoading(false)
+        })
+        .catch(() => {
+          toast({ title: "Could not load guide", variant: "destructive" })
+          router.replace("/dashboard")
+        })
+      return
+    }
+
+    // Standard flow: localStorage + generation
     const alreadyGenerated = searchParams.get("generated") === "true"
-    
-    // Load brand details, style guide, and guide type from localStorage
     const savedBrandDetails = localStorage.getItem("brandDetails")
     const savedGuideType = localStorage.getItem("styleGuidePlan")
     const savedStyleGuide = localStorage.getItem("generatedStyleGuide")
-    
+
     if (!savedBrandDetails) {
       console.error("[Full Access] No brand details found in localStorage")
       toast({
@@ -149,32 +212,64 @@ function FullAccessContent() {
       router.push("/brand-details?paymentComplete=true")
       return
     }
-    
-    if (savedBrandDetails) {
-      setBrandDetails(JSON.parse(savedBrandDetails))
-    }
-    if (savedGuideType) {
-      setGuideType(savedGuideType)
-    }
 
-    // If already generated and we have the guide, use it
+    setBrandDetails(JSON.parse(savedBrandDetails))
+    if (savedGuideType) setGuideType(savedGuideType)
+
     if (alreadyGenerated && savedStyleGuide) {
-      console.log("[Full Access] Using already generated style guide")
       setGeneratedStyleGuide(savedStyleGuide)
       setIsLoading(false)
     } else {
-      // Generate the style guide
-      generateStyleGuide().finally(() => {
-        setIsLoading(false)
-      })
+      generateStyleGuide().finally(() => setIsLoading(false))
     }
-    
-    // Trigger fade-in animation
-    const timer = setTimeout(() => {
-      setFadeIn(true)
-    }, 100)
+
+    const timer = setTimeout(() => setFadeIn(true), 100)
     return () => clearTimeout(timer)
-  }, [router, searchParams, toast])
+  }, [router, searchParams, toast, guideId, user, authLoading])
+
+  // Save existing guide to account when user logs in (e.g. returning visitor)
+  useEffect(() => {
+    if (!user || !generatedStyleGuide || savedToAccount) return
+    const savedBrandDetails = localStorage.getItem("brandDetails")
+    const savedGuideType = localStorage.getItem("styleGuidePlan")
+    if (!savedBrandDetails) return
+    const parsed = JSON.parse(savedBrandDetails)
+    fetch("/api/save-style-guide", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        guide_id: currentGuideId || undefined,
+        title: `${parsed.name} Style Guide`,
+        brand_name: parsed.name,
+        content_md: generatedStyleGuide,
+        plan_type: savedGuideType === "complete" ? "complete" : "core",
+        brand_details: parsed,
+      }),
+    })
+      .then((r) => r.ok && setSavedToAccount(true))
+      .catch(() => {})
+  }, [user, generatedStyleGuide, savedToAccount, currentGuideId])
+
+  // Auto-save edits to existing guide (debounced 2s)
+  useEffect(() => {
+    if (!currentGuideId || !user || !brandDetails || !hasEdits || !generatedStyleGuide)
+      return
+    const t = setTimeout(() => {
+      fetch("/api/save-style-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guide_id: currentGuideId,
+          title: `${brandDetails.name} Style Guide`,
+          brand_name: brandDetails.name,
+          content_md: generatedStyleGuide,
+          plan_type: guideType === "complete" ? "complete" : "core",
+          brand_details: brandDetails,
+        }),
+      }).catch(() => {})
+    }, 2000)
+    return () => clearTimeout(t)
+  }, [currentGuideId, user, brandDetails, hasEdits, generatedStyleGuide, guideType])
 
   const handleCopy = () => {
     setCopied(true)
@@ -250,10 +345,8 @@ function FullAccessContent() {
   const guideContent = getGuideContent()
 
   const exportPDF = async () => {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
-    
-    const element = document.getElementById('pdf-export-content')
+    if (typeof window === "undefined") return
+    const element = document.getElementById("pdf-export-content")
     if (!element) return
     // @ts-ignore
     const html2pdf = (await import('html2pdf.js')).default
@@ -462,7 +555,7 @@ function FullAccessContent() {
           <div className="flex items-center gap-3">
             {/* Retry button in case user wants to regenerate */}
             <Button
-              onClick={handleRetry}
+              onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
               disabled={isRetrying}
               variant="outline"
               size="sm"
@@ -505,6 +598,33 @@ function FullAccessContent() {
         </div>
       )}
 
+      {/* Regenerate confirmation when user has edits */}
+      <Dialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Regenerate style guide?</DialogTitle>
+            <DialogDescription>
+              You have unsaved edits. Regenerating will replace your changes with a fresh AI-generated guide. Are you sure?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRegenerateConfirm(false)}>
+              Keep edits
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowRegenerateConfirm(false)
+                setHasEdits(false)
+                await handleRetry()
+              }}
+              disabled={isRetrying}
+            >
+              {isRetrying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Regenerate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Notion Instructions Dialog */}
       <Dialog open={showNotionInstructions} onOpenChange={setShowNotionInstructions}>
         <DialogContent>
@@ -532,10 +652,11 @@ function FullAccessContent() {
         <div className="max-w-5xl mx-auto">
           <div className="mb-6 px-8">
             <Link
-              href="/brand-details"
+              href={currentGuideId ? "/dashboard" : "/brand-details"}
               className="inline-flex items-center gap-2 text-sm sm:text-base font-medium px-4 py-2 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
             >
-              <ArrowLeft className="h-5 w-5" /> Back to details
+              <ArrowLeft className="h-5 w-5" />{" "}
+              {currentGuideId ? "Back to dashboard" : "Back to details"}
             </Link>
           </div>
           
@@ -554,10 +675,24 @@ function FullAccessContent() {
                   </div>
                 )}
                 
-                <div className={`max-w-2xl mx-auto space-y-12 transition-opacity duration-300 ${isRetrying ? 'opacity-50' : 'opacity-100'}`}>
-                  <MarkdownRenderer 
-                    className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base"
-                    content={guideContent}
+                <div className={`max-w-2xl mx-auto space-y-12 transition-opacity duration-300 ${isRetrying ? "opacity-50" : "opacity-100"}`}>
+                  <StyleGuideEditor
+                    key={generatedStyleGuide ?? "init"}
+                    ref={editorRef}
+                    markdown={guideContent ?? ""}
+                    onChange={(md) => {
+                      setHasEdits(true)
+                      setGeneratedStyleGuide(md)
+                      if (typeof window !== "undefined") {
+                        try {
+                          localStorage.setItem("generatedStyleGuide", md)
+                        } catch {
+                          // ignore
+                        }
+                      }
+                    }}
+                    storageKey={brandDetails?.name?.replace(/\s+/g, "-")}
+                    className="style-guide-editor"
                   />
                 </div>
               </div>

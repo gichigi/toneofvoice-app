@@ -72,7 +72,7 @@ export function GuideCard({ id, title, planType, updatedAt }: GuideCardProps) {
     <>
       <div className="group relative flex flex-col rounded-lg border bg-white p-4 transition hover:border-gray-300 dark:bg-gray-950 dark:hover:border-gray-700">
         <Link
-          href={`/full-access?guideId=${id}`}
+          href={`/guide?guideId=${id}`}
           className="flex flex-col flex-1"
         >
           <FileText className="mb-2 h-8 w-8 text-muted-foreground" />

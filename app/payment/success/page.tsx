@@ -291,7 +291,7 @@ Thanks!`)}`
             </div>
             
             <Button 
-              onClick={() => router.push("/full-access?generated=true")}
+              onClick={() => router.push("/guide?generated=true")}
               className="w-full"
               size="lg"
             >

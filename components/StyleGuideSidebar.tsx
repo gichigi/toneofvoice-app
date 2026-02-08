@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Lock, CreditCard, Sparkles } from "lucide-react"
+import { Lock, Sparkles } from "lucide-react"
 import { StyleGuideSection, Tier } from "@/lib/content-parser"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -151,7 +151,7 @@ export function StyleGuideSidebar({
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
                 size="sm"
               >
-                <CreditCard className="mr-2 size-3.5 transition-transform duration-300 group-hover:scale-110" />
+                <Lock className="mr-2 size-3.5 transition-transform duration-300 group-hover:scale-110" />
                 Unlock Full Guide
               </Button>
             )}

@@ -37,9 +37,6 @@ _blogs, newsletters, articles_
 
 ## Style Rules
 
-_Unlock to see 25 personalised writing rules for {{brand_name}}._
-
 ---
 
-## Before → After 
-_Unlock to see {{brand_name}}'s brand voice in action._
+## Before → After

@@ -1,7 +1,34 @@
 // Design system: see DESIGN_SYSTEM.md for typography/spacing decisions
 
 import ReactMarkdown from "react-markdown"
-import { SECTION_H2_BAR_CLASS, SECTION_H2_CLASS, SECTION_H2_STYLE } from "@/lib/style-guide-styles"
+import { playfairDisplay } from "@/lib/fonts"
+import {
+  PREVIEW_H1_CLASS,
+  PREVIEW_H1_STYLE,
+  PREVIEW_H2_CLASS,
+  PREVIEW_H2_STYLE,
+  PREVIEW_H2_BAR_CLASS,
+  PREVIEW_H2_MARGIN_TOP,
+  PREVIEW_H2_MARGIN_BOTTOM,
+  PREVIEW_H3_CLASS,
+  PREVIEW_H3_STYLE,
+  PREVIEW_H3_MARGIN_TOP,
+  PREVIEW_H3_MARGIN_BOTTOM,
+  PREVIEW_H4_CLASS,
+  PREVIEW_EYEBROW_CLASS,
+  PREVIEW_BODY_CLASS,
+  PREVIEW_BODY_STYLE,
+  PREVIEW_LIST_CLASS,
+  PREVIEW_LIST_ITEM_CLASS,
+  PREVIEW_LIST_MARGIN_BOTTOM,
+  PREVIEW_BLOCKQUOTE_CLASS,
+  PREVIEW_HR_CLASS,
+  PREVIEW_HR_MARGIN,
+  PREVIEW_SECTION_DESCRIPTION_CLASS,
+  PREVIEW_P_MARGIN_BOTTOM,
+  getSectionDescription,
+  getSectionEyebrow,
+} from "@/lib/style-guide-styles"
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import { cn } from '@/lib/utils'
@@ -21,71 +48,70 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
     .replace(/"\s*\n\s*\(/g, '" (') // Fix quotes before parentheses
 
   return (
-    <div className={cn("max-w-3xl space-y-6 style-guide-document", className)}>
+    <div className={cn(playfairDisplay.variable, "max-w-3xl space-y-6 style-guide-document", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
-        // Custom heading styles
+        // Custom heading styles - using preview tokens for premium look
         h1: ({ children }) => (
-          <h1 className="text-3xl font-bold text-gray-900 mb-6 border-b border-gray-200 pb-4">
+          <h1 className={cn(PREVIEW_H1_CLASS, "mb-6 border-b border-gray-200 pb-4")} style={PREVIEW_H1_STYLE}>
             {children}
           </h1>
         ),
         h2: ({ children }) => {
           const childrenText = typeof children === 'string' ? children : (Array.isArray(children) ? children.join('') : String(children))
-          const isTraitHeading = childrenText.toLowerCase().includes('brand voice')
+          const sectionDescription = getSectionDescription(childrenText)
+          const eyebrowLabel = getSectionEyebrow(childrenText)
           return (
             <>
-              <h2 className={`${SECTION_H2_CLASS} mb-8 mt-20 first:mt-0`} style={SECTION_H2_STYLE}>
+              {eyebrowLabel && (
+                <p className={cn(PREVIEW_EYEBROW_CLASS, "mb-2")}>
+                  {eyebrowLabel}
+                </p>
+              )}
+              <h2 className={cn(PREVIEW_H2_CLASS, PREVIEW_H2_MARGIN_TOP, PREVIEW_H2_MARGIN_BOTTOM, "first:mt-0")} style={PREVIEW_H2_STYLE}>
                 {children}
               </h2>
-              <div className={`${SECTION_H2_BAR_CLASS} mb-8 -mt-4`} />
-              {isTraitHeading && selectedTraits.length > 0 && (
-                <div className="flex flex-wrap gap-3 md:gap-4 mb-8 mt-2">
-                  {selectedTraits.map((trait: string, index: number) => (
-                    <span 
-                      key={index}
-                      className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200"
-                    >
-                      {trait}
-                    </span>
-                  ))}
-                </div>
+              <div className={cn(PREVIEW_H2_BAR_CLASS, PREVIEW_H2_MARGIN_BOTTOM, "-mt-4")} />
+              {sectionDescription && (
+                <p className={cn(PREVIEW_SECTION_DESCRIPTION_CLASS, PREVIEW_H2_MARGIN_BOTTOM, "-mt-2")}>
+                  {sectionDescription}
+                </p>
               )}
             </>
           )
         },
         h3: ({ children }) => (
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-5 mt-12" style={{ fontFamily: 'var(--font-display), serif', hyphens: 'none', wordBreak: 'keep-all', letterSpacing: '-0.02em' }}>
+          <h3 className={cn(PREVIEW_H3_CLASS, PREVIEW_H3_MARGIN_TOP, PREVIEW_H3_MARGIN_BOTTOM)} style={PREVIEW_H3_STYLE}>
             {children}
           </h3>
         ),
         h4: ({ children }) => (
-          <h4 className="text-lg font-medium text-gray-700 mb-2 mt-4">
+          <h4 className={cn(PREVIEW_H4_CLASS, "mb-2 mt-4")}>
             {children}
           </h4>
         ),
         
         // Custom paragraph styles — generous line height for readability
         p: ({ children }) => (
-          <p className="text-gray-600 mb-5 leading-relaxed text-base md:text-lg" style={{ orphans: 2, widows: 2 }}>
+          <p className={cn(PREVIEW_BODY_CLASS, PREVIEW_P_MARGIN_BOTTOM)} style={PREVIEW_BODY_STYLE}>
             {children}
           </p>
         ),
         
         // Custom list styles — open, airy  
         ul: ({ children }) => (
-          <ul className="list-disc list-outside ml-5 text-gray-600 mb-6 space-y-2 text-base md:text-lg leading-relaxed">
+          <ul className={cn("list-disc list-outside ml-5", PREVIEW_LIST_CLASS, PREVIEW_LIST_MARGIN_BOTTOM, "space-y-2")}>
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal list-outside ml-5 text-gray-600 mb-6 space-y-2 text-base md:text-lg leading-relaxed">
+          <ol className={cn("list-decimal list-outside ml-5", PREVIEW_LIST_CLASS, PREVIEW_LIST_MARGIN_BOTTOM, "space-y-2")}>
             {children}
           </ol>
         ),
         li: ({ children }) => (
-          <li className="mb-1 leading-relaxed">{children}</li>
+          <li className={cn(PREVIEW_LIST_ITEM_CLASS, "mb-1")}>{children}</li>
         ),
         
         // Custom code styles
@@ -104,7 +130,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
         
         // Simpler blockquote styling (no paywall look)
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-gray-200 pl-4 italic text-gray-600 my-4">
+          <blockquote className={cn(PREVIEW_BLOCKQUOTE_CLASS, "my-4")}>
             {children}
           </blockquote>
         ),
@@ -121,7 +147,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
         
         // Custom horizontal rule - elegant section divider
         hr: () => (
-          <hr className="border-gray-200 my-12" />
+          <hr className={cn(PREVIEW_HR_CLASS, PREVIEW_HR_MARGIN, "border-t")} />
         ),
         
         // Custom table styles (from remark-gfm) - open, airy layout

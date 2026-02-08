@@ -14,6 +14,7 @@ import {
   Tier,
   buildEditableMarkdown,
 } from "@/lib/content-parser"
+import { cn } from "@/lib/utils"
 
 export interface StyleGuideViewProps {
   sections: StyleGuideSection[]
@@ -97,7 +98,15 @@ export function StyleGuideView({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div id="pdf-export-content" className={`${playfairDisplay.variable} bg-white rounded-lg border shadow-sm overflow-hidden ${contentClassName ?? ""}`.trim()}>
+        <div
+          id="pdf-export-content"
+          className={cn(
+            playfairDisplay.variable,
+            "bg-white rounded-lg border shadow-sm overflow-hidden",
+            viewMode === "preview" && "preview-document",
+            contentClassName
+          )}
+        >
           {viewMode === "preview" ? (
             <>
               <div id="cover" className="scroll-mt-4">
@@ -107,11 +116,14 @@ export function StyleGuideView({
                   showPreviewBadge={showPreviewBadge}
                 />
               </div>
-              {unlockedSections.map((section) => (
+              {unlockedSections.map((section, index) => (
                 <div
                   key={section.id}
                   id={section.id}
-                  className="scroll-mt-4 px-12 md:px-20 py-16 md:py-20 border-t border-gray-100"
+                  className={cn(
+                    "scroll-mt-4 px-12 md:px-20 py-20 md:py-24 border-t border-gray-100",
+                    index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                  )}
                 >
                   <div className="max-w-3xl mx-auto">
                     <MarkdownRenderer
@@ -121,11 +133,14 @@ export function StyleGuideView({
                   </div>
                 </div>
               ))}
-              {lockedSections.map((section) => (
+              {lockedSections.map((section, index) => (
                 <div
                   key={section.id}
                   id={section.id}
-                  className="scroll-mt-4 px-12 md:px-20 py-16 md:py-20 border-t border-gray-100"
+                  className={cn(
+                    "scroll-mt-4 px-12 md:px-20 py-20 md:py-24 border-t border-gray-100",
+                    (unlockedSections.length + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                  )}
                 >
                   <div className="max-w-3xl mx-auto">
                     <ContentGate

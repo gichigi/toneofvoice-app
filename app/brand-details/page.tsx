@@ -680,8 +680,8 @@ export default function BrandDetailsPage() {
       setLoadingMessage("")
       setGenerationStartTime(null)
 
-      // Redirect to preview page
-      router.push("/preview")
+      // Redirect to guide page
+      router.push("/guide")
     } catch (error) {
       setLoading(false)
       setProcessingStep('idle')

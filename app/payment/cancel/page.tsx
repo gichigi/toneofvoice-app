@@ -37,7 +37,7 @@ export default function CancelPage() {
         </div>
         <div className="flex justify-center">
           <Button
-            onClick={() => router.push("/preview")}
+            onClick={() => router.push("/guide")}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />

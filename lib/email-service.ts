@@ -97,7 +97,7 @@ export async function sendPurchaseConfirmationEmail(email: string, accessToken: 
     subject: "Your Style Guide is Ready!",
     template: "purchase-confirmation",
     variables: {
-      accessLink: `https://styleguideai.com/preview?token=${accessToken}`,
+      accessLink: `https://styleguideai.com/guide?token=${accessToken}`,
       downloadLinks: {
         pdf: `https://styleguideai.com/download/pdf?token=${accessToken}`,
         markdown: `https://styleguideai.com/download/md?token=${accessToken}`,
@@ -197,7 +197,7 @@ class EmailService {
           </div>
           
           <div style="text-align: center; margin: 25px 0;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/full-access?session_id=${data.sessionId}" 
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/guide?session_id=${data.sessionId}" 
                style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
               Access Your Style Guide
             </a>
@@ -231,7 +231,7 @@ If you have 2 minutes:
 
 And if you've got questions about AIStyleGuide, here's my direct Calendly link (15 min, no pitch): https://calendly.com/l-gichigi/customer-chat
 
-Access your style guide: ${process.env.NEXT_PUBLIC_APP_URL}/full-access?session_id=${data.sessionId}
+Access your style guide: ${process.env.NEXT_PUBLIC_APP_URL}/guide?session_id=${data.sessionId}
 
 Thanks again for being one of our very first customers. Anything you need, just hit reply — it's really me on the other end.
 

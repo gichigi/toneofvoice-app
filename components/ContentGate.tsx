@@ -2,10 +2,20 @@
 
 "use client"
 
-import { SECTION_H2_BAR_CLASS, SECTION_H2_CLASS, SECTION_H2_STYLE } from "@/lib/style-guide-styles"
-import { Lock } from "lucide-react"
+import {
+  PREVIEW_H2_CLASS,
+  PREVIEW_H2_STYLE,
+  PREVIEW_H2_BAR_CLASS,
+  PREVIEW_H2_MARGIN_TOP,
+  PREVIEW_H2_MARGIN_BOTTOM,
+  PREVIEW_SECTION_DESCRIPTION_CLASS,
+  PREVIEW_EYEBROW_CLASS,
+  getSectionDescription,
+  getSectionEyebrow,
+} from "@/lib/style-guide-styles"
+import { cn } from "@/lib/utils"
+import { Lock, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { CreditCard } from "lucide-react"
 import { MarkdownRenderer } from "./MarkdownRenderer"
 
 interface ContentGateProps {
@@ -31,27 +41,50 @@ interface ContentGateProps {
  * If `locked` prop is true, shows entire content blurred with lock overlay.
  */
 export function ContentGate({ content, showUpgradeCTA = true, onUpgrade, selectedTraits = [], locked = false, sectionTitle }: ContentGateProps) {
-  // Section-level locking: show heading + lock overlay
+  // Section-level locking: show heading + explainer + lock overlay
   if (locked) {
-    const lines = content.split("\n").filter((l) => l.trim())
-    const previewSnippet = lines.slice(0, 2).join(" ").slice(0, 120)
+    const sectionDescription = sectionTitle ? getSectionDescription(sectionTitle) : null
+    // Strip "Unlock to see..." placeholder lines and following --- so they never show (current or future content)
+    const strippedContent = content
+      .replace(/\n*_Unlock to see[^_]+_[^\n]*\n(\s*---\s*\n)?/gi, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+    // Preview snippet from stripped content only; skip placeholders and separator-only lines
+    const strippedLines = strippedContent.split("\n").filter((l) => {
+      const t = l.trim()
+      if (!t.length) return false
+      if (/^_Unlock to see[^_]+_$/i.test(t)) return false
+      if (/^-+$/.test(t)) return false // --- only
+      return true
+    })
+    const rawSnippet = strippedLines.slice(0, 2).join(" ").trim().slice(0, 120)
+    const previewSnippet = rawSnippet && !/^-+$/.test(rawSnippet.trim()) ? rawSnippet : null
 
     return (
       <div className="animate-in fade-in duration-500 rounded-lg">
-        {/* Visible section heading so user knows what's locked */}
+        {/* Visible section heading and explainer (same spacing as Brand Voice / MarkdownRenderer) */}
         {sectionTitle && (
-          <div className="mb-6">
-            <h2 className={SECTION_H2_CLASS} style={SECTION_H2_STYLE}>
+          <>
+            {getSectionEyebrow(sectionTitle) && (
+              <p className={cn(PREVIEW_EYEBROW_CLASS, "mb-2")}>
+                {getSectionEyebrow(sectionTitle)}
+              </p>
+            )}
+            <h2 className={cn(PREVIEW_H2_CLASS, PREVIEW_H2_MARGIN_TOP, PREVIEW_H2_MARGIN_BOTTOM, "first:mt-0")} style={PREVIEW_H2_STYLE}>
               {sectionTitle}
             </h2>
-            <div className={`${SECTION_H2_BAR_CLASS} mt-4`} />
-          </div>
+            <div className={cn(PREVIEW_H2_BAR_CLASS, PREVIEW_H2_MARGIN_BOTTOM, "-mt-4")} />
+            {sectionDescription && (
+              <p className={cn(PREVIEW_SECTION_DESCRIPTION_CLASS, PREVIEW_H2_MARGIN_BOTTOM, "-mt-2")}>
+                {sectionDescription}
+              </p>
+            )}
+          </>
         )}
 
         <div className="relative min-h-[40vh]">
           {/* Blurred content preview */}
           <div className="blur-sm select-none pointer-events-none opacity-30 transition-all duration-500">
-            <MarkdownRenderer content={content} selectedTraits={selectedTraits} />
+            <MarkdownRenderer content={strippedContent} selectedTraits={selectedTraits} />
           </div>
 
           {/* Lock overlay */}
@@ -76,7 +109,7 @@ export function ContentGate({ content, showUpgradeCTA = true, onUpgrade, selecte
                   onClick={onUpgrade}
                   className="bg-gray-900 hover:bg-gray-800 text-white font-medium shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
+                  <Lock className="h-4 w-4 mr-2" />
                   Unlock Full Guide
                 </Button>
               )}

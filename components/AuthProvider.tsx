@@ -17,30 +17,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const supabase = createClient();
+    let cancelled = false;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data?.user ?? null);
-      setLoading(false);
-    }).catch((err) => {
-      console.error("[AuthProvider] getUser failed:", err);
-      setLoading(false);
-    });
-
-    // Safety: force loading off if getUser hangs (e.g. network issues)
-    const timeout = setTimeout(() => setLoading(false), 8000);
-
-    return () => {
-      clearTimeout(timeout);
-      subscription.unsubscribe();
+    const setDone = () => {
+      if (!cancelled) setLoading(false);
     };
+
+    try {
+      const supabase = createClient();
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!cancelled) {
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      });
+
+      supabase.auth.getUser().then(({ data }) => {
+        if (!cancelled) {
+          setUser(data?.user ?? null);
+          setLoading(false);
+        }
+      }).catch((err) => {
+        console.error("[AuthProvider] getUser failed:", err);
+        setDone();
+      });
+
+      // Safety: stop spinner if auth check hangs (e.g. network/Supabase slow)
+      const timeout = setTimeout(setDone, 2500);
+
+      return () => {
+        cancelled = true;
+        clearTimeout(timeout);
+        subscription.unsubscribe();
+      };
+    } catch (err) {
+      console.error("[AuthProvider] init failed:", err);
+      setDone();
+    }
   }, []);
 
   const signOut = React.useCallback(async () => {

@@ -26,24 +26,14 @@ export function HeaderAuth() {
 
   if (!user) {
     return (
-      <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="sm">
-          <Link
-            href="/sign-in"
-            onClick={() => track("Sign In Clicked", { location: "header" })}
-          >
-            Sign in
-          </Link>
-        </Button>
-        <Button asChild size="sm">
-          <Link
-            href="/sign-up"
-            onClick={() => track("Sign Up Clicked", { location: "header" })}
-          >
-            Sign up
-          </Link>
-        </Button>
-      </div>
+      <Button asChild size="sm">
+        <Link
+          href="/sign-up"
+          onClick={() => track("Sign Up Clicked", { location: "header" })}
+        >
+          Sign up
+        </Link>
+      </Button>
     );
   }
 

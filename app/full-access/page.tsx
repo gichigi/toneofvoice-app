@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, FileText, Loader2, Check, X, ChevronDown, RefreshCw } from "lucide-react"
+import { ArrowLeft, FileText, Loader2, Check, ChevronDown, RefreshCw } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Dialog,
@@ -15,11 +15,17 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
-import Header from "@/components/Header"
-import { StyleGuideHeader } from "@/components/StyleGuideHeader"
-import { StyleGuideEditor, type StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
-import { MarkdownRenderer } from "@/components/MarkdownRenderer"
-import { ContentGate } from "@/components/ContentGate"
+import type { StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
+import { StyleGuideLayout } from "@/components/StyleGuideLayout"
+import { StyleGuideView } from "@/components/StyleGuideView"
+import {
+  parseStyleGuideContent,
+  StyleGuideSection,
+  Tier,
+  STYLE_GUIDE_SECTIONS,
+  getSectionContentFromMarkdown,
+  replaceSectionInMarkdown,
+} from "@/lib/content-parser"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { createErrorDetails, ErrorDetails } from "@/lib/api-utils"
 import { useAuth } from "@/components/AuthProvider"
@@ -47,9 +53,68 @@ function FullAccessContent() {
   const [hasEdits, setHasEdits] = useState(false)
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(null)
-  const [subscriptionTier, setSubscriptionTier] = useState<string>("free")
+  const [subscriptionTier, setSubscriptionTier] = useState<Tier>("free")
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit')
+  const [sections, setSections] = useState<StyleGuideSection[]>([])
+  const [activeSectionId, setActiveSectionId] = useState<string>("cover")
+  const [isRewriting, setIsRewriting] = useState(false)
+  const [rewriteSuccessAt, setRewriteSuccessAt] = useState<number>(0)
+  const [editorKey, setEditorKey] = useState(0)
   const editorRef = useRef<StyleGuideEditorRef>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollTopBeforeSwitchRef = useRef<number>(0)
+
+  // Restore scroll position after mode switch
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (scrollContainerRef.current && scrollTopBeforeSwitchRef.current > 0) {
+        scrollContainerRef.current.scrollTop = scrollTopBeforeSwitchRef.current
+        scrollTopBeforeSwitchRef.current = 0
+      }
+    })
+  }, [viewMode])
+
+  const handleModeSwitch = (mode: "preview" | "edit") => {
+    if (mode === viewMode) return
+    scrollTopBeforeSwitchRef.current = scrollContainerRef.current?.scrollTop ?? 0
+    setViewMode(mode)
+  }
+
+  // Scroll to section on sidebar click (center in viewport)
+  const handleSectionSelect = (id: string) => {
+    setActiveSectionId(id)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+
+  // IntersectionObserver: update activeSectionId as user scrolls
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || sections.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const intersecting = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => {
+            const aTop = (a.target as HTMLElement).getBoundingClientRect().top
+            const bTop = (b.target as HTMLElement).getBoundingClientRect().top
+            return aTop - bTop
+          })
+        const topmost = intersecting[0]
+        if (topmost) {
+          const id = (topmost.target as HTMLElement).id
+          if (id) setActiveSectionId(id)
+        }
+      },
+      { root: container, rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+    )
+
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [sections])
 
   // Function to generate the style guide (can be called multiple times)
   const generateStyleGuide = async () => {
@@ -321,6 +386,27 @@ function FullAccessContent() {
     return () => clearTimeout(t)
   }, [currentGuideId, user, brandDetails, hasEdits, generatedStyleGuide, guideType])
 
+  // Parse content into sections when generatedStyleGuide changes
+  useEffect(() => {
+    if (!generatedStyleGuide) return
+    
+    // Parse markdown directly into sections
+    const parsed = parseStyleGuideContent(generatedStyleGuide)
+    
+    // Add cover section manually
+    const coverSection: StyleGuideSection = {
+      id: 'cover',
+      title: 'Cover Page',
+      content: '',
+      level: 1,
+      isMainSection: true,
+      configId: 'cover',
+      icon: STYLE_GUIDE_SECTIONS.find(s => s.id === 'cover')?.icon,
+      minTier: 'free'
+    }
+    setSections([coverSection, ...parsed])
+  }, [generatedStyleGuide])
+
   const handleCopy = () => {
     setCopied(true)
     const shareableLink = window.location.href
@@ -418,119 +504,165 @@ function FullAccessContent() {
     html2pdf().set(opt).from(element).save()
   }
 
-  // Process content to remove duplicate headings that conflict with our header
-  const processFullAccessContent = (content: string, brandName: string = "") => {
-    if (!content) return content;
-    
-    // Only process on client side to avoid SSR issues
-    if (typeof window === 'undefined') {
-      return content;
-    }
-    
-    // Remove the first h1 heading if it contains the brand name
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = content;
-    
-    // Remove the first paragraph that contains the date (May 29, 2025)
-    const firstP = tempDiv.querySelector('p');
-    if (firstP && firstP.textContent?.match(/\w+\s+\d{1,2},\s+\d{4}/)) {
-      firstP.remove();
-    }
-    
-    // Find and remove the first h1 that contains brand name or "Style Guide"
-    const firstH1 = tempDiv.querySelector('h1');
-    if (firstH1 && (
-      (brandName && firstH1.textContent?.includes(brandName)) ||
-      firstH1.textContent?.toLowerCase().includes('style guide')
-    )) {
-      firstH1.remove();
-    }
-    
-    // Remove the subtitle paragraph "An essential guide..."
-    const paragraphs = tempDiv.querySelectorAll('p');
-    paragraphs.forEach(p => {
-      if (p.textContent?.toLowerCase().includes('essential guide') || 
-          p.textContent?.toLowerCase().includes('clear and consistent')) {
-        p.remove();
-      }
-    });
-    
-    // Remove any horizontal divider lines (hr tags) that are orphaned
-    const hrTags = tempDiv.querySelectorAll('hr');
-    hrTags.forEach(hr => hr.remove());
-    
-    // Wrap "How to Use This Document" section in a callout
-    const howToUseH2 = Array.from(tempDiv.querySelectorAll('h2')).find(h2 => 
-      h2.textContent?.toLowerCase().includes('how to use this document')
-    );
-    if (howToUseH2) {
-      const calloutDiv = document.createElement('div');
-      calloutDiv.className = 'how-to-use-callout';
-      
-      // Move the h2 into the callout
-      calloutDiv.appendChild(howToUseH2.cloneNode(true));
-      
-      // Move following paragraphs until we hit another h2
-      let nextElement = howToUseH2.nextElementSibling;
-      while (nextElement && nextElement.tagName.toLowerCase() !== 'h2') {
-        const elementToMove = nextElement;
-        nextElement = nextElement.nextElementSibling;
-        calloutDiv.appendChild(elementToMove.cloneNode(true));
-        elementToMove.remove();
-      }
-      
-      // Replace the original h2 with the callout
-      howToUseH2.parentNode?.replaceChild(calloutDiv, howToUseH2);
-      
-      // Add divider after the callout
-      const dividerAfterCallout = document.createElement('hr');
-      dividerAfterCallout.style.border = 'none';
-      dividerAfterCallout.style.borderTop = '1px solid #e2e8f0';
-      dividerAfterCallout.style.margin = '2rem 0';
-      calloutDiv.parentNode?.insertBefore(dividerAfterCallout, calloutDiv.nextSibling);
-    }
-    
-    // Add divider and brand name to Brand Voice section
-    const brandVoiceH2 = Array.from(tempDiv.querySelectorAll('h2')).find(h2 => 
-      h2.textContent?.toLowerCase().includes('brand voice')
-    );
-    if (brandVoiceH2) {
-      // Add brand name to the heading
-      const currentText = brandVoiceH2.textContent || 'Brand Voice';
-      if (brandName && !currentText.includes(brandName)) {
-        brandVoiceH2.textContent = `${brandName} Brand Voice`;
-      }
-      
-      // Add divider before Brand Voice section
-      const divider = document.createElement('hr');
-      divider.style.border = 'none';
-      divider.style.borderTop = '1px solid #e2e8f0';
-      divider.style.margin = '2rem 0';
-      brandVoiceH2.parentNode?.insertBefore(divider, brandVoiceH2);
-      
-      // Add numbering to brand voice traits
-      let currentElement = brandVoiceH2.nextElementSibling;
-      let traitNumber = 1;
-      
-      while (currentElement) {
-        if (currentElement.tagName.toLowerCase() === 'h2') {
-          // Stop if we hit another major section
-          break;
+  const handleRewrite = async (instruction: string, scope: "section" | "selection" | "document", selectedText?: string) => {
+    if (!generatedStyleGuide) return
+
+    setIsRewriting(true)
+    try {
+      let currentContent = ""
+      if (scope === "selection" && selectedText) {
+        currentContent = selectedText
+      } else if (scope === "document") {
+        currentContent = generatedStyleGuide
+      } else {
+        // section scope
+        if (!activeSectionId || activeSectionId === "cover") {
+          throw new Error("No section selected")
         }
-        if (currentElement.tagName.toLowerCase() === 'h3') {
-          // Add numbering to trait titles
-          const traitTitle = currentElement.textContent;
-          if (traitTitle && !traitTitle.match(/^\d+\./)) {
-            currentElement.textContent = `${traitNumber}. ${traitTitle}`;
-            traitNumber++;
+        currentContent = getSectionContentFromMarkdown(generatedStyleGuide, activeSectionId)
+        if (!currentContent) {
+          throw new Error("Section content not found")
+        }
+      }
+
+      const response = await fetch("/api/rewrite-section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instruction,
+          currentContent,
+          brandName: brandDetails?.name,
+          scope,
+          selectedText,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to rewrite")
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.content) {
+        let newContent = generatedStyleGuide
+        if (scope === "selection" && selectedText && editorRef.current) {
+          // For selection, we'd need to replace the selected text in the editor
+          // This is more complex and would require editor manipulation
+          // For now, fall back to section replacement
+          if (activeSectionId && activeSectionId !== "cover") {
+            newContent = replaceSectionInMarkdown(generatedStyleGuide, activeSectionId, data.content)
           }
+        } else if (scope === "document") {
+          newContent = data.content
+        } else {
+          // section scope
+          if (!activeSectionId || activeSectionId === "cover") {
+            throw new Error("No section selected")
+          }
+          newContent = replaceSectionInMarkdown(generatedStyleGuide, activeSectionId, data.content)
         }
-        currentElement = currentElement.nextElementSibling;
+        
+        setGeneratedStyleGuide(newContent)
+        const parsed = parseStyleGuideContent(newContent)
+        const coverSection: StyleGuideSection = {
+          id: "cover",
+          title: "Cover Page",
+          content: "",
+          level: 1,
+          isMainSection: true,
+          configId: "cover",
+          icon: STYLE_GUIDE_SECTIONS.find((s) => s.id === "cover")?.icon,
+          minTier: "free",
+        }
+        setSections([coverSection, ...parsed])
+        setEditorKey((k) => k + 1)
+        setRewriteSuccessAt(Date.now())
+        setTimeout(() => setRewriteSuccessAt(0), 800)
+        try {
+          localStorage.setItem("generatedStyleGuide", newContent)
+        } catch (e) {
+          console.warn("[Full Access] Failed to save to localStorage", e)
+        }
+        toast({
+          title: scope === "document" ? "Document rewritten" : scope === "selection" ? "Selection rewritten" : "Section rewritten",
+          description: "Your changes have been applied.",
+        })
+      } else {
+        throw new Error("Invalid response from server")
+      }
+    } catch (error) {
+      console.error("Rewrite error:", error)
+      toast({
+        title: "Rewrite failed",
+        description: error instanceof Error ? error.message : "Could not rewrite. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRewriting(false)
+    }
+  }
+
+  const isUnlocked = (minTier?: Tier) => {
+    if (!minTier || minTier === 'free') return true
+    if (subscriptionTier === 'free') return false
+    if (subscriptionTier === 'pro' && minTier === 'team') return false
+    return true
+  }
+
+  // Clean up markdown content for download (remove redundant title/date/subtitle lines)
+  const processFullAccessContent = (content: string, brandName: string = "") => {
+    if (!content) return content
+
+    let lines = content.split('\n')
+
+    // Remove first H1 that contains brand name or "Style Guide"
+    const h1Idx = lines.findIndex(l => /^#\s+/.test(l))
+    if (h1Idx !== -1) {
+      const h1Text = lines[h1Idx].replace(/^#\s+/, '')
+      if ((brandName && h1Text.includes(brandName)) || h1Text.toLowerCase().includes('style guide')) {
+        lines.splice(h1Idx, 1)
       }
     }
-    
-    return tempDiv.innerHTML;
-  };
+
+    // Remove standalone date line near the top (e.g. "January 5, 2026")
+    const dateIdx = lines.findIndex((l, i) => i < 10 && /^\w+\s+\d{1,2},\s+\d{4}/.test(l.trim()))
+    if (dateIdx !== -1) lines.splice(dateIdx, 1)
+
+    // Remove subtitle lines ("An essential guide..." / "clear and consistent")
+    lines = lines.filter(l => {
+      const lower = l.trim().toLowerCase()
+      return !lower.includes('essential guide') && !lower.includes('clear and consistent')
+    })
+
+    // Remove orphan horizontal rules (---) that sit alone
+    lines = lines.filter(l => !/^-{3,}$/.test(l.trim()))
+
+    // Add brand name to Brand Voice heading if missing
+    lines = lines.map(l => {
+      if (/^##\s+Brand Voice/i.test(l) && brandName && !l.includes(brandName)) {
+        return `## ${brandName} Brand Voice`
+      }
+      return l
+    })
+
+    // Number ### trait headings inside the Brand Voice section
+    let inBrandVoice = false
+    let traitNum = 1
+    lines = lines.map(l => {
+      if (/^##\s+.*Brand Voice/i.test(l)) { inBrandVoice = true; traitNum = 1; return l }
+      if (/^##\s+/.test(l) && inBrandVoice) { inBrandVoice = false; return l }
+      if (inBrandVoice && /^###\s+/.test(l)) {
+        const title = l.replace(/^###\s+/, '')
+        if (!/^\d+\./.test(title)) {
+          return `### ${traitNum++}. ${title}`
+        }
+      }
+      return l
+    })
+
+    return lines.join('\n')
+  }
 
   if (isLoading) {
     return (
@@ -545,10 +677,12 @@ function FullAccessContent() {
   if (apiError && !generatedStyleGuide) {
     return (
       <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <Header 
-          containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
-        />
+        {/* Simple header for error state */}
+        <header className="border-b bg-white">
+          <div className="max-w-5xl mx-auto px-8 flex h-16 items-center">
+            <Link href="/" className="font-semibold text-lg">AI Style Guide</Link>
+          </div>
+        </header>
 
         <main className="flex-1 py-8">
           <div className="max-w-2xl mx-auto px-8">
@@ -596,71 +730,50 @@ function FullAccessContent() {
     )
   }
 
+  const activeSection = sections.find(s => s.id === activeSectionId)
+  const isSectionLocked = activeSection ? !isUnlocked(activeSection.minTier) : false
+
+  // Build header content for StyleGuideLayout
+  const headerContent = (
+    <div className="flex items-center gap-3">
+      {/* Retry button in case user wants to regenerate */}
+      {subscriptionTier !== "free" && (
+        <Button
+          onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
+          disabled={isRetrying}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          {isRetrying ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3 w-3" />
+          )}
+          Regenerate
+        </Button>
+      )}
+      
+      <Button
+        onClick={() => setShowDownloadOptions(true)}
+        disabled={isDownloading}
+        className="gap-2"
+      >
+        {isDownloading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+        <ChevronDown className="h-4 w-4" />
+        )}
+        Download
+      </Button>
+    </div>
+  )
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Header (sticky to match preview) */}
-      <Header 
-        containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
-        rightContent={
-          <div className="flex items-center gap-3">
-            {/* Edit/Preview toggle for paid users */}
-            {subscriptionTier !== "free" && (
-              <div className="flex items-center gap-1 border border-gray-200 rounded-md p-1 bg-white">
-                <Button
-                  onClick={() => setViewMode('edit')}
-                  variant={viewMode === 'edit' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-3"
-                >
-                  Edit
-                </Button>
-                <Button
-                  onClick={() => setViewMode('preview')}
-                  variant={viewMode === 'preview' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="h-8 px-3"
-                >
-                  Preview
-                </Button>
-              </div>
-            )}
-            
-            {/* Retry button in case user wants to regenerate */}
-            {subscriptionTier !== "free" && (
-              <Button
-                onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
-                disabled={isRetrying}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                {isRetrying ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3" />
-                )}
-                Regenerate
-              </Button>
-            )}
-            
-            <Button
-              onClick={() => setShowDownloadOptions(true)}
-              disabled={isDownloading}
-              className="gap-2"
-            >
-              {isDownloading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-              <ChevronDown className="h-4 w-4" />
-              )}
-              Download
-            </Button>
-          </div>
-        }
-      />
 
       {/* Error message if there was an issue but we have existing content */}
-      {apiError && (
+      {apiError && sections.length > 0 && (
         <div className="max-w-5xl mx-auto px-8 pt-4">
           <ErrorMessage
             error={apiError}
@@ -668,7 +781,7 @@ function FullAccessContent() {
             isRetrying={isRetrying}
             onDismiss={() => setApiError(null)}
             showRetryButton={true}
-      />
+          />
         </div>
       )}
 
@@ -721,81 +834,66 @@ function FullAccessContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Main Content */}
-      <main className="flex-1 pt-24 pb-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-6 px-8">
-            <Link
-              href={currentGuideId ? "/dashboard" : "/brand-details"}
-              className="inline-flex items-center gap-2 text-sm sm:text-base font-medium px-4 py-2 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />{" "}
-              {currentGuideId ? "Back to dashboard" : "Back to details"}
-            </Link>
-          </div>
-          
-          <div className="bg-white rounded-2xl border shadow-lg overflow-hidden">
-            <div id="pdf-export-content" className="print-optimized">
-              <StyleGuideHeader 
-                brandName={brandDetails?.name || 'Your Brand'} 
-                guideType={guideType as 'core' | 'complete'} 
-              />
-              <div className="p-8 bg-white relative">
-                {/* Content updated indicator */}
-                {contentUpdated && (
-                  <div className="absolute top-4 right-4 bg-green-100 border border-green-200 text-green-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 animate-in fade-in-0 slide-in-from-top-2">
-                    <Check className="h-4 w-4" />
-                    Style Guide Updated
-                  </div>
-                )}
-                
-                <div className={`max-w-2xl mx-auto space-y-12 transition-opacity duration-300 ${isRetrying ? "opacity-50" : "opacity-100"}`}>
-                  {subscriptionTier === "free" ? (
-                    // Free tier: show read-only view with ContentGate
-                    <ContentGate
-                      content={guideContent ?? ""}
-                      showUpgradeCTA={true}
-                      onUpgrade={() => {
-                        // Redirect to payment or show upgrade dialog
-                        router.push("/dashboard/billing")
-                      }}
-                      selectedTraits={(() => {
-                        try {
-                          const savedTraits = localStorage.getItem("selectedTraits")
-                          return savedTraits ? JSON.parse(savedTraits) : []
-                        } catch (e) {
-                          return []
-                        }
-                      })()}
-                    />
-                  ) : (
-                    // Paid tier: show editor with edit/preview toggle
-                    <StyleGuideEditor
-                      key={generatedStyleGuide ?? "init"}
-                      ref={editorRef}
-                      markdown={guideContent ?? ""}
-                      readOnly={viewMode === 'preview'}
-                      onChange={(md) => {
-                        setHasEdits(true)
-                        setGeneratedStyleGuide(md)
-                        if (typeof window !== "undefined") {
-                          try {
-                            localStorage.setItem("generatedStyleGuide", md)
-                          } catch {
-                            // ignore
-                          }
-                        }
-                      }}
-                      storageKey={brandDetails?.name?.replace(/\s+/g, "-")}
-                      className="style-guide-editor"
-                    />
-                  )}
+      {/* Main Content with Sidebar Layout */}
+      {sections.length > 0 ? (
+        <StyleGuideLayout
+          sections={sections}
+          activeSectionId={activeSectionId}
+          onSectionChange={handleSectionSelect}
+          subscriptionTier={subscriptionTier}
+          brandName={brandDetails?.name || 'Your Brand'}
+          onUpgrade={() => router.push("/dashboard/billing")}
+          headerContent={headerContent}
+          viewMode={viewMode}
+          onModeSwitch={handleModeSwitch}
+          showEditTools={true}
+        >
+          <StyleGuideView
+            sections={sections}
+            activeSectionId={activeSectionId}
+            scrollContainerRef={scrollContainerRef}
+            viewMode={viewMode}
+            onModeSwitch={handleModeSwitch}
+            content={generatedStyleGuide ?? ""}
+            onContentChange={(full) => {
+              setHasEdits(true)
+              setGeneratedStyleGuide(full)
+              try {
+                localStorage.setItem("generatedStyleGuide", full)
+              } catch (e) {
+                console.warn("[Full Access] Failed to save", e)
+              }
+            }}
+            brandName={brandDetails?.name || "Your Brand"}
+            guideType={guideType as "core" | "complete"}
+            showPreviewBadge={false}
+            isUnlocked={isUnlocked}
+            onRewrite={handleRewrite}
+            isRewriting={isRewriting}
+            isSectionLocked={isSectionLocked}
+            onUpgrade={() => router.push("/dashboard/billing")}
+            editorKey={editorKey}
+            editorRef={editorRef}
+            storageKey="full-access-full"
+            editorId="full-access-single-editor"
+            showEditTools={true}
+            editorBanner={
+              contentUpdated && (generatedStyleGuide?.length ?? 0) > 0 ? (
+                <div className="absolute top-4 right-4 bg-green-100 border border-green-200 text-green-800 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-2 zoom-in-95 duration-500 z-10 shadow-md">
+                  <Check className="h-4 w-4 animate-in zoom-in duration-300" />
+                  Style Guide Updated
                 </div>
-              </div>
-            </div>
-          </div>
+              ) : undefined
+            }
+            contentClassName={`transition-all duration-500 ${isRetrying ? "opacity-50 blur-sm" : "opacity-100"}`}
+          />
+        </StyleGuideLayout>
+      ) : (
+        <div className="flex min-h-screen flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="mt-4">Loading style guide...</p>
         </div>
-      </main>
+      )}
 
       {/* Download Options Dialog */}
       <Dialog open={showDownloadOptions} onOpenChange={setShowDownloadOptions}>

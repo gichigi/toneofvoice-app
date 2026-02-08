@@ -1,6 +1,7 @@
 // Design system: see DESIGN_SYSTEM.md for typography/spacing decisions
 
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown from "react-markdown"
+import { SECTION_H2_BAR_CLASS, SECTION_H2_CLASS, SECTION_H2_STYLE } from "@/lib/style-guide-styles"
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import { cn } from '@/lib/utils'
@@ -20,7 +21,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
     .replace(/"\s*\n\s*\(/g, '" (') // Fix quotes before parentheses
 
   return (
-    <div className={cn("prose prose-gray max-w-none style-guide-document", className)}>
+    <div className={cn("max-w-3xl space-y-6 style-guide-document", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         components={{
@@ -35,9 +36,10 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
           const isTraitHeading = childrenText.toLowerCase().includes('brand voice')
           return (
             <>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6 mt-16" style={{ fontFamily: 'var(--font-display), serif', letterSpacing: '-0.02em' }}>
+              <h2 className={`${SECTION_H2_CLASS} mb-8 mt-20 first:mt-0`} style={SECTION_H2_STYLE}>
                 {children}
               </h2>
+              <div className={`${SECTION_H2_BAR_CLASS} mb-8 -mt-4`} />
               {isTraitHeading && selectedTraits.length > 0 && (
                 <div className="flex flex-wrap gap-3 md:gap-4 mb-8 mt-2">
                   {selectedTraits.map((trait: string, index: number) => (
@@ -54,7 +56,7 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
           )
         },
         h3: ({ children }) => (
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 mt-8" style={{ fontFamily: 'var(--font-display), serif', hyphens: 'none', wordBreak: 'keep-all', letterSpacing: '-0.02em' }}>
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-5 mt-12" style={{ fontFamily: 'var(--font-display), serif', hyphens: 'none', wordBreak: 'keep-all', letterSpacing: '-0.02em' }}>
             {children}
           </h3>
         ),
@@ -64,26 +66,26 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
           </h4>
         ),
         
-        // Custom paragraph styles with proper line spacing
+        // Custom paragraph styles — generous line height for readability
         p: ({ children }) => (
-          <p className="text-gray-700 mb-4 leading-8" style={{ orphans: 2, widows: 2 }}>
+          <p className="text-gray-600 mb-5 leading-relaxed text-base md:text-lg" style={{ orphans: 2, widows: 2 }}>
             {children}
           </p>
         ),
         
-        // Custom list styles  
+        // Custom list styles — open, airy  
         ul: ({ children }) => (
-          <ul className="list-disc list-inside text-gray-700 mb-4 space-y-1">
+          <ul className="list-disc list-outside ml-5 text-gray-600 mb-6 space-y-2 text-base md:text-lg leading-relaxed">
             {children}
           </ul>
         ),
         ol: ({ children }) => (
-          <ol className="list-decimal list-inside text-gray-700 mb-4 space-y-1">
+          <ol className="list-decimal list-outside ml-5 text-gray-600 mb-6 space-y-2 text-base md:text-lg leading-relaxed">
             {children}
           </ol>
         ),
         li: ({ children }) => (
-          <li className="mb-1">{children}</li>
+          <li className="mb-1 leading-relaxed">{children}</li>
         ),
         
         // Custom code styles

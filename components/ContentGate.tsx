@@ -2,6 +2,7 @@
 
 "use client"
 
+import { SECTION_H2_BAR_CLASS, SECTION_H2_CLASS, SECTION_H2_STYLE } from "@/lib/style-guide-styles"
 import { Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CreditCard } from "lucide-react"
@@ -16,14 +17,76 @@ interface ContentGateProps {
   onUpgrade?: () => void
   /** Selected traits for MarkdownRenderer */
   selectedTraits?: string[]
+  /** If true, show entire content blurred with lock overlay (section-level gating) */
+  locked?: boolean
+  /** Section heading to show above the lock overlay */
+  sectionTitle?: string
 }
 
 /**
  * ContentGate component splits markdown content at the paywall boundary
  * (Core Rules / Style Rules heading) and shows locked sections below with
  * gradient fade and upgrade CTA.
+ * 
+ * If `locked` prop is true, shows entire content blurred with lock overlay.
  */
-export function ContentGate({ content, showUpgradeCTA = true, onUpgrade, selectedTraits = [] }: ContentGateProps) {
+export function ContentGate({ content, showUpgradeCTA = true, onUpgrade, selectedTraits = [], locked = false, sectionTitle }: ContentGateProps) {
+  // Section-level locking: show heading + lock overlay
+  if (locked) {
+    const lines = content.split("\n").filter((l) => l.trim())
+    const previewSnippet = lines.slice(0, 2).join(" ").slice(0, 120)
+
+    return (
+      <div className="animate-in fade-in duration-500 rounded-lg">
+        {/* Visible section heading so user knows what's locked */}
+        {sectionTitle && (
+          <div className="mb-6">
+            <h2 className={SECTION_H2_CLASS} style={SECTION_H2_STYLE}>
+              {sectionTitle}
+            </h2>
+            <div className={`${SECTION_H2_BAR_CLASS} mt-4`} />
+          </div>
+        )}
+
+        <div className="relative min-h-[40vh]">
+          {/* Blurred content preview */}
+          <div className="blur-sm select-none pointer-events-none opacity-30 transition-all duration-500">
+            <MarkdownRenderer content={content} selectedTraits={selectedTraits} />
+          </div>
+
+          {/* Lock overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg">
+            <div className="text-center space-y-4 p-8 max-w-sm animate-in fade-in zoom-in-95 duration-500">
+              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                <Lock className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+              </div>
+              {previewSnippet && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-2">
+                  &ldquo;{previewSnippet}...&rdquo;
+                </p>
+              )}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                This section is locked
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Upgrade to unlock all sections and get full editing access.
+              </p>
+              {showUpgradeCTA && onUpgrade && (
+                <Button
+                  onClick={onUpgrade}
+                  className="bg-gray-900 hover:bg-gray-800 text-white font-medium shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Unlock Full Guide
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Find the split point - "Style Rules" or "Core Rules" heading (with optional number prefix like "25 Core Rules")
   const splitRegex = /(##\s+(?:\d+\s+)?(?:Core|Style)\s+Rules?\s*\n)/i
   const match = content.match(splitRegex)

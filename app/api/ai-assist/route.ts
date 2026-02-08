@@ -103,7 +103,7 @@ export async function POST(req: Request) {
         { role: "user", content: prompts.user(text, context) },
       ],
       reasoning_effort: "low",
-      max_tokens: 500,
+      max_completion_tokens: 500,
     });
 
     const suggestion =

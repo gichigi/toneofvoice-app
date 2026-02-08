@@ -14,6 +14,8 @@
     "convert-search-terms": "node scripts/convert-search-terms-to-blog-csv.js",
     "update-post-images": "node scripts/update-existing-posts-images.js",
     "update-blog-images": "node scripts/update-blog-images.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test-outline": "node scripts/test-outline-approach.js",
     "generate-logos": "node scripts/generate-logo-svgs.js",
     "generate-favicons": "node scripts/generate-favicons.js",
@@ -110,10 +112,14 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/turndown": "^5.0.5",
+    "@vitejs/plugin-react": "^5.1.3",
+    "jsdom": "^28.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "to-ico": "^1.1.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.0",
+    "vitest": "^4.0.18"
   }
 }

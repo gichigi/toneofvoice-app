@@ -22,7 +22,7 @@ export function Toolbar({
 }: React.ComponentProps<typeof ToolbarPrimitive.Root>) {
   return (
     <ToolbarPrimitive.Root
-      className={cn('relative flex select-none items-center', className)}
+      className={cn('relative flex select-none items-center flex-nowrap', className)}
       {...props}
     />
   );
@@ -270,11 +270,11 @@ export function ToolbarGroup({
     <div
       className={cn(
         'group/toolbar-group',
-        'relative hidden has-[button]:flex',
+        'relative hidden shrink-0 has-[button]:inline-flex flex-nowrap',
         className
       )}
     >
-      <div className="flex items-center">{children}</div>
+      <div className="flex items-center flex-nowrap">{children}</div>
 
       <div className="group-last/toolbar-group:hidden! mx-1.5 py-0.5">
         <Separator orientation="vertical" />

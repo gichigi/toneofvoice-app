@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ArrowLeft, CreditCard, Loader2, CheckCircle, Download } from "lucide-react"
+import { Loader2, Eye, PenLine } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/AuthProvider"
 import { track } from "@vercel/analytics"
@@ -17,116 +16,19 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
-// Tabs removed - subscription-only payment dialog no longer needs tabs
-import Logo from "@/components/Logo"
-import { StyleGuideHeader } from "@/components/StyleGuideHeader"
-import { MarkdownRenderer } from "@/components/MarkdownRenderer"
-import { ContentGate } from "@/components/ContentGate"
+import type { StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
+import { StyleGuideLayout } from "@/components/StyleGuideLayout"
+import { StyleGuideView } from "@/components/StyleGuideView"
+import {
+  parseStyleGuideContent,
+  StyleGuideSection,
+  Tier,
+  STYLE_GUIDE_SECTIONS,
+  getSectionContentFromMarkdown,
+  replaceSectionInMarkdown,
+} from "@/lib/content-parser"
+import { cn } from "@/lib/utils"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
-
-// (MiniPaywallBanner removed)
-
-// Process preview content to remove duplicate title/subtitle but keep How to Use section
-const processPreviewContent = (content: string, brandName: string = "") => {
-  if (!content) return content;
-  
-  // Create a temporary DOM element to parse HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = content;
-  
-  // Remove the first paragraph that contains the date (May 29, 2025)
-  const firstP = tempDiv.querySelector('p');
-  if (firstP && firstP.textContent?.match(/\w+\s+\d{1,2},\s+\d{4}/)) {
-    firstP.remove();
-  }
-  
-  // Find and remove the first h1 that contains brand name or "Style Guide"
-  const firstH1 = tempDiv.querySelector('h1');
-  if (firstH1 && (
-    (brandName && firstH1.textContent?.includes(brandName)) ||
-    firstH1.textContent?.toLowerCase().includes('style guide')
-  )) {
-    firstH1.remove();
-  }
-  
-  // Remove the subtitle paragraph "An essential guide..."
-  const paragraphs = tempDiv.querySelectorAll('p');
-  paragraphs.forEach(p => {
-    if (p.textContent?.toLowerCase().includes('essential guide') || 
-        p.textContent?.toLowerCase().includes('clear and consistent')) {
-      p.remove();
-    }
-  });
-  
-  // Remove any horizontal divider lines (hr tags) that are orphaned
-  const hrTags = tempDiv.querySelectorAll('hr');
-  hrTags.forEach(hr => hr.remove());
-  
-  // Wrap "How to Use This Document" section in a callout
-  const howToUseH2 = Array.from(tempDiv.querySelectorAll('h2')).find(h2 => 
-    h2.textContent?.toLowerCase().includes('how to use this document')
-  );
-  if (howToUseH2) {
-    const calloutDiv = document.createElement('div');
-    calloutDiv.className = 'how-to-use-callout';
-    
-    // Move the h2 into the callout
-    calloutDiv.appendChild(howToUseH2.cloneNode(true));
-    
-    // Move following paragraphs until we hit another h2
-    let nextElement = howToUseH2.nextElementSibling;
-    while (nextElement && nextElement.tagName.toLowerCase() !== 'h2') {
-      const elementToMove = nextElement;
-      nextElement = nextElement.nextElementSibling;
-      calloutDiv.appendChild(elementToMove.cloneNode(true));
-      elementToMove.remove();
-    }
-    
-    // Replace the original h2 with the callout
-    howToUseH2.parentNode?.replaceChild(calloutDiv, howToUseH2);
-  }
-  
-  // Add divider and brand name to Brand Voice section
-  const brandVoiceH2 = Array.from(tempDiv.querySelectorAll('h2')).find(h2 => 
-    h2.textContent?.toLowerCase().includes('brand voice')
-  );
-  if (brandVoiceH2) {
-    // Add brand name to the heading
-    const currentText = brandVoiceH2.textContent || 'Brand Voice';
-    if (brandName && !currentText.includes(brandName)) {
-      brandVoiceH2.textContent = `${brandName} Brand Voice`;
-    }
-    
-    // Add divider before Brand Voice section
-    const divider = document.createElement('hr');
-    divider.style.border = 'none';
-    divider.style.borderTop = '1px solid #e2e8f0';
-    divider.style.margin = '2rem 0';
-    brandVoiceH2.parentNode?.insertBefore(divider, brandVoiceH2);
-    
-    // Add numbering to brand voice traits
-    let currentElement = brandVoiceH2.nextElementSibling;
-    let traitNumber = 1;
-    
-    while (currentElement) {
-      if (currentElement.tagName.toLowerCase() === 'h2') {
-        // Stop if we hit another major section
-        break;
-      }
-      if (currentElement.tagName.toLowerCase() === 'h3') {
-        // Add numbering to trait titles
-        const traitTitle = currentElement.textContent;
-        if (traitTitle && !traitTitle.match(/^\d+\./)) {
-          currentElement.textContent = `${traitNumber}. ${traitTitle}`;
-          traitNumber++;
-        }
-      }
-      currentElement = currentElement.nextElementSibling;
-    }
-  }
-  
-  return tempDiv.innerHTML;
-};
 
 function PreviewContent() {
   const router = useRouter()
@@ -136,33 +38,97 @@ function PreviewContent() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [processingPlan, setProcessingPlan] = useState<"pro" | "team" | null>(null)
   const [previewContent, setPreviewContent] = useState<string | null>(null)
-  const [fadeIn, setFadeIn] = useState(false)
   const [brandDetails, setBrandDetails] = useState<any>(null)
   const [shouldRedirect, setShouldRedirect] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [subscriptionTier, setSubscriptionTier] = useState<Tier>("free")
+  const [sections, setSections] = useState<StyleGuideSection[]>([])
+  const [activeSectionId, setActiveSectionId] = useState<string>("cover")
+  const [isRewriting, setIsRewriting] = useState(false)
+  const [rewriteSuccessAt, setRewriteSuccessAt] = useState<number>(0)
+  const [editorKey, setEditorKey] = useState(0)
+  const [viewMode, setViewMode] = useState<"preview" | "edit">("preview")
+  const editorRef = useRef<StyleGuideEditorRef>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollTopBeforeSwitchRef = useRef<number>(0)
+
+  // Restore scroll position after mode switch
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (scrollContainerRef.current && scrollTopBeforeSwitchRef.current > 0) {
+        scrollContainerRef.current.scrollTop = scrollTopBeforeSwitchRef.current
+        scrollTopBeforeSwitchRef.current = 0
+      }
+    })
+  }, [viewMode])
+
+  const handleModeSwitch = (mode: "preview" | "edit") => {
+    if (mode === viewMode) return
+    scrollTopBeforeSwitchRef.current = scrollContainerRef.current?.scrollTop ?? 0
+    setViewMode(mode)
+  }
+
+  // Scroll to section on sidebar click (center in viewport)
+  const handleSectionSelect = (id: string) => {
+    setActiveSectionId(id)
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+
+  // IntersectionObserver: update activeSectionId as user scrolls
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || sections.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const intersecting = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => {
+            const aTop = (a.target as HTMLElement).getBoundingClientRect().top
+            const bTop = (b.target as HTMLElement).getBoundingClientRect().top
+            return aTop - bTop
+          })
+        const topmost = intersecting[0]
+        if (topmost) {
+          const id = (topmost.target as HTMLElement).id
+          if (id) setActiveSectionId(id)
+        }
+      },
+      { root: container, rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+    )
+
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [sections])
+
+  // Fetch subscription tier
+  useEffect(() => {
+    if (!user) {
+      setSubscriptionTier("free")
+      return
+    }
+    
+    fetch("/api/user-subscription-tier")
+      .then(res => res.json())
+      .then(data => setSubscriptionTier((data.subscription_tier || "free") as Tier))
+      .catch(() => setSubscriptionTier("free"))
+  }, [user])
 
   useEffect(() => {
-    // Load brand details with error handling
     try {
       const savedBrandDetails = localStorage.getItem("brandDetails")
       if (savedBrandDetails) {
         setBrandDetails(JSON.parse(savedBrandDetails))
       } else {
-        // No brand details found, redirect to home
         setShouldRedirect(true)
       }
     } catch (error) {
-      console.error('[Preview Page] Failed to load brand details from localStorage:', error)
-      // If localStorage fails, redirect to home
+      console.error('[Preview Page] Failed to load brand details:', error)
       setShouldRedirect(true)
     }
-
-    // Trigger fade-in animation
-    const timer = setTimeout(() => {
-      setFadeIn(true)
-    }, 100)
-
-    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -178,36 +144,45 @@ function PreviewContent() {
       if (!brandDetails) return
       
       try {
-        // Check if we already have the preview content saved from brand-details page
         const savedPreviewContent = localStorage.getItem("previewContent")
         if (savedPreviewContent) {
-          console.log('[Preview Page] Using saved preview content (no API call needed)')
           if (isMounted) {
             setPreviewContent(savedPreviewContent)
             
-            // Extract and save the generated trait descriptions for reuse in full-access
+            // Parse markdown into sections directly
+            const parsed = parseStyleGuideContent(savedPreviewContent)
+            // Add cover section manually (it's not in the content)
+            const coverSection: StyleGuideSection = {
+              id: 'cover',
+              title: 'Cover Page',
+              content: '',
+              level: 1,
+              isMainSection: true,
+              configId: 'cover',
+              icon: STYLE_GUIDE_SECTIONS.find(s => s.id === 'cover')?.icon,
+              minTier: 'free'
+            }
+            setSections([coverSection, ...parsed])
+            setActiveSectionId('cover')
+            
+            // Extract traits for reuse
             const brandVoiceMatch = savedPreviewContent.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
             if (brandVoiceMatch) {
-              // Save only the content without the heading (full-access templates already have ## Brand Voice)
               const brandVoiceContent = brandVoiceMatch[1].trim()
               localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
               localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
-              console.log('[Preview Page] Saved generated traits for reuse')
             }
           }
           return
         }
         
-        // Only call API if no saved content exists (fallback case)
-        console.log('[Preview Page] No saved content found, generating dynamic preview with AI content...')
-        // Get selectedTraits from localStorage with error handling
+        // Fallback: generate preview
         let selectedTraits = []
         try {
           const savedSelectedTraits = localStorage.getItem("selectedTraits")
           selectedTraits = savedSelectedTraits ? JSON.parse(savedSelectedTraits) : []
         } catch (parseError) {
-          console.warn('[Preview Page] Failed to parse selectedTraits from localStorage:', parseError)
-          selectedTraits = []
+          console.warn('[Preview Page] Failed to parse selectedTraits:', parseError)
         }
         
         const response = await fetch('/api/preview', {
@@ -222,20 +197,31 @@ function PreviewContent() {
         }
         
         const data = await response.json()
-        console.log(`[Preview Page] Preview generated successfully in ${data.duration}`)
         
         if (isMounted) {
           setPreviewContent(data.preview)
           
-          // Save the generated trait descriptions for reuse in full-access
-          // Extract just the brand voice traits section from the preview
+          // Parse markdown into sections directly
+          const parsed = parseStyleGuideContent(data.preview)
+          const coverSection: StyleGuideSection = {
+            id: 'cover',
+            title: 'Cover Page',
+            content: '',
+            level: 1,
+            isMainSection: true,
+            configId: 'cover',
+            icon: STYLE_GUIDE_SECTIONS.find(s => s.id === 'cover')?.icon,
+            minTier: 'free'
+          }
+          setSections([coverSection, ...parsed])
+          setActiveSectionId('cover')
+          
+          // Extract traits
           const brandVoiceMatch = data.preview.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
           if (brandVoiceMatch) {
-            // Save only the content without the heading (full-access templates already have ## Brand Voice)
             const brandVoiceContent = brandVoiceMatch[1].trim()
             localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
             localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
-            console.log('[Preview Page] Saved generated traits for reuse')
           }
         }
       } catch (error) {
@@ -259,13 +245,11 @@ function PreviewContent() {
   }, [brandDetails, toast])
 
   const subscribeTriggered = useRef(false)
-  // After sign-up/sign-in with subscribe param, start subscription checkout
   useEffect(() => {
     const sub = searchParams.get("subscribe")
     if (!sub || (sub !== "pro" && sub !== "team") || !user || subscribeTriggered.current) return
     subscribeTriggered.current = true
     const run = async () => {
-      setIsProcessingPayment(true)
       try {
         const res = await fetch("/api/create-subscription-session", {
           method: "POST",
@@ -275,8 +259,8 @@ function PreviewContent() {
         const data = await res.json()
         if (res.ok && data.url) window.location.href = data.url
         else toast({ title: "Could not start checkout", variant: "destructive" })
-      } finally {
-        setIsProcessingPayment(false)
+      } catch (e) {
+        toast({ title: "Could not start checkout", variant: "destructive" })
       }
     }
     run()
@@ -299,12 +283,6 @@ function PreviewContent() {
       const data = await res.json()
       if (!res.ok) {
         const errorMsg = data.error || `Failed to start checkout (${res.status})`
-        console.error("[handleSubscription] API error:", {
-          status: res.status,
-          error: data.error,
-          code: data.code,
-          type: data.type,
-        })
         throw new Error(errorMsg)
       }
       if (data.url) {
@@ -325,77 +303,28 @@ function PreviewContent() {
     }
   }
 
-  const handlePayment = async (guideType: 'core' | 'complete') => {
-    try {
-      setIsProcessingPayment(true);
-      
-      // Get email capture token for abandoned cart tracking
-      const emailCaptureToken = localStorage.getItem('emailCaptureToken');
-      
-      // Create checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          guideType,
-          emailCaptureToken // Include for abandoned cart connection
-        })
-      });
-      
-      if (!response.ok) {
-        let errorMessage = 'Failed to create checkout session';
-        try {
-          const error = await response.json();
-          errorMessage = error.error || error.message || errorMessage;
-        } catch (e) {
-          // If response isn't JSON, use status text
-          errorMessage = response.statusText || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const { url } = await response.json();
-      
-      // Redirect to Stripe Checkout
-      window.location.href = url;
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Payment failed",
-        description: "Could not process payment. Please try again.",
-        variant: "destructive",
-      });
-      setIsProcessingPayment(false);
-    }
-  };
-
-  // Download functionality (same as full-access page)
-  const handleDownload = async (format: string) => {
+  const handleDownload = async (format: string = "pdf") => {
     if (!previewContent || !brandDetails) return
 
     setIsDownloading(true)
 
     try {
       if (format === "pdf") {
-        // Use html2pdf for PDF generation (same as full-access)
         const source = document.getElementById('pdf-export-content')
         if (!source) {
           throw new Error('PDF content not found')
         }
 
-        // Create an offscreen clone to avoid mutating React-managed DOM
         const clone = source.cloneNode(true) as HTMLElement
         const wrapper = document.createElement('div')
         wrapper.style.position = 'fixed'
         wrapper.style.left = '-99999px'
         wrapper.style.top = '0'
         wrapper.style.background = '#ffffff'
-        // Match width so line wraps are consistent
         wrapper.style.width = `${source.offsetWidth || 800}px`
         wrapper.appendChild(clone)
         document.body.appendChild(wrapper)
 
-        // Show/hide PDF-specific elements on the clone only
         clone.querySelectorAll('.pdf-only').forEach(el => (el as HTMLElement).style.display = 'block')
         clone.querySelectorAll('.pdf-exclude').forEach(el => (el as HTMLElement).style.display = 'none')
 
@@ -412,11 +341,9 @@ function PreviewContent() {
         try {
           await html2pdf().set(opt).from(clone).save()
         } finally {
-          // Clean up offscreen wrapper
           if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper)
         }
       } else {
-        // Keep existing method for other formats
         const file = await generateFile(format as FileFormat, previewContent, brandDetails.name)
         const url = window.URL.createObjectURL(file)
         const a = document.createElement("a")
@@ -444,8 +371,112 @@ function PreviewContent() {
     }
   }
 
-  // If no preview content yet, show loading state
-  if (!previewContent) {
+  const handleRewrite = async (instruction: string, scope: "section" | "selection" | "document", selectedText?: string) => {
+    if (!previewContent) return
+
+    setIsRewriting(true)
+    try {
+      let currentContent = ""
+      if (scope === "selection" && selectedText) {
+        currentContent = selectedText
+      } else if (scope === "document") {
+        currentContent = previewContent
+      } else {
+        // section scope
+        if (!activeSectionId || activeSectionId === "cover") {
+          throw new Error("No section selected")
+        }
+        currentContent = getSectionContentFromMarkdown(previewContent, activeSectionId)
+        if (!currentContent) {
+          throw new Error("Section content not found")
+        }
+      }
+
+      const response = await fetch("/api/rewrite-section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instruction,
+          currentContent,
+          brandName: brandDetails?.name,
+          scope,
+          selectedText,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to rewrite")
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.content) {
+        let newContent = previewContent
+        if (scope === "selection" && selectedText && editorRef.current) {
+          // For selection, we'd need to replace the selected text in the editor
+          // This is more complex and would require editor manipulation
+          // For now, fall back to section replacement
+          if (activeSectionId && activeSectionId !== "cover") {
+            newContent = replaceSectionInMarkdown(previewContent, activeSectionId, data.content)
+          }
+        } else if (scope === "document") {
+          newContent = data.content
+        } else {
+          // section scope
+          if (!activeSectionId || activeSectionId === "cover") {
+            throw new Error("No section selected")
+          }
+          newContent = replaceSectionInMarkdown(previewContent, activeSectionId, data.content)
+        }
+        
+        setPreviewContent(newContent)
+        const parsed = parseStyleGuideContent(newContent)
+        const coverSection: StyleGuideSection = {
+          id: "cover",
+          title: "Cover Page",
+          content: "",
+          level: 1,
+          isMainSection: true,
+          configId: "cover",
+          icon: STYLE_GUIDE_SECTIONS.find((s) => s.id === "cover")?.icon,
+          minTier: "free",
+        }
+        setSections([coverSection, ...parsed])
+        setEditorKey((k) => k + 1)
+        setRewriteSuccessAt(Date.now())
+        setTimeout(() => setRewriteSuccessAt(0), 800)
+        toast({
+          title: scope === "document" ? "Document rewritten" : scope === "selection" ? "Selection rewritten" : "Section rewritten",
+          description: "Your changes have been applied.",
+        })
+      } else {
+        throw new Error("Invalid response from server")
+      }
+    } catch (error) {
+      console.error("Rewrite error:", error)
+      toast({
+        title: "Rewrite failed",
+        description: error instanceof Error ? error.message : "Could not rewrite. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRewriting(false)
+    }
+  }
+
+  const isUnlocked = (minTier?: Tier) => {
+    if (!minTier || minTier === 'free') return true
+    if (subscriptionTier === 'free') return false
+    if (subscriptionTier === 'pro' && minTier === 'team') return false
+    return true
+  }
+
+  const activeSection = sections.find(s => s.id === activeSectionId)
+  const isSectionLocked = activeSection ? !isUnlocked(activeSection.minTier) : false
+
+  // Loading state
+  if (!previewContent || sections.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -461,49 +492,72 @@ function PreviewContent() {
         { name: "Brand Details", url: "https://aistyleguide.com/brand-details" },
         { name: "Preview", url: "https://aistyleguide.com/preview" }
       ]} />
-      {/* (Mini paywall CSS removed) */}
-      <div className="bg-gray-50 dark:bg-gray-900">
-      {/* Sticky Header with CTAs */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-950/95 dark:border-gray-800 shadow-sm">
-        <div className="max-w-5xl mx-auto px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Logo size="md" linkToHome={true} />
-          </div>
-          
-          {/* CTAs in header */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleDownload("pdf")}
-              disabled={isDownloading}
-              className="text-sm"
-            >
-              {isDownloading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              Download Preview
-            </Button>
-            
-            <Button
-              size="sm"
-              onClick={() => {
-                track('Header CTA Clicked', { 
-                  location: 'sticky-header',
-                  action: 'get-full-access'
-                });
-                setPaymentDialogOpen(true);
-              }}
-              className="text-sm bg-gray-900 hover:bg-gray-800 text-white"
-            >
-              <CreditCard className="mr-2 h-4 w-4" />
-              Unlock Full Guide
-            </Button>
-          </div>
-        </div>
-      </header>
+      
+      <StyleGuideLayout
+        sections={sections}
+        activeSectionId={activeSectionId}
+        onSectionChange={handleSectionSelect}
+        subscriptionTier={subscriptionTier}
+        brandName={brandDetails?.name || 'Your Brand'}
+        onUpgrade={() => {
+          track('Paywall Clicked', { 
+            location: 'preview-page',
+            action: 'unlock-style-guide'
+          })
+          setPaymentDialogOpen(true)
+        }}
+        viewMode={viewMode}
+        onModeSwitch={handleModeSwitch}
+        showEditTools={true}
+      >
+        <StyleGuideView
+          sections={sections}
+          activeSectionId={activeSectionId}
+          scrollContainerRef={scrollContainerRef}
+          viewMode={viewMode}
+          onModeSwitch={handleModeSwitch}
+          content={previewContent}
+          onContentChange={(full) => {
+            setPreviewContent(full)
+            try {
+              localStorage.setItem("previewContent", full)
+            } catch (e) {
+              console.warn("[Preview] Failed to save", e)
+            }
+          }}
+          brandName={brandDetails?.name || "Your Brand"}
+          guideType="core"
+          showPreviewBadge={true}
+          isUnlocked={isUnlocked}
+          onRewrite={handleRewrite}
+          isRewriting={isRewriting}
+          isSectionLocked={isSectionLocked}
+          onUpgrade={() => {
+            track("Paywall Clicked", { location: "preview-page", action: "unlock-section" })
+            setPaymentDialogOpen(true)
+          }}
+          editorKey={editorKey}
+          editorRef={editorRef}
+          storageKey="preview-full"
+          editorId="preview-single-editor"
+          showEditTools={true}
+          pdfFooter={
+            <div className="pdf-only mt-12 pt-8 border-t border-gray-200 px-8 pb-8">
+              <div className="text-center space-y-3 max-w-2xl mx-auto">
+                <div className="text-sm text-gray-600">
+                  <div className="font-medium text-gray-800">AI Style Guide Preview</div>
+                  <div>Generated by aistyleguide.com</div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <div>Questions? Contact: support@aistyleguide.com</div>
+                  <div>Get the complete guide: aistyleguide.com</div>
+                </div>
+                <div className="text-xs text-gray-500">© 2025 AI Style Guide. All rights reserved.</div>
+              </div>
+            </div>
+          }
+        />
+      </StyleGuideLayout>
 
       {/* Payment Dialog */}
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
@@ -516,39 +570,39 @@ function PreviewContent() {
           </DialogHeader>
 
           <div className="mt-4 space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold">Pro — $29/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">5 guides, core rules, AI editing</p>
-                  <Button
-                    onClick={() => {
-                      track("Payment Started", { plan: "pro", type: "subscription" })
-                      handleSubscription("pro")
-                    }}
-                    disabled={processingPlan !== null}
-                    className="mt-3 w-full"
-                  >
-                    {processingPlan === "pro" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Subscribe
-                  </Button>
-                </div>
-                <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
-                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900">RECOMMENDED</span>
-                  <h4 className="mt-1 font-semibold">Team — $79/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, complete rules</p>
-                  <Button
-                    onClick={() => {
-                      track("Payment Started", { plan: "team", type: "subscription" })
-                      handleSubscription("team")
-                    }}
-                    disabled={processingPlan !== null}
-                    className="mt-3 w-full"
-                  >
-                    {processingPlan === "team" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Subscribe
-                  </Button>
-                </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border p-4">
+                <h4 className="font-semibold">Pro — $29/mo</h4>
+                <p className="mt-1 text-xs text-muted-foreground">5 guides, core rules, AI editing</p>
+                <Button
+                  onClick={() => {
+                    track("Payment Started", { plan: "pro", type: "subscription" })
+                    handleSubscription("pro")
+                  }}
+                  disabled={processingPlan !== null}
+                  className="mt-3 w-full"
+                >
+                  {processingPlan === "pro" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Subscribe
+                </Button>
               </div>
+              <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
+                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900">RECOMMENDED</span>
+                <h4 className="mt-1 font-semibold">Team — $79/mo</h4>
+                <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, complete rules</p>
+                <Button
+                  onClick={() => {
+                    track("Payment Started", { plan: "team", type: "subscription" })
+                    handleSubscription("team")
+                  }}
+                  disabled={processingPlan !== null}
+                  className="mt-3 w-full"
+                >
+                  {processingPlan === "team" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Subscribe
+                </Button>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="sm:justify-start">
@@ -563,75 +617,6 @@ function PreviewContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Download modal removed; immediate PDF download */}
-
-      {/* Main Content */}
-      <main className={`pt-24 pb-8 transition-opacity duration-500 ease-in-out ${fadeIn ? "opacity-100" : "opacity-0"}`}>
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-6 px-8">
-          <Link
-            href="/brand-details"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </Link>
-        </div>
-
-          <div className="bg-white rounded-2xl border shadow-lg overflow-hidden">
-            <div id="pdf-export-content">
-              <StyleGuideHeader 
-                brandName={brandDetails?.name || 'Your Brand'} 
-                guideType="core"
-                showPreviewBadge={true}
-              />
-                <div className="p-8 bg-white">
-                  <div className="max-w-2xl mx-auto space-y-12">
-                    <div className="prose prose-slate dark:prose-invert max-w-none style-guide-content prose-sm sm:prose-base">
-                      <ContentGate
-                        content={previewContent || ""}
-                        showUpgradeCTA={true}
-                        onUpgrade={() => {
-                          track('Paywall Clicked', { 
-                            location: 'preview-page',
-                            action: 'unlock-style-guide'
-                          });
-                          setPaymentDialogOpen(true);
-                        }}
-                        selectedTraits={(() => {
-                          try {
-                            const savedTraits = localStorage.getItem("selectedTraits")
-                            return savedTraits ? JSON.parse(savedTraits) : []
-                          } catch (e) {
-                            return []
-                          }
-                        })()}
-                      />
-                    </div>
-                  
-                  {/* Professional PDF Footer - only in PDF */}
-                  <div className="pdf-only mt-12 pt-8 border-t border-gray-200">
-                    <div className="text-center space-y-3">
-                      <div className="text-sm text-gray-600">
-                        <div className="font-medium text-gray-800">AI Style Guide Preview</div>
-                        <div>Generated by aistyleguide.com</div>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        <div>Questions? Contact: support@aistyleguide.com</div>
-                        <div>Get the complete guide: aistyleguide.com</div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        © 2025 AI Style Guide. All rights reserved.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-      </div>
     </>
   )
 }
@@ -643,4 +628,3 @@ export default function PreviewPage() {
     </Suspense>
   )
 }
-

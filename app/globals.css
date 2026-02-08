@@ -317,26 +317,25 @@ html, body {
 
 /* Design system: see DESIGN_SYSTEM.md for typography/spacing decisions */
 
-/* Style guide document shared styles - applied to both MarkdownRenderer and Plate.js editor */
-.style-guide-document {
-  /* Premium display font for headings */
-  --font-display: var(--font-display, 'Playfair Display', serif);
-}
-
-.style-guide-document h1,
-.style-guide-document h2,
-.style-guide-document h3,
-.style-guide-document h4,
-.style-guide-document h5,
-.style-guide-document h6 {
-  font-family: var(--font-display), serif;
+/* All headings in style guide — single source of truth (cover, sections, locked, editor) */
+#pdf-export-content h1,
+#pdf-export-content h2,
+#pdf-export-content h3,
+#pdf-export-content h4,
+#pdf-export-content h5,
+#pdf-export-content h6 {
+  font-family: var(--font-display), Georgia, serif !important;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-/* H2 sections - spacious with generous margins */
+.style-guide-document {
+  --font-display: var(--font-display, 'Playfair Display', serif);
+}
+
+/* H2 sections - match ContentGate / cover aesthetic (text-4xl md:text-5xl) */
 .style-guide-document h2 {
-  font-size: 1.875rem; /* text-3xl */
+  font-size: clamp(2.25rem, 5vw, 3rem);
   margin-top: 4rem; /* mt-16 */
   margin-bottom: 1.5rem; /* mb-6 */
   color: #111827; /* gray-900 */
@@ -394,8 +393,8 @@ html, body {
   margin-top: 1rem; /* mt-4 */
 }
 
-/* Use Geist Sans for all headings (fallback for non-document areas) */
-h1, h2, h3, h4, h5, h6 {
+/* Geist Sans for headings outside style-guide-document (low specificity via :where) */
+:where(h1, h2, h3, h4, h5, h6) {
   font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
@@ -438,6 +437,34 @@ h1, h2, h3, h4, h5, h6 {
   .animate-glow-pulse {
     animation: glow-pulse 2s ease-in-out;
   }
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Live rewrite: brief green border flash on section content after AI rewrite */
+@keyframes rewrite-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+[data-rewrite-success="true"] {
+  animation: rewrite-flash 0.6s ease-out;
+}
+
 }
 
 /* PDF export visibility controls */

@@ -23,7 +23,6 @@ import {
   Users,
   Rocket,
   Briefcase,
-  PhoneCall,
   Check,
   X,
   FileQuestion,
@@ -776,25 +775,6 @@ export default function LandingPage() {
                     </Link>
                   </div>
                 </div>
-                {/* Secondary CTA: Book a Call */}
-                {SHOW_NIKE_DEMO_CTA && (
-                  <Button
-                    asChild
-                    variant="secondary"
-                    size="lg"
-                    className="w-full py-6 text-lg mt-10"
-                  >
-                    <Link 
-                      href="https://calendly.com/l-gichigi/customer-chat"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <PhoneCall className="h-5 w-5" />
-                      Book a Call
-                    </Link>
-                  </Button>
-                )}
               </form>
               
               {/* Secondary CTA: View Demo */}

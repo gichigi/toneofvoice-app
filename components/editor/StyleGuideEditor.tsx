@@ -51,7 +51,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // UI node components — see DESIGN_SYSTEM.md
-import { H1Element, H2Element, H3Element } from "@/components/ui/heading-node";
+import { H1Element, H2Element, H2SectionElement, H3Element } from "@/components/ui/heading-node";
 import { BlockquoteElement } from "@/components/ui/blockquote-node";
 import { HrElement } from "@/components/ui/hr-node";
 import { ParagraphElement } from "@/components/ui/paragraph-node";
@@ -76,6 +76,14 @@ interface StyleGuideEditorProps {
   className?: string;
   /** Read-only mode (preview mode) */
   readOnly?: boolean;
+  /** Show editable tip banner (only for first section in unified doc) */
+  showTip?: boolean;
+  /** Callback when editor gains or loses focus (for dimming sidebar/header) */
+  onFocusChange?: (focused: boolean) => void;
+  /** Unique editor id when multiple editors on page (avoids Plate conflicts) */
+  editorId?: string;
+  /** Use H2SectionElement for section ids (sidebar jump, IntersectionObserver) */
+  useSectionIds?: boolean;
 }
 
 /** Ref handle exposed to parent components */
@@ -89,13 +97,17 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
   storageKey,
   className,
   readOnly = false,
+  showTip = true,
+  onFocusChange,
+  editorId = "style-guide-editor",
+  useSectionIds = false,
 }, ref) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const [showTip, setShowTip] = useState(true);
+  const [tipDismissed, setTipDismissed] = useState(false);
 
   const editor = usePlateEditor({
-    id: "style-guide-editor",
+    id: editorId,
     plugins: [
       // Markdown serialisation (must come first for deserialize/serialize)
       MarkdownPlugin.configure({
@@ -108,7 +120,7 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
         shortcuts: { toggle: { keys: "mod+alt+1" } },
       }),
       H2Plugin.configure({
-        node: { component: H2Element },
+        node: { component: useSectionIds ? H2SectionElement : H2Element },
         shortcuts: { toggle: { keys: "mod+alt+2" } },
       }),
       H3Plugin.configure({
@@ -205,11 +217,14 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
     );
   };
 
+  const handleFocus = useCallback(() => onFocusChange?.(true), [onFocusChange]);
+  const handleBlur = useCallback(() => onFocusChange?.(false), [onFocusChange]);
+
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* Dismissable tip banner */}
-      {showTip && !readOnly && (
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
+    <div className={cn("space-y-4", className)} onFocus={handleFocus} onBlur={handleBlur}>
+      {/* Editable tip banner (shown once in unified doc) */}
+      {showTip && !tipDismissed && !readOnly && (
+        <div className="pdf-exclude flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
           <span>
             This guide is fully editable. Click anywhere to make changes, or use
             AI Assist to refine sections.
@@ -218,7 +233,7 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
             variant="ghost"
             size="sm"
             className="shrink-0 text-blue-600 hover:text-blue-800 dark:text-blue-300"
-            onClick={() => setShowTip(false)}
+            onClick={() => setTipDismissed(true)}
           >
             Dismiss
           </Button>
@@ -230,9 +245,9 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
           {/* Toolbar — only visible when editing */}
           {!readOnly && (
             <TooltipProvider delayDuration={200}>
-              <FixedToolbar className="flex items-center gap-0.5 px-1.5 py-1">
+              <FixedToolbar className="pdf-exclude justify-start gap-1">
               {/* Headings */}
-              <ToolbarGroup>
+              <ToolbarGroup className="flex-nowrap">
                 <ToolbarButton
                   tooltip="Heading 1 (⌘+⌥+1)"
                   onClick={() => editor.tf.h1.toggle()}
@@ -254,7 +269,7 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
               </ToolbarGroup>
 
               {/* Text formatting */}
-              <ToolbarGroup>
+              <ToolbarGroup className="flex-nowrap">
                 <MarkToolbarButton nodeType="bold" tooltip="Bold (⌘+B)">
                   <Bold className="size-4" />
                 </MarkToolbarButton>
@@ -279,7 +294,7 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
               </ToolbarGroup>
 
               {/* Lists */}
-              <ToolbarGroup>
+              <ToolbarGroup className="flex-nowrap">
                 <ToolbarButton
                   tooltip="Bullet list"
                   onClick={() => editor.tf.bulleted_list.toggle()}
@@ -295,7 +310,7 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
               </ToolbarGroup>
 
               {/* Block elements */}
-              <ToolbarGroup>
+              <ToolbarGroup className="flex-nowrap">
                 <ToolbarButton
                   tooltip="Blockquote"
                   onClick={() => editor.tf.blockquote.toggle()}
@@ -321,12 +336,12 @@ export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditor
             </TooltipProvider>
           )}
 
-          <EditorContainer className="min-h-[400px]">
+          <EditorContainer className="min-h-[420px]">
             <Editor
               variant="default"
               placeholder="Type your style guide content..."
               readOnly={readOnly}
-              className="prose prose-slate dark:prose-invert max-w-none style-guide-content style-guide-document px-6 py-4"
+              className="prose prose-slate dark:prose-invert max-w-none style-guide-content style-guide-document px-8 py-6"
             />
           </EditorContainer>
         </Plate>

@@ -29,9 +29,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data?.user ?? null);
       setLoading(false);
+    }).catch((err) => {
+      console.error("[AuthProvider] getUser failed:", err);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Safety: force loading off if getUser hangs (e.g. network issues)
+    const timeout = setTimeout(() => setLoading(false), 8000);
+
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = React.useCallback(async () => {

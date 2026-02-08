@@ -58,42 +58,41 @@ const withRetry = async <T>(
   return null;
 };
 
-// Function to load a template file via API
+// Function to load a template file via API or from disk (server-side)
 export async function loadTemplate(templateName: string): Promise<string> {
   console.log(`[loadTemplate] Called with templateName: "${templateName}"`)
-  
+
   try {
-    // Use absolute URL with origin for server-side calls
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : process.env.NEXT_PUBLIC_APP_URL
-    
-    if (!baseUrl) {
-      throw new Error('NEXT_PUBLIC_APP_URL environment variable is not set')
+    // Server-side: read from disk when possible (no NEXT_PUBLIC_APP_URL needed)
+    if (typeof window === 'undefined') {
+      try {
+        const path = await import('path')
+        const fs = await import('fs/promises')
+        const templatePath = path.join(process.cwd(), 'templates', `${templateName}.md`)
+        const content = await fs.readFile(templatePath, 'utf8')
+        console.log(`[loadTemplate] Loaded from disk: "${templateName}" (${content.length} chars)`)
+        return content
+      } catch (diskError) {
+        console.warn(`[loadTemplate] Disk read failed, falling back to API:`, diskError)
+      }
     }
-    
+
+    // Client-side or fallback: fetch from API
+    const baseUrl = typeof window !== 'undefined'
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3000}`
+
     console.log(`[loadTemplate] Base URL: "${baseUrl}"`)
-    console.log(`[loadTemplate] Environment: ${typeof window !== 'undefined' ? 'client-side' : 'server-side'}`)
-    
     const fullUrl = `${baseUrl}/api/load-template?name=${templateName}`
-    console.log(`[loadTemplate] Fetching from: "${fullUrl}"`)
-    
     const response = await fetch(fullUrl)
-    console.log(`[loadTemplate] Response status: ${response.status}`)
-    
     const data = await response.json()
-    console.log(`[loadTemplate] Response data:`, {
-      hasContent: !!data.content,
-      contentLength: data.content?.length || 0,
-      error: data.error || 'none'
-    })
 
     if (!response.ok) {
       console.error(`[loadTemplate] API error:`, data)
       throw new Error(data.error || `Failed to load template: ${templateName}`)
     }
 
-    console.log(`[loadTemplate] Successfully loaded template "${templateName}" (${data.content.length} chars)`)
+    console.log(`[loadTemplate] Loaded template "${templateName}" (${data.content?.length ?? 0} chars)`)
     return data.content
   } catch (error) {
     console.error(`[loadTemplate] Error loading template ${templateName}:`, error)

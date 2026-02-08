@@ -28,3 +28,6 @@ export function useMobile(breakpoint = 640): boolean {
 
   return isMobile
 }
+
+// Alias for shadcn sidebar (expects useIsMobile)
+export const useIsMobile = useMobile

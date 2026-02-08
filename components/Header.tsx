@@ -4,7 +4,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo"
 import { ReactNode } from "react"
-import { PhoneCall } from "lucide-react"
 import { track } from "@vercel/analytics"
 import { HeaderAuth } from "@/components/HeaderAuth"
 
@@ -25,11 +24,13 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className={containerClass || "container flex h-16 items-center justify-between"}>
-        <Logo size="md" linkToHome={true} />
+      <div className={containerClass || "container grid h-16 grid-cols-3 items-center"}>
+        <div className="flex items-center">
+          <Logo size="md" linkToHome={true} />
+        </div>
         
         {showNavigation && (
-          <nav className="hidden md:flex gap-6">
+          <nav className="hidden md:flex justify-center gap-6">
             <Link href="#how-it-works" className="text-sm font-medium hover:text-primary">
               How It Works
             </Link>
@@ -45,28 +46,10 @@ export default function Header({
           </nav>
         )}
         
-        {showGetStarted && (
-          <div className="flex items-center gap-4">
-            <Button asChild variant="outline">
-              <Link
-                href="https://calendly.com/l-gichigi/customer-chat"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden md:inline-flex items-center gap-2 text-sm font-medium"
-              >
-                <PhoneCall className="h-4 w-4" />
-                Book a Call
-              </Link>
-            </Button>
-            <HeaderAuth />
-          </div>
-        )}
-        
-        {rightContent && (
-          <div className="flex items-center gap-4">
-            {rightContent}
-          </div>
-        )}
+        <div className="flex items-center justify-end gap-4">
+          {showGetStarted && <HeaderAuth />}
+          {rightContent}
+        </div>
       </div>
     </header>
   )

@@ -124,14 +124,14 @@ export async function generateWithOpenAI(
           { role: "system", content: systemPrompt },
           { role: "user", content: prompt }
         ],
-        max_tokens: max_tokens
       }
       
-      // Add reasoning_effort for GPT-5.2 (reasoning models)
+      // GPT-5+ uses max_completion_tokens + reasoning_effort; older models use max_tokens + temperature
       if (model === "gpt-5.2" || model.startsWith("gpt-5")) {
+        requestParams.max_completion_tokens = max_tokens
         requestParams.reasoning_effort = reasoningEffort
       } else {
-        // For older models, use temperature
+        requestParams.max_tokens = max_tokens
         requestParams.temperature = 0.4
       }
       

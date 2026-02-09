@@ -25,8 +25,8 @@ export async function POST(request: Request) {
     console.log(`Creating checkout session for guide type: ${guideType}`)
     console.log(`Using base URL: ${BASE_URL}`)
 
-    // Validate guide type
-    if (!['core', 'complete'].includes(guideType)) {
+    // Validate guide type (unified product)
+    if (guideType !== 'style_guide') {
       return NextResponse.json(
         { error: 'Invalid guide type' },
         { status: 400 }
@@ -44,12 +44,10 @@ export async function POST(request: Request) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${guideType === 'core' ? 'Core' : 'Complete'} Style Guide`,
-              description: guideType === 'core' 
-                ? 'Unlock 25 essential brand writing rules and voice guidelines for clear, consistent content. Perfect for startups and small teams.'
-                : 'Get the full brand style guide with 99+ advanced rules, voice traits, and pro content templates. Ideal for agencies and growing teams.',
+              name: 'Style Guide',
+              description: 'Get your brand voice guidelines with 25 writing rules, before/after examples, and a word list. Editable in-app with PDF and Word export.',
             },
-            unit_amount: guideType === 'core' ? 9900 : 14900, // $99 or $149
+            unit_amount: 14900, // $149 (unified product)
           },
           quantity: 1,
         },

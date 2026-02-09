@@ -21,13 +21,13 @@ export async function GET(req: Request) {
     if (error) {
       console.error("[user-subscription-tier] Error fetching profile:", error);
       return NextResponse.json(
-        { subscription_tier: "free" },
+        { subscription_tier: "starter" },
         { status: 200 }
       );
     }
 
     return NextResponse.json({
-      subscription_tier: profile?.subscription_tier || "free",
+      subscription_tier: (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) || "starter",
     });
   } catch (e) {
     if (e instanceof MissingSupabaseConfigError) {
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     }
     console.error("[user-subscription-tier] Error:", e);
     return NextResponse.json(
-      { subscription_tier: "free" },
+      { subscription_tier: "starter" },
       { status: 200 }
     );
   }

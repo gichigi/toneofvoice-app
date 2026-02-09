@@ -248,13 +248,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const periodEnd = subscription.current_period_end
       ? new Date(subscription.current_period_end * 1000).toISOString()
       : null;
-    const guidesLimit = plan === "pro" ? 5 : plan === "team" ? 99 : 1;
+    const guidesLimit = plan === "pro" ? 5 : 99;
 
     const { error } = await getSupabaseAdmin()
       .from("profiles")
       .update({
         subscription_status: status === "active" || status === "trialing" ? "active" : "inactive",
-        subscription_tier: plan || "free",
+        subscription_tier: plan || "starter",
         guides_limit: guidesLimit,
         current_period_end: periodEnd,
         updated_at: new Date().toISOString(),
@@ -274,7 +274,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     const { error } = await getSupabaseAdmin()
       .from("profiles")
       .update({
-        subscription_tier: "free",
+        subscription_tier: "starter",
         subscription_status: "cancelled",
         stripe_subscription_id: null,
         current_period_end: null,

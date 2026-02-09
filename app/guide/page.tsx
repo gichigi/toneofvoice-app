@@ -73,7 +73,7 @@ function GuideContent() {
     isSectionLocked,
   } = useStyleGuide({
     guideId,
-    defaultViewMode: isPreviewFlow ? "preview" : "edit",
+    defaultViewMode: "preview",
     isPreviewFlow,
   })
   
@@ -98,7 +98,7 @@ function GuideContent() {
   const subscribeTriggered = useRef(false)
   useEffect(() => {
     const sub = searchParams.get("subscribe")
-    if (!sub || (sub !== "pro" && sub !== "team") || !user || subscribeTriggered.current) return
+    if (!sub || !["pro", "team"].includes(sub) || !user || subscribeTriggered.current) return
     subscribeTriggered.current = true
     const run = async () => {
       try {
@@ -144,24 +144,24 @@ function GuideContent() {
           }
           
           const guide = await guideResponse.json()
-          const tierData = tierResponse.ok ? await tierResponse.json() : { subscription_tier: "free" }
+          const tierData = tierResponse.ok ? await tierResponse.json() : { subscription_tier: "starter" }
           
           if (!guide) return
           
           setContent(guide.content_md || "")
           setBrandDetails(guide.brand_details || { name: guide.brand_name || "Brand" })
-          setGuideType(guide.plan_type || "core")
+          setGuideType(guide.plan_type || "style_guide")
           
-          const tier = tierData?.subscription_tier || (guide as any).subscription_tier || "free"
+          const tier = (tierData?.subscription_tier === "free" ? "starter" : tierData?.subscription_tier) || (guide as any).subscription_tier || "starter"
           
           // If subscription just succeeded but tier is still free, retry after a delay
-          if (subscriptionSuccess && tier === "free" && retryCount < 3) {
+          if (subscriptionSuccess && (tier === "starter" || tier === "free") && retryCount < 3) {
             console.log(`[Guide] Subscription success but tier still free, retrying... (${retryCount + 1}/3)`)
             setTimeout(() => loadGuide(retryCount + 1), 2000 * (retryCount + 1))
             return
           }
           
-          if (subscriptionSuccess && tier !== "free") {
+          if (subscriptionSuccess && tier !== "starter" && tier !== "free") {
             toast({
               title: "Subscription activated!",
               description: "You now have full access to edit and export your style guides.",
@@ -337,12 +337,25 @@ function GuideContent() {
         parsedBrandDetails.previewTraits = generatedPreviewTraits
       }
       
+      // Pass user email and preview content when available (preserve preview user liked)
+      let userEmail = user?.email ?? null
+      let previewContent = null
+      if (!userEmail) {
+        try {
+          const captured = localStorage.getItem("emailCapture")
+          if (captured) userEmail = JSON.parse(captured)?.email ?? null
+        } catch {}
+      }
+      try {
+        previewContent = localStorage.getItem("previewContent")
+      } catch {}
       const response = await fetch('/api/generate-styleguide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           brandDetails: parsedBrandDetails,
-          plan: savedGuideType === 'complete' ? 'complete' : 'core',
+          userEmail: userEmail || undefined,
+          previewContent: previewContent || undefined,
         }),
       })
       
@@ -369,7 +382,7 @@ function GuideContent() {
               title: `${parsedBrandDetails.name} Style Guide`,
               brand_name: parsedBrandDetails.name,
               content_md: data.styleGuide,
-              plan_type: savedGuideType === "complete" ? "complete" : "core",
+              plan_type: savedGuideType === "style_guide" ? "style_guide" : savedGuideType || "style_guide",
               brand_details: parsedBrandDetails,
             }),
           })
@@ -410,7 +423,7 @@ function GuideContent() {
           title: `${brandDetails.name} Style Guide`,
           brand_name: brandDetails.name,
           content_md: content,
-          plan_type: guideType === "complete" ? "complete" : "core",
+          plan_type: "style_guide",
           brand_details: brandDetails,
         }),
       }).catch(() => {})
@@ -682,7 +695,7 @@ function GuideContent() {
   // Build header content
   const headerContent = isPreviewFlow ? null : (
     <div className="flex items-center gap-3">
-      {subscriptionTier !== "free" && (
+      {subscriptionTier !== "starter" && (
         <Button
           onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
           disabled={isRetrying}
@@ -715,7 +728,7 @@ function GuideContent() {
   )
   
   return (
-    <>
+    <div className="animate-in fade-in duration-500">
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://aistyleguide.com" },
         { name: "Brand Details", url: "https://aistyleguide.com/brand-details" },
@@ -767,7 +780,7 @@ function GuideContent() {
             }
           }}
           brandName={brandDetails?.name || "Your Brand"}
-          guideType={guideType as "core" | "complete"}
+          guideType={guideType as "core" | "complete" | "style_guide"}
           showPreviewBadge={isPreviewFlow}
           isUnlocked={isUnlocked}
           onRewrite={handleRewrite}
@@ -828,9 +841,10 @@ function GuideContent() {
             
             <div className="mt-4 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold">Pro — $29/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">5 guides, core rules, AI editing</p>
+                <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
+                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900">RECOMMENDED</span>
+                  <h4 className="mt-1 font-semibold">Pro — $29/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">5 guides, full editing & export</p>
                   <Button
                     onClick={() => {
                       track("Payment Started", { plan: "pro", type: "subscription" })
@@ -843,10 +857,9 @@ function GuideContent() {
                     Subscribe
                   </Button>
                 </div>
-                <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
-                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900">RECOMMENDED</span>
-                  <h4 className="mt-1 font-semibold">Team — $79/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, complete rules</p>
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-semibold">Team — $79/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">99 guides, 5 seats, collaboration</p>
                   <Button
                     onClick={() => {
                       track("Payment Started", { plan: "team", type: "subscription" })
@@ -988,7 +1001,7 @@ function GuideContent() {
           />
         </div>
       )}
-    </>
+    </div>
   )
 }
 

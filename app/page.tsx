@@ -530,7 +530,8 @@ export default function LandingPage() {
           audience: data.audience || ""
         }
         if (data.keywords) {
-          localStorage.setItem("brandKeywords", data.keywords)
+          const kw = Array.isArray(data.keywords) ? data.keywords.join("\n") : String(data.keywords)
+          localStorage.setItem("brandKeywords", kw)
         }
         
         if (data.suggestedTraits) {
@@ -1045,7 +1046,7 @@ export default function LandingPage() {
                   </thead>
                   <tbody>
                     <tr className="border-b border-gray-200 bg-slate-50">
-                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Complete brand voice & style guidelines</td>
+                      <td className="py-5 px-4 font-medium text-gray-700 text-lg sm:text-base">Brand voice & style guidelines</td>
                       <td className="py-5 px-4 text-center">
                         <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
                           <Check className="h-5 w-5 text-emerald-600" />
@@ -1160,7 +1161,7 @@ export default function LandingPage() {
               <div className="md:hidden space-y-4">
                 {/* Feature Card 1 */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Complete brand voice & style guidelines</h3>
+                  <h3 className="font-medium text-gray-900 text-base mb-3 text-center">Brand voice & style guidelines</h3>
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <div className="text-xs text-gray-500 mb-2">Templates</div>
@@ -1526,65 +1527,46 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Pricing Section - BACKGROUND CHANGED TO MUTED FOR ALTERNATION */}
+        {/* Pricing Section - Subscription tiers */}
         <section id="pricing" className="w-full py-12 md:py-20 lg:py-24 bg-muted">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Pay once, use forever</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Simple subscription pricing</h2>
                 <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  No subscriptions or hidden fees
+                  Full guide access, editing, and exports
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-8 md:grid-cols-3">
-              <Card className="relative overflow-hidden border-2 border-blue-500">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-background"></div>
+            <div className="mx-auto grid max-w-5xl gap-6 py-8 md:grid-cols-4">
+              <Card className="relative overflow-hidden border-2 border-gray-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-background"></div>
                 <CardContent className="p-6 relative z-10">
                   <div className="flex flex-col items-center space-y-4 text-center">
-                    <h3 className="text-2xl font-bold text-blue-700">Core Style Guide</h3>
+                    <h3 className="text-2xl font-bold text-gray-700">Starter</h3>
                     <div className="space-y-1">
-                      <p className="text-5xl font-bold text-blue-700">$99</p>
-                      <p className="text-sm text-muted-foreground">One-time payment</p>
+                      <p className="text-5xl font-bold text-gray-700">$0</p>
+                      <p className="text-sm text-muted-foreground">Free forever</p>
                     </div>
                     <ul className="space-y-2 text-left">
                       <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Brand voice guidelines</span>
+                        <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>Preview full guide</span>
                       </li>
                       <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>25 supporting rules</span>
+                        <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>About, Audience, Content Guidelines</span>
                       </li>
                       <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Before/After examples</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Do's and don'ts</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Multiple export formats</span>
+                        <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>Brand Voice section</span>
                       </li>
                     </ul>
-                    <Button size="lg" className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
-                      track('Pricing Card Clicked', {
-                        guideType: 'core',
-                        price: 99,
-                        location: 'homepage'
-                      });
+                    <Button size="lg" className="mt-2 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
+                      track('Pricing Card Clicked', { plan: 'starter', price: 0, location: 'homepage' });
                       router.push("/brand-details");
-                    }}>Get Core Guide</Button>
-                    
-                    {/* Add guarantee */}
-                    <div className="flex items-center justify-center gap-2 text-xs text-green-600 mt-3">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                      <span className="font-medium">Best for startups & small teams</span>
-                    </div>
+                    }}>Get started free</Button>
+                    <p className="text-xs text-muted-foreground">Best for trying out</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1594,35 +1576,57 @@ export default function LandingPage() {
                 <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-xs font-medium rounded-bl-lg shadow">Most Popular</div>
                 <CardContent className="p-6 relative z-10">
                   <div className="flex flex-col items-center space-y-4 text-center">
-                    <h3 className="text-2xl font-bold text-indigo-700">Complete Style Guide</h3>
+                    <h3 className="text-2xl font-bold text-indigo-700">Pro</h3>
                     <div className="space-y-1">
-                      <p className="text-5xl font-bold text-indigo-700">$149</p>
-                      <p className="text-sm text-muted-foreground">One-time payment</p>
+                      <p className="text-5xl font-bold text-indigo-700">$29</p>
+                      <p className="text-sm text-muted-foreground">per month</p>
                     </div>
                     <ul className="text-left space-y-2 text-sm">
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Everything in Core Guide</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />99+ supporting rules</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Best practices guidelines</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Before/After examples</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Dos and don'ts</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Multiple download formats</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />5 style guides</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Full editing & AI assist</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />PDF & Word export</li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
-                      track('Pricing Card Clicked', {
-                        guideType: 'complete',
-                        price: 149,
-                        location: 'homepage'
-                      })
-                      router.push("/brand-details?guideType=complete");
-                    }}>Get Complete Guide</Button>
-                    
-                    {/* Add guarantee */}
-                    <div className="flex items-center justify-center gap-2 text-xs text-green-600 mt-3">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                      <span className="font-medium">Best for agencies & large teams</span>
+                      track('Pricing Card Clicked', { plan: 'pro', price: 29, location: 'homepage' });
+                      router.push("/brand-details");
+                    }}>Get Pro</Button>
+                    <p className="text-xs text-muted-foreground">Best for small teams</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="relative overflow-hidden border-2 border-blue-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-background"></div>
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex flex-col items-center space-y-4 text-center">
+                    <h3 className="text-2xl font-bold text-blue-700">Team</h3>
+                    <div className="space-y-1">
+                      <p className="text-5xl font-bold text-blue-700">$79</p>
+                      <p className="text-sm text-muted-foreground">per month</p>
                     </div>
+                    <ul className="space-y-2 text-left">
+                      <li className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                        <span>99 style guides</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                        <span>5 seats included</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                        <span>Collaboration features</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                        <span>Full export & AI assist</span>
+                      </li>
+                    </ul>
+                    <Button size="lg" className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
+                      track('Pricing Card Clicked', { plan: 'team', price: 79, location: 'homepage' });
+                      router.push("/brand-details");
+                    }}>Get Team</Button>
+                    <p className="text-xs text-muted-foreground">Best for agencies</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1640,7 +1644,7 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-left">
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Everything in Complete</span>
+                        <span className="text-white">Everything in Style Guide</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-white" />
@@ -1753,7 +1757,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "How do I get a refund?",
-                  a: <span>We offer a 30-day money-back guarantee. Simply email <a href="mailto:support@aistyleguide.com?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20AIStyleGuide%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20style%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide%20Type:%20[Core%20or%20Complete]%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a> within 30 days of your purchase for a full refund. No questions asked - we process refunds quickly, usually within 1-2 business days.</span>,
+                  a: <span>We offer a 30-day money-back guarantee. Simply email <a href="mailto:support@aistyleguide.com?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20AIStyleGuide%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20style%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide:%20Style%20Guide%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a> within 30 days of your purchase for a full refund. No questions asked - we process refunds quickly, usually within 1-2 business days.</span>,
                 },
               ].map((item, i) => (
                 <div key={i} className="py-6">

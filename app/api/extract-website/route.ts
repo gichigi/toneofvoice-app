@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { generateWithOpenAI, generateAudienceSummary, generateKeywords, generateTraitSuggestions } from "@/lib/openai"
 import Logger from "@/lib/logger"
 import { validateUrl } from "@/lib/url-validation"
+import { scrapeSiteForExtraction } from "@/lib/firecrawl-site-scraper"
 import * as cheerio from "cheerio"
 import OpenAI from "openai"
 
@@ -35,6 +36,70 @@ const REQUIRED_FIELDS = [
   "description",
   "targetAudience"
 ] as const
+
+// Fallback: fetch HTML and extract text via Cheerio (no Firecrawl)
+async function fetchAndExtractWithCheerio(url: string): Promise<string> {
+  const siteResponse = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br",
+      DNT: "1",
+      Connection: "keep-alive",
+      "Upgrade-Insecure-Requests": "1",
+    },
+  })
+  const html = await siteResponse.text()
+  const $ = cheerio.load(html)
+  const title = $("title").text()
+  const metaDesc = $('meta[name="description"]').attr("content") || ""
+  const h1 = $("h1").first().text()
+  const h2 = $("h2").first().text()
+  let mainContent = $("main").text() || $("body").text()
+  mainContent = mainContent.replace(/\s+/g, " ").trim().slice(0, 2000)
+
+  const subpageLinks: string[] = []
+  $("a").each((_: unknown, el: unknown) => {
+    const href = $(el as cheerio.Element).attr("href") || ""
+    if (/about|company|team/i.test(href) && !href.startsWith("#") && !href.startsWith("mailto:")) {
+      let u = href
+      if (!/^https?:\/\//i.test(u)) u = new URL(u, url).href
+      if (!subpageLinks.includes(u)) subpageLinks.push(u)
+    }
+  })
+  const subpagesToCrawl = subpageLinks.slice(0, 1)
+  let subpageText = ""
+  if (subpagesToCrawl.length > 0) {
+    const results = await Promise.all(
+      subpagesToCrawl.map(async (subUrl) => {
+        try {
+          const subRes = await fetch(subUrl, {
+            signal: AbortSignal.timeout(3000),
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            },
+          })
+          const subHtml = await subRes.text()
+          const $sub = cheerio.load(subHtml)
+          const subTitle = $sub("title").text()
+          const subMeta = $sub('meta[name="description"]').attr("content") || ""
+          const subH1 = $sub("h1").first().text()
+          const subH2 = $sub("h2").first().text()
+          let subMain = $sub("main").text() || $sub("body").text()
+          subMain = subMain.replace(/\s+/g, " ").trim().slice(0, 1500)
+          return `\n[Subpage: ${subUrl}]\n${subTitle}\n${subMeta}\n${subH1}\n${subH2}\n${subMain}`
+        } catch {
+          return ""
+        }
+      })
+    )
+    subpageText = results.join("")
+  }
+  const parts = [title, metaDesc, h1, h2, mainContent, subpageText].filter(Boolean)
+  return parts.join("\n").slice(0, 7000)
+}
 
 // Function to flatten target audience object into a string
 function flattenTargetAudience(audience: TargetAudienceDetail): string {
@@ -198,12 +263,11 @@ export async function POST(request: Request) {
             audience: audienceStr || 'general audience'
           }).catch(err => ({ success: false, error: err.message }))
           
-          // Process keywords with error handling
-          let keywords = ''
+          // Process keywords with error handling (return array for consistency)
+          let keywords: string[] = []
           if (keywordsResult?.success && keywordsResult?.content) {
             const parsed = JSON.parse(keywordsResult.content)
-            const keywordArray = Array.isArray(parsed.keywords) ? parsed.keywords : []
-            keywords = keywordArray.join('\n')
+            keywords = Array.isArray(parsed.keywords) ? parsed.keywords : []
           }
 
           // Generate trait suggestions
@@ -276,131 +340,22 @@ export async function POST(request: Request) {
       throw new Error(testResult.error || "API key validation failed")
     }
 
-    // Fetch the website HTML
-    let siteResponse, html
-    try {
-      siteResponse = await fetch(urlValidation.url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
-        }
-      })
-      html = await siteResponse.text()
-    } catch (fetchError: any) {
-      Logger.error("Failed to fetch website", fetchError)
-      
-      // Handle specific network errors
-      if (fetchError.code === 'ECONNRESET' || fetchError.message?.includes('ECONNRESET')) {
-        return NextResponse.json({
-          success: false,
-          message: "Connection was interrupted. Try again or add details manually.",
-          error: "Connection reset by peer"
-        }, { status: 400 })
+    let summary: string
+
+    // Prefer Firecrawl when API key is set (richer content, avoids bot protection)
+    if (process.env.FIRECRAWL_API_KEY) {
+      Logger.info("Using Firecrawl for site extraction")
+      const fcResult = await scrapeSiteForExtraction(urlValidation.url)
+      if (fcResult.success && fcResult.markdown) {
+        summary = fcResult.markdown.slice(0, 7000)
+        Logger.debug("Firecrawl scrape completed", { pagesScraped: fcResult.pagesScraped, contentLength: summary.length })
+      } else {
+        Logger.warn("Firecrawl failed, falling back to Cheerio", { error: fcResult.error })
+        summary = await fetchAndExtractWithCheerio(urlValidation.url)
       }
-      
-      if (fetchError.message?.includes('timeout')) {
-        return NextResponse.json({
-          success: false,
-          message: "Site didn't respond. Try again or add details manually.",
-          error: "Request timeout"
-        }, { status: 400 })
-      }
-      
-      // Generic network error
-      return NextResponse.json({
-        success: false,
-        message: "Can't reach this site. Try again later.",
-        error: fetchError.message || "Network error"
-      }, { status: 400 })
+    } else {
+      summary = await fetchAndExtractWithCheerio(urlValidation.url)
     }
-    
-    // Debug: Log what we actually got
-    Logger.debug("Fetched HTML preview", { 
-      url: urlValidation.url,
-      htmlPreview: html.slice(0, 500),
-      contentLength: html.length 
-    })
-
-    // Use cheerio to extract key info from homepage
-    const $ = cheerio.load(html)
-    const title = $('title').text()
-    const metaDesc = $('meta[name="description"]').attr('content') || ''
-    const h1 = $('h1').first().text()
-    const h2 = $('h2').first().text()
-    // Try to get main content (simple: first <main>, fallback: body text)
-    let mainContent = $('main').text() || $('body').text()
-    mainContent = mainContent.replace(/\s+/g, ' ').trim().slice(0, 2000)
-
-    // Debug: Log extracted content
-    Logger.debug("Extracted content", { 
-      title, 
-      metaDesc, 
-      h1, 
-      h2, 
-      mainContentPreview: mainContent.slice(0, 200) 
-    })
-
-    // Find links to About, Company, Team pages
-    const subpageLinks: string[] = []
-    $('a').each((_: unknown, el: any) => {
-      const href = $(el).attr('href') || ''
-      if (/about|company|team/i.test(href) && !href.startsWith('#') && !href.startsWith('mailto:')) {
-        let url = href
-        if (!/^https?:\/\//i.test(url)) {
-          url = new URL(url, urlValidation.url).href
-        }
-        if (!subpageLinks.includes(url)) subpageLinks.push(url)
-      }
-    })
-    // Limit to 1 subpage
-    const subpagesToCrawl = subpageLinks.slice(0, 1)
-    let subpageText = ''
-    
-    // Fetch subpages in parallel for better performance
-    if (subpagesToCrawl.length > 0) {
-      const subpagePromises = subpagesToCrawl.map(async (subUrl) => {
-        try {
-          const subRes = await fetch(subUrl, { 
-            signal: AbortSignal.timeout(3000), // 3 second timeout
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-              'Accept-Language': 'en-US,en;q=0.5',
-              'Accept-Encoding': 'gzip, deflate, br',
-              'DNT': '1',
-              'Connection': 'keep-alive',
-              'Upgrade-Insecure-Requests': '1',
-            }
-          })
-          const subHtml = await subRes.text()
-          const $sub = cheerio.load(subHtml)
-          const subTitle = $sub('title').text()
-          const subMeta = $sub('meta[name="description"]').attr('content') || ''
-          const subH1 = $sub('h1').first().text()
-          const subH2 = $sub('h2').first().text()
-          let subMain = $sub('main').text() || $sub('body').text()
-          subMain = subMain.replace(/\s+/g, ' ').trim().slice(0, 1500)
-          return `\n[Subpage: ${subUrl}]\n${subTitle}\n${subMeta}\n${subH1}\n${subH2}\n${subMain}`
-        } catch (e) { 
-          console.log(`Failed to fetch subpage ${subUrl}:`, e)
-          return '' // Return empty string on error
-        }
-      })
-      
-      // Wait for all subpage fetches to complete
-      const subpageResults = await Promise.all(subpagePromises)
-      subpageText = subpageResults.join('')
-    }
-
-    // Combine all extracted text
-    let summary = [title, metaDesc, h1, h2, mainContent, subpageText].filter(Boolean).join('\n')
-    // Reduce to 7k chars for faster processing while maintaining quality
-    summary = summary.slice(0, 7000)
 
     // Generate prompt for website extraction with improved guidance
     const prompt = `Analyze this website content and extract the brand's core identity.
@@ -485,12 +440,11 @@ ${summary}`
       audience: audience || 'general audience'
     }).catch(err => ({ success: false, error: err.message }))
 
-    // Process keywords with error handling
-    let keywords = ''
+    // Process keywords with error handling (return array for consistency)
+    let keywords: string[] = []
     if (keywordsResult?.success && keywordsResult?.content) {
       const parsed = JSON.parse(keywordsResult.content)
-      const keywordArray = Array.isArray(parsed.keywords) ? parsed.keywords : []
-      keywords = keywordArray.join('\n')
+      keywords = Array.isArray(parsed.keywords) ? parsed.keywords : []
     }
 
     // Generate trait suggestions

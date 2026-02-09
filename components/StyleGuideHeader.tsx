@@ -2,7 +2,7 @@
 
 interface StyleGuideHeaderProps {
   brandName: string
-  guideType: 'core' | 'complete'
+  guideType?: 'core' | 'complete' | 'style_guide'
   date?: string
   showPreviewBadge?: boolean
 }
@@ -40,7 +40,7 @@ export function StyleGuideHeader({ brandName, guideType, date, showPreviewBadge 
         <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-sm text-gray-500">
           {!showPreviewBadge && (
             <span className="font-medium">
-              {guideType === 'complete' ? 'The Complete Style Guide' : 'Core Style Guide'}
+              Style Guide
             </span>
           )}
           <span className="hidden md:inline">•</span>

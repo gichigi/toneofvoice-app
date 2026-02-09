@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { renderStyleGuideTemplate } from "@/lib/template-processor"
+import { renderStyleGuideTemplate, renderFullGuideFromPreview } from "@/lib/template-processor"
 import OpenAI from "openai"
 
 // Simplified validation function - only new format
@@ -83,8 +83,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Extract brandDetails from request body
+    // Extract brandDetails, optional userEmail, and optional previewContent (preserve user's preview when upgrading)
     brandDetails = requestBody?.brandDetails || {}
+    const userEmail = requestBody?.userEmail ?? null
+    const previewContent = requestBody?.previewContent ?? null
     console.log("Extracted brand details:", brandDetails)
     console.log("Brand details structure:", {
       hasName: !!brandDetails.name,
@@ -107,30 +109,20 @@ export async function POST(request: Request) {
       )
     }
 
-    // Determine which template to use based on the plan
-    const plan = requestBody?.plan || "core"
-    console.log("Using plan:", plan)
-
-    // Validate plan type
-    if (!["core", "complete"].includes(plan)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid plan type",
-          error: "Plan must be either 'core' or 'complete'",
-        },
-        { status: 400 },
-      )
-    }
-
     try {
-      // Process the template with OpenAI
-      console.log("Calling renderStyleGuideTemplate with:", brandDetails, plan)
-      const styleGuide = await renderStyleGuideTemplate({
-        brandDetails,
-        useAIContent: true,
-        templateType: plan === "complete" ? "complete" : "core"
-      })
+      // If user has preview content, merge: preserve their preview and only generate locked sections
+      const hasPreview = previewContent && typeof previewContent === "string" && previewContent.length > 500
+
+      const styleGuide = hasPreview
+        ? await renderFullGuideFromPreview({ previewContent, brandDetails, userEmail })
+        : await renderStyleGuideTemplate({
+            brandDetails,
+            useAIContent: true,
+            isPreview: false,
+            userEmail,
+          })
+
+      console.log("Style guide generated:", hasPreview ? "merged from preview" : "full generation")
 
       if (!styleGuide || styleGuide.trim() === "") {
         throw new Error("Generated style guide is empty")

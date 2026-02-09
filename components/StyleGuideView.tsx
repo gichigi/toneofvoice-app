@@ -25,7 +25,7 @@ export interface StyleGuideViewProps {
   content: string
   onContentChange: (markdown: string) => void
   brandName: string
-  guideType?: "core" | "complete"
+  guideType?: "core" | "complete" | "style_guide"
   showPreviewBadge?: boolean
   isUnlocked: (minTier?: Tier) => boolean
   onRewrite: (instruction: string, scope: "section" | "selection" | "document", selectedText?: string) => Promise<void>
@@ -129,6 +129,7 @@ export function StyleGuideView({
                     <MarkdownRenderer
                       content={`## ${section.title}\n\n${section.content}`}
                       selectedTraits={selectedTraits}
+                      sectionId={section.id}
                     />
                   </div>
                 </div>
@@ -148,6 +149,7 @@ export function StyleGuideView({
                       locked={true}
                       showUpgradeCTA={true}
                       sectionTitle={section.title}
+                      sectionId={section.id}
                       onUpgrade={onUpgrade}
                       selectedTraits={selectedTraits}
                     />
@@ -196,6 +198,7 @@ export function StyleGuideView({
                       locked={true}
                       showUpgradeCTA={true}
                       sectionTitle={section.title}
+                      sectionId={section.id}
                       onUpgrade={onUpgrade}
                       selectedTraits={selectedTraits}
                     />

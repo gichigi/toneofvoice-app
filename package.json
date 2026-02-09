@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test-outline": "node scripts/test-outline-approach.js",
+    "test:style-guide-gen": "node scripts/test-style-guide-generation.mjs",
     "generate-logos": "node scripts/generate-logo-svgs.js",
     "generate-favicons": "node scripts/generate-favicons.js",
     "generate-icons": "pnpm generate-logos && pnpm generate-favicons"
@@ -24,6 +25,7 @@
   "dependencies": {
     "@ai-sdk/openai": "latest",
     "@hookform/resolvers": "^3.9.1",
+    "@mendable/firecrawl-js": "^4.12.0",
     "@platejs/basic-nodes": "^52.0.11",
     "@platejs/link": "^52.0.11",
     "@platejs/list-classic": "^52.0.11",

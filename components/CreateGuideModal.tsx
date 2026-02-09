@@ -222,7 +222,8 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
           audience: data.audience || "",
         };
         if (data.keywords) {
-          localStorage.setItem("brandKeywords", data.keywords);
+          const kw = Array.isArray(data.keywords) ? data.keywords.join("\n") : String(data.keywords);
+          localStorage.setItem("brandKeywords", kw);
         }
         if (data.suggestedTraits) {
           localStorage.setItem("suggestedTraits", JSON.stringify(data.suggestedTraits));

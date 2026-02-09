@@ -30,7 +30,7 @@ describe("parseStyleGuideContent", () => {
       content: "Just some body text.",
       level: 2,
       isMainSection: true,
-      minTier: "free",
+      minTier: "starter",
     })
   })
 
@@ -49,14 +49,14 @@ Voice traits here.`
       title: "About Brand",
       content: "This is about the brand.",
       level: 2,
-      minTier: "free",
+      minTier: "starter",
     })
     expect(result[1]).toMatchObject({
       id: "brand-voice",
       title: "Brand Voice",
       content: "Voice traits here.",
       level: 2,
-      minTier: "free",
+      minTier: "starter",
     })
   })
 
@@ -65,16 +65,16 @@ Voice traits here.`
 
 Instructions.
 
-## General Guidelines
+## Content Guidelines
 
 Rules here.
 
-## 25 Core Rules
+## Style Rules
 
 More rules.`
     const result = parseStyleGuideContent(md)
     expect(result[0].id).toBe("how-to-use")
-    expect(result[1].id).toBe("general-guidelines")
+    expect(result[1].id).toBe("content-guidelines")
     expect(result[2].id).toBe("style-rules")
     expect(result[2].minTier).toBe("pro")
   })
@@ -147,7 +147,7 @@ This is about the brand.
 
 Voice traits here.
 
-## 25 Style Rules
+## Style Rules
 
 Locked rules content.`
 
@@ -156,7 +156,7 @@ Locked rules content.`
     expect(getSectionContentFromMarkdown(md, "about")).toContain("This is about the brand.")
     expect(getSectionContentFromMarkdown(md, "brand-voice")).toContain("## Brand Voice")
     expect(getSectionContentFromMarkdown(md, "brand-voice")).toContain("Voice traits here.")
-    expect(getSectionContentFromMarkdown(md, "style-rules")).toContain("25 Style Rules")
+    expect(getSectionContentFromMarkdown(md, "style-rules")).toContain("Style Rules")
   })
 
   it("returns empty string for unknown section id", () => {
@@ -206,11 +206,11 @@ New voice traits.`
 })
 
 describe("buildEditableMarkdown", () => {
-  const isUnlocked = (minTier?: string) => !minTier || minTier === "free"
+  const isUnlocked = (minTier?: string) => !minTier || minTier === "starter"
 
   it("builds markdown from unlocked sections only", () => {
     const sections: StyleGuideSection[] = [
-      { id: "about", title: "About Brand", content: "A", level: 2, isMainSection: true, minTier: "free" },
+      { id: "about", title: "About Brand", content: "A", level: 2, isMainSection: true, minTier: "starter" },
       { id: "style-rules", title: "Style Rules", content: "B", level: 2, isMainSection: true, minTier: "pro" },
     ]
     const result = buildEditableMarkdown(sections, isUnlocked as any)
@@ -245,16 +245,18 @@ describe("STYLE_GUIDE_SECTIONS", () => {
     expect(ids).toContain("cover")
     expect(ids).toContain("about")
     expect(ids).toContain("how-to-use")
-    expect(ids).toContain("general-guidelines")
+    expect(ids).toContain("content-guidelines")
+    expect(ids).toContain("audience")
+    expect(ids).toContain("word-list")
     expect(ids).toContain("brand-voice")
     expect(ids).toContain("style-rules")
     expect(ids).toContain("examples")
   })
 
   it("has tier hierarchy for gating", () => {
-    const freeSections = STYLE_GUIDE_SECTIONS.filter((s) => s.minTier === "free")
+    const starterSections = STYLE_GUIDE_SECTIONS.filter((s) => s.minTier === "starter")
     const proSections = STYLE_GUIDE_SECTIONS.filter((s) => s.minTier === "pro")
-    expect(freeSections.length).toBeGreaterThan(0)
+    expect(starterSections.length).toBeGreaterThan(0)
     expect(proSections.length).toBeGreaterThan(0)
   })
 })

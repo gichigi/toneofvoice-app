@@ -19,7 +19,7 @@ export async function POST(req: Request) {
         title?: string;
         brand_name?: string;
         content_md?: string;
-        plan_type?: "core" | "complete";
+        plan_type?: "core" | "complete" | "style_guide";
         brand_details?: object;
       };
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
           title: title.slice(0, 255),
           brand_name: brand_name?.slice(0, 255) ?? null,
           content_md,
-          plan_type: plan_type === "complete" ? "complete" : "core",
+          plan_type: (plan_type === "style_guide" || !plan_type) ? "style_guide" : plan_type,
           brand_details: brand_details ?? null,
           updated_at: new Date().toISOString(),
         })
@@ -66,11 +66,12 @@ export async function POST(req: Request) {
     // Create new guide
     const { data: profile } = await supabase
       .from("profiles")
-      .select("guides_limit")
+      .select("subscription_tier, guides_limit")
       .eq("id", user.id)
       .single();
 
-    const limit = profile?.guides_limit ?? 1;
+    const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
+    const limit = tier === "starter" ? 0 : tier === "pro" ? 5 : 99;
 
     const { count } = await supabase
       .from("style_guides")
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
         title: title.slice(0, 255),
         brand_name: brand_name?.slice(0, 255) ?? null,
         content_md,
-        plan_type: plan_type === "complete" ? "complete" : "core",
+        plan_type: (plan_type === "style_guide" || !plan_type) ? "style_guide" : plan_type,
         brand_details: brand_details ?? null,
       })
       .select("id, title, created_at")

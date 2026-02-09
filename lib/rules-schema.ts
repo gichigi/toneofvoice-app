@@ -1,34 +1,35 @@
 // Schema and validation for style guide rules
+// Design system: consolidated 25 rule categories (see plan)
 
 export const ALLOWED_RULE_CATEGORIES = [
-  "Abbreviated Words",
-  "Acronyms",
-  "Capitalisation",
   "Contractions",
-  "Emojis",
-  "Numbers",
-  "Pronouns",
-  "Serial Comma",
-  "Hyphens",
-  "Em Dash",
-  "Apostrophes",
-  "Quotation Marks",
-  "Exclamation Points",
-  "Titles and Headings",
-  "Job Titles",
-  "Dates",
-  "Time & Time Zones",
-  "Money",
-  "Percentages",
-  "Proper Nouns",
   "Active vs. Passive Voice",
-  "Ampersands",
-  "Slang & Jargon",
+  "Emojis",
+  "Exclamation Points",
+  "Sentence Length",
+  "Slang and Jargon",
+  "Pronouns and Point of View",
   "UK vs. US English",
-  "Compound Adjectives",
+  "Serial Comma",
+  "Capitalisation",
+  "Title Case vs. Sentence Case",
+  "Acronyms",
+  "Abbreviated Words",
+  "Numbers",
+  "Dates",
+  "Time and Time Zones",
+  "Money and Currency",
+  "Percentages",
+  "Hedging Language",
+  "Sentence Structure",
+  "Ellipses",
+  "Quotation Marks",
+  "Company and Product Name Spelling",
+  "Job Titles",
+  "Inclusive Language",
 ] as const;
 
-export type RuleCategory = typeof ALLOWED_RULE_CATEGORIES[number];
+export type RuleCategory = (typeof ALLOWED_RULE_CATEGORIES)[number];
 
 export interface StyleRule {
   category: string;
@@ -90,7 +91,7 @@ export function validateRules(rules: StyleRule[]): ValidationResult {
     }
 
     // Enforce unique categories (case-insensitive, trimmed)
-    const key = (rule.category || '').trim().toLowerCase();
+    const key = (rule.category || "").trim().toLowerCase();
     if (seenCategories.has(key)) {
       invalid.push(rule);
       continue;
@@ -107,7 +108,5 @@ export function validateRules(rules: StyleRule[]): ValidationResult {
  * Get a formatted list of allowed categories for prompts
  */
 export function getAllowedCategoriesPromptText(): string {
-  return ALLOWED_RULE_CATEGORIES.map((cat, i) => `${i + 1}. ${cat}`).join('\n');
+  return ALLOWED_RULE_CATEGORIES.map((cat, i) => `${i + 1}. ${cat}`).join("\n");
 }
-
-

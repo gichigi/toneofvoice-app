@@ -1,5 +1,6 @@
 // Design system: see DESIGN_SYSTEM.md for typography/spacing decisions
 
+import React from "react"
 import ReactMarkdown from "react-markdown"
 import { playfairDisplay } from "@/lib/fonts"
 import {
@@ -37,9 +38,21 @@ interface MarkdownRendererProps {
   content: string
   className?: string
   selectedTraits?: string[]
+  /** Section id (e.g. examples, word-list) for section-specific rendering */
+  sectionId?: string
 }
 
-export function MarkdownRenderer({ content, className, selectedTraits = [] }: MarkdownRendererProps) {
+/** Extract plain text from React children for pattern matching */
+function getTextFromChildren(children: React.ReactNode): string {
+  if (typeof children === "string") return children
+  if (Array.isArray(children)) return children.map(getTextFromChildren).join("")
+  if (children && typeof children === "object" && "props" in children) {
+    return getTextFromChildren((children as React.ReactElement).props.children)
+  }
+  return String(children ?? "")
+}
+
+export function MarkdownRenderer({ content, className, selectedTraits = [], sectionId }: MarkdownRendererProps) {
   // Fix orphaned punctuation patterns
   const fixedContent = content
     .replace(/\s*\n\s*\)/g, ')') // Fix orphaned closing parentheses on new lines
@@ -81,11 +94,36 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
             </>
           )
         },
-        h3: ({ children }) => (
-          <h3 className={cn(PREVIEW_H3_CLASS, PREVIEW_H3_MARGIN_TOP, PREVIEW_H3_MARGIN_BOTTOM)} style={PREVIEW_H3_STYLE}>
-            {children}
-          </h3>
-        ),
+        h3: ({ children }) => {
+          const text = getTextFromChildren(children).trim()
+          // Before/After section: content-type label as pill
+          if (sectionId === "examples") {
+            return (
+              <span
+                className={cn(
+                  "inline-block px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700",
+                  PREVIEW_H3_MARGIN_TOP,
+                  PREVIEW_H3_MARGIN_BOTTOM
+                )}
+              >
+                {children}
+              </span>
+            )
+          }
+          // Word List: subtle category header
+          if (sectionId === "word-list" || /^(Preferred Terms|Avoid Terms|Spelling and Usage)$/i.test(text)) {
+            return (
+              <h3 className={cn("text-sm font-medium uppercase tracking-wide text-gray-500 mt-6 mb-3 first:mt-0")}>
+                {children}
+              </h3>
+            )
+          }
+          return (
+            <h3 className={cn(PREVIEW_H3_CLASS, PREVIEW_H3_MARGIN_TOP, PREVIEW_H3_MARGIN_BOTTOM)} style={PREVIEW_H3_STYLE}>
+              {children}
+            </h3>
+          )
+        },
         h4: ({ children }) => (
           <h4 className={cn(PREVIEW_H4_CLASS, "mb-2 mt-4")}>
             {children}
@@ -93,11 +131,29 @@ export function MarkdownRenderer({ content, className, selectedTraits = [] }: Ma
         ),
         
         // Custom paragraph styles — generous line height for readability
-        p: ({ children }) => (
-          <p className={cn(PREVIEW_BODY_CLASS, PREVIEW_P_MARGIN_BOTTOM)} style={PREVIEW_BODY_STYLE}>
-            {children}
-          </p>
-        ),
+        // Before/After: grey for Before, green accent for After
+        p: ({ children }) => {
+          const text = getTextFromChildren(children).trim()
+          if (text.startsWith("Before:")) {
+            return (
+              <p className={cn(PREVIEW_BODY_CLASS, PREVIEW_P_MARGIN_BOTTOM, "border-l-2 border-gray-300 pl-4 text-gray-600")} style={PREVIEW_BODY_STYLE}>
+                {children}
+              </p>
+            )
+          }
+          if (text.startsWith("After:")) {
+            return (
+              <p className={cn(PREVIEW_BODY_CLASS, PREVIEW_P_MARGIN_BOTTOM, "border-l-2 border-green-500 pl-4 text-gray-800")} style={PREVIEW_BODY_STYLE}>
+                {children}
+              </p>
+            )
+          }
+          return (
+            <p className={cn(PREVIEW_BODY_CLASS, PREVIEW_P_MARGIN_BOTTOM)} style={PREVIEW_BODY_STYLE}>
+              {children}
+            </p>
+          )
+        },
         
         // Custom list styles — open, airy  
         ul: ({ children }) => (

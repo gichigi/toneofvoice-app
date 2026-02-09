@@ -39,14 +39,14 @@ export function StyleGuideSidebar({
   const { setOpenMobile } = useSidebar()
 
   // Calculate progress
-  // Assuming 'free' tier can access 'free' sections.
+  // Starter (free) tier can access starter sections.
   // 'pro'/'team' can access everything.
   const totalSections = sections.length
-  // unlocked count: sections where minTier is 'free' OR user tier >= minTier
-  // Tier hierarchy: free < pro < team
+  // unlocked count: sections where minTier is 'starter' OR user tier >= minTier
+  // Tier hierarchy: starter < pro < team
   const isUnlocked = (minTier?: Tier) => {
-    if (!minTier || minTier === 'free') return true
-    if (subscriptionTier === 'free') return false
+    if (!minTier || minTier === 'starter') return true
+    if (subscriptionTier === 'starter') return false
     if (subscriptionTier === 'pro' && minTier === 'team') return false
     return true
   }
@@ -66,7 +66,7 @@ export function StyleGuideSidebar({
           <div className="hidden group-data-[collapsible=icon]:flex w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm items-center justify-center shrink-0">
             {brandName.charAt(0).toUpperCase()}
           </div>
-          {subscriptionTier !== 'free' && (
+          {subscriptionTier !== 'starter' && (
             <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-blue-50 text-blue-700 border-blue-100 group-data-[collapsible=icon]:hidden">
               {subscriptionTier.toUpperCase()}
             </Badge>
@@ -127,7 +127,7 @@ export function StyleGuideSidebar({
       <SidebarFooter className="p-4 border-t border-gray-50/50 bg-white/50">
         <div className="group-data-[collapsible=icon]:hidden space-y-4">
           {/* Progress Indicator (only if not fully unlocked) */}
-          {subscriptionTier === 'free' && (
+          {subscriptionTier === 'starter' && (
             <div className="space-y-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">
               <div className="flex items-center justify-between text-xs text-gray-500 transition-all duration-300">
                 <span className="font-medium">{unlockedCount} of {totalSections} sections included</span>
@@ -145,7 +145,7 @@ export function StyleGuideSidebar({
           )}
 
           <div className="grid gap-2">
-            {subscriptionTier === 'free' && (
+            {subscriptionTier === 'starter' && (
               <Button 
                 onClick={onUpgrade} 
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md"
@@ -160,7 +160,7 @@ export function StyleGuideSidebar({
         
         {/* Icon-only mode footer */}
         <div className="hidden group-data-[collapsible=icon]:flex flex-col gap-2 items-center">
-           {subscriptionTier === 'free' && (
+           {subscriptionTier === 'starter' && (
              <Button size="icon" variant="ghost" onClick={onUpgrade} className="h-8 w-8 text-blue-600 hover:bg-blue-50">
                <Lock className="size-4" />
              </Button>

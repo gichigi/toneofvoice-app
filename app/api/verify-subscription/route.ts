@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       .eq("id", user.id)
       .single();
 
-    if (profile?.subscription_tier !== "free" && profile?.subscription_status === "active") {
+    if (profile?.subscription_tier !== "starter" && profile?.subscription_tier !== "free" && profile?.subscription_status === "active") {
       // Already updated (webhook was fast enough)
       return NextResponse.json({
         subscription_tier: profile.subscription_tier,
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 
     if (!matchingSession) {
       return NextResponse.json({
-        subscription_tier: "free",
+        subscription_tier: "starter",
         already_active: false,
       });
     }
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     const plan = matchingSession.metadata?.plan as string;
     if (!["pro", "team"].includes(plan)) {
       return NextResponse.json({
-        subscription_tier: "free",
+        subscription_tier: "starter",
         already_active: false,
       });
     }

@@ -23,74 +23,52 @@ function SuccessContent() {
   const { toast } = useToast()
   const [generationStatus, setGenerationStatus] = useState<'generating' | 'complete' | 'error'>('generating')
   const [sessionId, setSessionId] = useState<string | null>(null)
-  const [guideType, setGuideType] = useState<string>('core')
   const [apiError, setApiError] = useState<ErrorDetails | null>(null)
   const [isRetrying, setIsRetrying] = useState<boolean>(false)
   const [currentStep, setCurrentStep] = useState<string>('Preparing your brand details')
   const [progress, setProgress] = useState<number>(0)
 
-  // Progress steps for complete guide (two API calls)
-  const getProgressSteps = (plan: string) => {
-    if (plan === 'complete') {
-      return [
-        { message: 'Preparing your brand details', progress: 10 },
-        { message: 'Analyzing your brand voice and personality', progress: 30 },
-        { message: 'Defining communication style', progress: 50 },
-        { message: 'Creating comprehensive writing rules', progress: 70 },
-        { message: 'Generating practical examples', progress: 90 },
-        { message: 'Finalizing your style guide', progress: 100 }
-      ]
-    } else {
-      return [
-        { message: 'Preparing your brand details', progress: 20 },
-        { message: 'Analyzing your brand voice', progress: 50 },
-        { message: 'Creating core guidelines', progress: 80 },
-        { message: 'Finalizing your style guide', progress: 100 }
-      ]
-    }
-  }
+  const getProgressSteps = () => [
+    { message: 'Preparing your brand details', progress: 10 },
+    { message: 'Analyzing your brand voice and personality', progress: 25 },
+    { message: 'Creating writing rules and examples', progress: 50 },
+    { message: 'Building before/after samples and word list', progress: 75 },
+    { message: 'Finalizing your style guide', progress: 100 }
+  ]
 
-  // Update progress as generation happens
-  const updateProgress = (plan: string, stage: 'start' | 'voice' | 'rules' | 'complete') => {
-    const steps = getProgressSteps(plan)
+  const updateProgress = (stage: 'start' | 'voice' | 'rules' | 'examples' | 'complete') => {
+    const steps = getProgressSteps()
     switch (stage) {
       case 'start':
         setCurrentStep(steps[0].message)
         setProgress(steps[0].progress)
         break
       case 'voice':
-        if (plan === 'complete') {
-          setCurrentStep(steps[2].message)
-          setProgress(steps[2].progress)
-        } else {
-          setCurrentStep(steps[1].message)
-          setProgress(steps[1].progress)
-        }
+        setCurrentStep(steps[1].message)
+        setProgress(steps[1].progress)
         break
       case 'rules':
-        if (plan === 'complete') {
-          setCurrentStep(steps[4].message)
-          setProgress(steps[4].progress)
-        } else {
-          setCurrentStep(steps[2].message)
-          setProgress(steps[2].progress)
-        }
+        setCurrentStep(steps[2].message)
+        setProgress(steps[2].progress)
+        break
+      case 'examples':
+        setCurrentStep(steps[3].message)
+        setProgress(steps[3].progress)
         break
       case 'complete':
-        setCurrentStep(steps[steps.length - 1].message)
+        setCurrentStep(steps[4].message)
         setProgress(100)
         break
     }
   }
 
   // Generate style guide function (extracted for retry functionality)
-  const generateStyleGuide = async (overrideGuideType?: string) => {
-    const effectiveGuideType = overrideGuideType || guideType
+  const generateStyleGuide = async () => {
+    let progressInterval: ReturnType<typeof setInterval> | null = null
     try {
-      // Clear any previous errors
       setApiError(null)
       setGenerationStatus('generating')
-      updateProgress(effectiveGuideType, 'start')
+      updateProgress('start')
       
       // Get brand details
       const brandDetails = localStorage.getItem("brandDetails")
@@ -111,26 +89,73 @@ function SuccessContent() {
       // Parse and log the brand details
       const parsedBrandDetails = JSON.parse(brandDetails)
       console.log("[Payment Success] Parsed brand details:", parsedBrandDetails)
-      console.log("[Payment Success] Sending to API with plan:", guideType)
+      console.log("[Payment Success] Sending to API")
 
-      // Update progress before API call
-      updateProgress(effectiveGuideType, 'voice')
+      updateProgress('voice')
 
-      // Generate style guide using enhanced API call
+      progressInterval = setInterval(() => {
+        setProgress((p) => {
+          if (p >= 75) return p
+          if (p < 25) {
+            setCurrentStep('Analyzing your brand voice and personality')
+            return 25
+          }
+          if (p < 50) {
+            setCurrentStep('Creating writing rules and examples')
+            return 50
+          }
+          setCurrentStep('Building before/after samples and word list')
+          return 75
+        })
+      }, 25000)
+
+      // Pass user email and preview content when available (preserve preview user liked)
+      let userEmail = null
+      let previewContent = null
+      try {
+        const captured = localStorage.getItem("emailCapture")
+        if (captured) userEmail = JSON.parse(captured)?.email ?? null
+        previewContent = localStorage.getItem("previewContent")
+      } catch {}
       const data = await callAPI("/api/generate-styleguide", {
         brandDetails: parsedBrandDetails,
-        plan: effectiveGuideType
+        userEmail: userEmail || undefined,
+        previewContent: previewContent || undefined,
       })
+
+      if (progressInterval) clearInterval(progressInterval)
 
       if (!data.success) {
         throw new Error(data.error || "Failed to generate style guide")
       }
 
-      // Update progress to complete
-      updateProgress(effectiveGuideType, 'complete')
+      updateProgress('complete')
 
-      // Save generated style guide
+      // Save to localStorage for guide page
       localStorage.setItem("generatedStyleGuide", data.styleGuide)
+
+      // Save to DB if user is logged in (best practice: persist immediately)
+      try {
+        const saveRes = await fetch("/api/save-style-guide", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `${parsedBrandDetails.name} Style Guide`,
+            brand_name: parsedBrandDetails.name,
+            content_md: data.styleGuide,
+            plan_type: "style_guide",
+            brand_details: parsedBrandDetails,
+          }),
+        })
+        if (saveRes.ok) {
+          const json = await saveRes.json()
+          if (json.guide?.id) {
+            localStorage.setItem("savedGuideId", json.guide.id)
+          }
+        }
+      } catch {
+        // Non-fatal; guide is in localStorage, user can still view
+      }
       
       // Update status
       setGenerationStatus('complete')
@@ -142,6 +167,7 @@ function SuccessContent() {
       })
 
     } catch (error) {
+      if (progressInterval) clearInterval(progressInterval)
       console.error("Generation error:", error)
       
       // Use enhanced error handling
@@ -194,10 +220,7 @@ Thanks!`)}`
 
   useEffect(() => {
     const sessionIdParam = searchParams.get("session_id")
-    const guideTypeParam = searchParams.get("guide_type") || "core"
-    
     setSessionId(sessionIdParam)
-    setGuideType(guideTypeParam)
     
     // Fire Google Ads conversion event (required even with page load conversion)
     if (typeof window !== 'undefined' && window.gtag) {
@@ -222,10 +245,10 @@ Thanks!`)}`
 
     // Store payment status and guide type
     localStorage.setItem("styleGuidePaymentStatus", "completed")
-    localStorage.setItem("styleGuidePlan", guideTypeParam)
+    localStorage.setItem("styleGuidePlan", "style_guide")
 
     // Start generation process
-    generateStyleGuide(guideTypeParam)
+    generateStyleGuide()
   }, [router, searchParams, toast])
 
   return (
@@ -271,27 +294,29 @@ Thanks!`)}`
         </p>
         
         {generationStatus === 'generating' && (
-          <div className="space-y-4">
-            {/* Additional info based on guide type */}
+          <div className="space-y-4 w-full">
+            <p className="text-sm font-medium text-gray-700">{currentStep}</p>
+            <Progress value={progress} className="h-2" />
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                              <p className="text-blue-800 text-sm">
-                  {guideType === 'complete' 
-                    ? <>This might take 2-3 minutes.<br />Please don't leave this page.</>
-                    : <>This might take 1-2 minutes.<br />Please don't leave this page.</>}
-                </p>
+              <p className="text-blue-800 text-sm">
+                This might take 1–2 minutes. Please don&apos;t leave this page.
+              </p>
             </div>
           </div>
         )}
 
         {generationStatus === 'complete' && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-in fade-in duration-500">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 font-medium">Generation Complete</p>
               <p className="text-green-700 text-sm">Your style guide is ready to view and download.</p>
             </div>
             
             <Button 
-              onClick={() => router.push("/guide?generated=true")}
+              onClick={() => {
+                const guideId = localStorage.getItem("savedGuideId")
+                router.push(guideId ? `/guide?guideId=${guideId}` : "/guide?generated=true")
+              }}
               className="w-full"
               size="lg"
             >

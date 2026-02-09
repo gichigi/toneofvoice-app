@@ -69,13 +69,13 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
   // Content state
   const [content, setContent] = useState<string | null>(null)
   const [brandDetails, setBrandDetails] = useState<any>(null)
-  const [guideType, setGuideType] = useState<string>("core")
+  const [guideType, setGuideType] = useState<string>("style_guide")
   
   // UI state
   const [sections, setSections] = useState<StyleGuideSection[]>([])
   const [activeSectionId, setActiveSectionId] = useState<string>("cover")
   const [viewMode, setViewMode] = useState<"preview" | "edit">(defaultViewMode)
-  const [subscriptionTier, setSubscriptionTier] = useState<Tier>("free")
+  const [subscriptionTier, setSubscriptionTier] = useState<Tier>("starter")
   const [isLoading, setIsLoading] = useState(true)
   
   // Editor state
@@ -100,14 +100,14 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
   // Fetch subscription tier
   useEffect(() => {
     if (!user) {
-      setSubscriptionTier("free")
+      setSubscriptionTier("starter")
       return
     }
     
     fetch("/api/user-subscription-tier")
       .then(res => res.json())
-      .then(data => setSubscriptionTier((data.subscription_tier || "free") as Tier))
-      .catch(() => setSubscriptionTier("free"))
+      .then(data => setSubscriptionTier((data.subscription_tier === "free" ? "starter" : (data.subscription_tier || "starter")) as Tier))
+      .catch(() => setSubscriptionTier("starter"))
   }, [user])
   
   // Scroll to section on sidebar click (center in viewport)
@@ -159,7 +159,7 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
       isMainSection: true,
       configId: 'cover',
       icon: STYLE_GUIDE_SECTIONS.find(s => s.id === 'cover')?.icon,
-      minTier: 'free'
+      minTier: 'starter'
     }
     setSections([coverSection, ...parsed])
     // Only set cover as active on initial load (not on every content change)
@@ -255,11 +255,11 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
     }
   }, [content, brandDetails, activeSectionId, toast])
   
-  // Unlock check
+  // Unlock check: starter (free) < pro < team
   const isUnlocked = useCallback((minTier?: Tier) => {
-    if (!minTier || minTier === 'free') return true
-    if (subscriptionTier === 'free') return false
-    if (subscriptionTier === 'pro' && minTier === 'team') return false
+    if (!minTier || minTier === 'starter') return true
+    if (subscriptionTier === 'starter') return false
+    if (minTier === 'team' && subscriptionTier !== 'team') return false
     return true
   }, [subscriptionTier])
   

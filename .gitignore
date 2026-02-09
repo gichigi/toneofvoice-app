@@ -10,6 +10,10 @@
 # production
 /build
 
+# test output
+style-guide-test-output.md
+style-guide-real-website-output.md
+
 # debug
 npm-debug.log*
 yarn-debug.log*

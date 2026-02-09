@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 interface StyleGuideCoverProps {
   brandName: string
-  guideType: 'core' | 'complete'
+  guideType?: 'core' | 'complete' | 'style_guide'
   date?: string
   showPreviewBadge?: boolean
   className?: string
@@ -56,7 +56,7 @@ export function StyleGuideCover({
           <p className="text-lg font-light transition-colors duration-300 hover:text-gray-700">Prepared for {brandName}</p>
           <p className="text-sm transition-colors duration-300 hover:text-gray-600">Generated on {formattedDate}</p>
           <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
-            {guideType === 'complete' ? 'The Complete Style Guide' : 'Core Style Guide'}
+            Style Guide
           </p>
         </div>
       </div>

@@ -130,24 +130,28 @@ export const SECTION_H2_BAR_CLASS = PREVIEW_H2_BAR_CLASS
 
 /** Section explainer copy: first person plural, informational. Preview only (not in editor). */
 export function getSectionDescription(headingText: string): string | null {
-  const text = headingText.trim()
-  const lower = text.toLowerCase()
-  if (lower.includes("brand voice")) return "The core character of our brand that defines the dos and don'ts of our personality."
-  if (/general\s+guidelines/i.test(text)) return "The guardrails that support our brand voice and keep our messaging clear, consistent, and true to our brand."
-  if (/(?:25\s+)?(?:core|style)\s+rules/i.test(text)) return "Rules that support our brand voice to keep us consistent and on-brand across every channel."
-  if (/before.*after/i.test(text)) return "Real examples that show our guidelines in action."
-  return null
+  const text = headingText.trim();
+  const lower = text.toLowerCase();
+  if (lower.includes("brand voice")) return "The core character of our brand that defines the dos and don'ts of our personality.";
+  if (/your\s+audience/i.test(text)) return "Who we write for and how to address them.";
+  if (/content\s+guidelines/i.test(text)) return "Guardrails for short-form, long-form, and product copy.";
+  if (/style\s+rules/i.test(text)) return "Rules that support our brand voice across every channel.";
+  if (/before.*after/i.test(text)) return "Real examples that show our guidelines in action.";
+  if (/word\s+list/i.test(text)) return "Preferred terms, words to avoid, and spelling conventions.";
+  return null;
 }
 
 /** Get eyebrow label for a section (uppercase category label like "BRAND IDENTITY SYSTEM") */
 export function getSectionEyebrow(headingText: string): string | null {
-  const text = headingText.trim()
-  const lower = text.toLowerCase()
-  if (lower.includes("about")) return "BRAND OVERVIEW"
-  if (lower.includes("how to use")) return "USAGE GUIDE"
-  if (/general\s+guidelines/i.test(text)) return "FOUNDATION"
-  if (lower.includes("brand voice")) return "BRAND IDENTITY"
-  if (/(?:25\s+)?(?:core|style)\s+rules/i.test(text)) return "STYLE RULES"
-  if (/before.*after/i.test(text)) return "EXAMPLES"
-  return null
+  const text = headingText.trim();
+  const lower = text.toLowerCase();
+  if (lower.includes("about")) return "BRAND OVERVIEW";
+  if (lower.includes("how to use")) return "USAGE GUIDE";
+  if (/your\s+audience/i.test(text)) return "AUDIENCE";
+  if (/content\s+guidelines/i.test(text)) return "FOUNDATION";
+  if (lower.includes("brand voice")) return "BRAND IDENTITY";
+  if (/style\s+rules/i.test(text)) return "STYLE RULES";
+  if (/before.*after/i.test(text)) return "EXAMPLES";
+  if (/word\s+list/i.test(text)) return "TERMINOLOGY";
+  return null;
 }

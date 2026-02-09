@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       ...guide,
-      subscription_tier: profile?.subscription_tier || "free"
+      subscription_tier: (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) || "starter"
     });
   } catch (e) {
     if (e instanceof MissingSupabaseConfigError) {

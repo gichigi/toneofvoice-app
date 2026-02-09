@@ -26,8 +26,8 @@ export default async function BillingPage() {
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  const tier = profile?.subscription_tier ?? "free";
-  const limit = tier === "pro" ? 5 : tier === "team" ? 99 : 1;
+  const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
+  const limit = tier === "starter" ? 0 : tier === "pro" ? 5 : 99;
   const used = count ?? 0;
   const nextBilling = profile?.current_period_end
     ? new Date(profile.current_period_end).toLocaleDateString()
@@ -60,7 +60,7 @@ export default async function BillingPage() {
                 <p className="text-sm text-muted-foreground">
                   Guides used: {used} of {limit === 99 ? "unlimited" : limit}
                 </p>
-                {nextBilling && tier !== "free" && (
+                {nextBilling && tier !== "starter" && (
                   <p className="mt-1 text-sm text-muted-foreground">
                     Next billing: {nextBilling}
                   </p>
@@ -73,23 +73,18 @@ export default async function BillingPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <div className="mt-8 grid gap-4 sm:grid-cols-4">
             <PlanCard
-              name="Free"
+              name="Starter"
               price="$0"
-              features={["1 preview only", "No download", "No editing"]}
-              current={tier === "free"}
+              features={["Preview only", "No download", "No editing"]}
+              current={tier === "starter"}
               action={null}
             />
             <PlanCard
               name="Pro"
               price="$29/mo"
-              features={[
-                "5 guides",
-                "Core rules (25)",
-                "AI editing",
-                "All download formats",
-              ]}
+              features={["5 guides", "Full editing & AI assist", "PDF & Word export"]}
               current={tier === "pro"}
               action={
                 <BillingActions
@@ -103,12 +98,7 @@ export default async function BillingPage() {
             <PlanCard
               name="Team"
               price="$79/mo"
-              features={[
-                "Unlimited guides",
-                "Complete rules (99+)",
-                "Team sharing",
-                "Priority support",
-              ]}
+              features={["99 guides", "5 seats", "Collaboration", "Full export"]}
               current={tier === "team"}
               action={
                 <BillingActions

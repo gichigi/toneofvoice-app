@@ -35,7 +35,8 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  const limit = profile?.guides_limit ?? 1;
+  const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
+  const limit = tier === "starter" ? 0 : tier === "pro" ? 5 : 99;
   const used = guides?.length ?? 0;
 
   return (
@@ -58,13 +59,13 @@ export default async function DashboardPage() {
         <div className="max-w-5xl mx-auto px-8">
           <h1 className="text-2xl font-semibold">Welcome back, {name}</h1>
           <p className="mt-1 text-muted-foreground">
-            {profile?.subscription_tier === "free"
-              ? "Free plan"
+            {(profile?.subscription_tier === "free" || profile?.subscription_tier === "starter")
+              ? "Starter plan"
               : profile?.subscription_tier === "pro"
               ? "Pro plan"
               : profile?.subscription_tier === "team"
               ? "Team plan"
-              : "Free plan"}{" "}
+              : "Starter plan"}{" "}
             — {used} of {limit} guides
           </p>
 

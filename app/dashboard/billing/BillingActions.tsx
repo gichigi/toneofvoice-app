@@ -43,7 +43,7 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
   };
 
   // Main billing section: Manage in Stripe
-  if (!plan && hasCustomer && (tier === "pro" || tier === "team")) {
+  if (!plan && hasCustomer && (tier === "starter" || tier === "pro" || tier === "team")) {
     return (
       <Button onClick={handleManage} disabled={loading} size={compact ? "sm" : "default"}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Manage in Stripe"}
@@ -60,10 +60,12 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
         </Button>
       ) : null;
     }
-    if (tier === "free" || (plan === "team" && tier === "pro")) {
+    // Can subscribe/upgrade: starter -> pro/team; pro -> team
+    const canUpgrade = (tier === "starter" && (plan === "pro" || plan === "team")) || (tier === "pro" && plan === "team");
+    if (canUpgrade) {
       return (
         <Button onClick={() => handleSubscribe(plan)} disabled={loading} size="sm">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : plan === "team" && tier === "pro" ? "Upgrade" : "Subscribe"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tier === "pro" ? "Upgrade" : "Subscribe"}
         </Button>
       );
     }

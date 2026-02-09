@@ -178,7 +178,7 @@ All typography tokens are defined in `lib/style-guide-styles.ts` to prevent CSS 
 - **Style**: Dimmed text `text-gray-400`, smaller size `text-lg`
 - **Icon**: Lock icon (`Lock` from lucide-react) before header text
 - **Spacing**: `mt-8` from fade, `mb-4` between headers
-- **Headers shown**: "25 Core Rules", "Before/After Examples" (no body content)
+- **Headers shown**: "Style Rules", "Before/After Examples" (no body content)
 
 ### Upgrade CTA Card
 - **Position**: Centered between faded content and locked headers

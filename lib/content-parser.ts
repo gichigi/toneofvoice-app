@@ -6,10 +6,12 @@ import {
   Megaphone, 
   ScrollText, 
   ArrowLeftRight,
+  Users,
+  BookOpen,
   type LucideIcon
 } from "lucide-react"
 
-export type Tier = 'free' | 'pro' | 'team'
+export type Tier = 'starter' | 'pro' | 'team'  // starter = free plan
 
 export interface SectionConfig {
   id: string
@@ -24,35 +26,42 @@ export const STYLE_GUIDE_SECTIONS: SectionConfig[] = [
     id: 'cover',
     label: 'Cover Page',
     icon: LayoutTemplate,
-    minTier: 'free',
+    minTier: 'starter',
     matchHeading: /^Cover/i // Special case, usually won't match content
   },
   {
     id: 'about',
     label: 'About Brand',
     icon: Info,
-    minTier: 'free',
+    minTier: 'starter',
     matchHeading: /^About/i
   },
   {
     id: 'how-to-use',
     label: 'How to Use',
     icon: HelpCircle,
-    minTier: 'free',
+    minTier: 'starter',
     matchHeading: /^How to Use/i
   },
   {
-    id: 'general-guidelines',
-    label: 'General Guidelines',
+    id: 'audience',
+    label: 'Your Audience',
+    icon: Users,
+    minTier: 'starter',
+    matchHeading: /^Your Audience/i
+  },
+  {
+    id: 'content-guidelines',
+    label: 'Content Guidelines',
     icon: FileText,
-    minTier: 'free',
-    matchHeading: /^General Guidelines/i
+    minTier: 'starter',
+    matchHeading: /^Content Guidelines/i
   },
   {
     id: 'brand-voice',
     label: 'Brand Voice',
     icon: Megaphone,
-    minTier: 'free',
+    minTier: 'starter',
     matchHeading: /^Brand Voice/i
   },
   {
@@ -60,7 +69,7 @@ export const STYLE_GUIDE_SECTIONS: SectionConfig[] = [
     label: 'Style Rules',
     icon: ScrollText,
     minTier: 'pro',
-    matchHeading: /^(?:25 )?(?:Core|Style) Rules/i
+    matchHeading: /^Style Rules/i
   },
   {
     id: 'examples',
@@ -68,6 +77,13 @@ export const STYLE_GUIDE_SECTIONS: SectionConfig[] = [
     icon: ArrowLeftRight,
     minTier: 'pro',
     matchHeading: /^Before.*After/i
+  },
+  {
+    id: 'word-list',
+    label: 'Word List',
+    icon: BookOpen,
+    minTier: 'pro',
+    matchHeading: /^Word List/i
   }
 ]
 
@@ -115,7 +131,7 @@ export function parseStyleGuideContent(markdown: string): StyleGuideSection[] {
       content: markdown.trim(),
       level: 2,
       isMainSection: true,
-      minTier: 'free'
+      minTier: 'starter'
     }]
   }
 
@@ -139,7 +155,7 @@ export function parseStyleGuideContent(markdown: string): StyleGuideSection[] {
       isMainSection: heading.level <= 2,
       configId: config?.id,
       icon: config?.icon,
-      minTier: config?.minTier || 'free'
+      minTier: config?.minTier || 'starter'
     })
   })
 

@@ -27,7 +27,7 @@ export function SubscriptionRefresh() {
         const res = await fetch("/api/verify-subscription", { method: "POST" })
         const data = await res.json()
         
-        if (data.subscription_tier && data.subscription_tier !== "free") {
+        if (data.subscription_tier && data.subscription_tier !== "starter" && data.subscription_tier !== "free") {
           toast({
             title: "Subscription activated!",
             description: `Your ${data.subscription_tier} plan is now active.`,

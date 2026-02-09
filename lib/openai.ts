@@ -385,262 +385,65 @@ export async function generateBrandVoiceTraitsPreview(
   }
 }
 
-// Generate preview-specific style rules (limited count) matching core rules format
-export async function generatePreviewRules(brandDetails: any, traitsContext?: string, count: number = 3): Promise<GenerationResult> {
-  console.log('============================================')
-  console.log('[generatePreviewRules] FUNCTION CALLED')
-  console.log('[generatePreviewRules] Brand:', brandDetails?.name, 'Count:', count)
-  console.log('============================================')
-  
+// Generate before/after examples (5 content types, 1-2 sentences each)
+export async function generateBeforeAfterSamples(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
   try {
-    console.log('[generatePreviewRules] About to import rules-schema...')
-    const rulesSchema = await import('./rules-schema')
-    console.log('[generatePreviewRules] rules-schema imported successfully')
-    
-    console.log('[generatePreviewRules] About to import rules-renderer...')
-    const rulesRenderer = await import('./rules-renderer')
-    console.log('[generatePreviewRules] rules-renderer imported successfully')
-    
-    const { getAllowedCategoriesPromptText, validateRules } = rulesSchema
-    const { renderRulesMarkdown } = rulesRenderer
-    
-    console.log('[generatePreviewRules] All imports successful')
-    
-    const traitsSection = traitsContext ? `\nTraits Context:\n${traitsContext}\n` : ''
-    const styleConstraints = `\nStyle Constraints:\n- Formality: ${brandDetails.formalityLevel || 'Neutral'} (Professional: avoid contractions; Casual: allow contractions; Very Formal: use third person)\n- Reading Level: ${brandDetails.readingLevel || '10-12'} (6–8: short sentences, simple vocab; 13+: technical precision allowed)\n- English Variant: ${brandDetails.englishVariant || 'american'} (apply spelling and punctuation accordingly)`
-    const keywordSection = Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-      ? `\nBrand Keywords (use naturally in examples where helpful):\n- ${brandDetails.keywords.slice(0, 15).join('\n- ')}`
-      : ''
+    const prompt = `Create exactly 5 "Before → After" content transformation examples for ${brandDetails.name}. Each tied to a content type.
 
-    const allowedCategories = getAllowedCategoriesPromptText()
+Brand: ${brandDetails.name}
+Description: ${brandDetails.brandDetailsDescription}
+Audience: ${brandDetails.audience}
+${traitsContext ? `Traits: ${traitsContext.slice(0, 800)}` : ""}
 
-    const prompt = `You are a writing style guide expert. Based on the brand info below, create exactly ${count} specific writing style rules that support and reinforce the brand voice traits for this brand.
+Content types (one example each):
+1. Homepage headline
+2. Email subject line
+3. Social media post
+4. Error or empty state message
+5. Blog intro paragraph
 
-Brand Info:
-  • Brand Name: ${brandDetails.name}
-  • Audience: ${brandDetails.audience}
-  • What they do: ${brandDetails.brandDetailsDescription}
+For each: "Before" = plausible generic copy (not absurdly bad). "After" = on-brand, demonstrates voice. 1-2 sentences each.
 
-${traitsSection}
-${styleConstraints}
-${keywordSection}
-${Array.isArray(brandDetails.traits) && brandDetails.traits.length ? `\nSelected Traits: ${brandDetails.traits.join(', ')}` : ''}
-${Array.isArray(brandDetails.traits) && brandDetails.traits.length ? `\nSelected Traits: ${brandDetails.traits.join(', ')}` : ''}
-${Array.isArray(brandDetails.traits) && brandDetails.traits.length ? `\nSelected Traits: ${brandDetails.traits.join(', ')}` : ''}
-
-CRITICAL: Choose ONLY from these allowed categories. Reject content/tone/strategy topics (e.g., Clarity, Positive Language, Playful Language, Technical Terms, Success Stories, Technical Terminology).
-
-Allowed Categories:
-${allowedCategories}
-
-Instructions:
-- Prioritize rules that reflect the type of brand (online/offline, B2B/B2C, etc.) and support the chosen brand voice traits.
-- Each rule must be about writing style, grammar, punctuation, spelling, or formatting.
-- Return STRICT JSON array format: [{"category": "Contractions", "title": "Contractions", "description": "Avoid contractions to maintain our Assertive tone", "examples": {"good": "We will help you streamline workflows", "bad": "We'll help you streamline workflows"}}]
-- Description must be 8–12 words max. In ~60% of rules, explicitly reference 1–2 of the Selected Traits by name (e.g., "supports our Direct and Refined voice", "reinforces our Assertive tone").
-- Examples should be 6–12 words and MUST reflect the brand voice described in the Traits Context above. Write examples as if ${brandDetails.name} is speaking to ${brandDetails.audience}. Include brand/context words where helpful.
-
-Example JSON for TechFlow (a B2B SaaS productivity platform for remote teams - Direct + Supportive + Assertive traits):
-[
-  {
-    "category": "Contractions",
-    "title": "Contractions",
-    "description": "Avoid contractions to maintain our Assertive tone",
-    "examples": {
-      "good": "We will help you streamline workflows",
-      "bad": "We'll help you streamline workflows"
-    }
-  },
-  {
-    "category": "Capitalisation",
-    "title": "Capitalisation",
-    "description": "Capitalize product names to support our Direct voice",
-    "examples": {
-      "good": "TechFlow Dashboard",
-      "bad": "techflow dashboard"
-    }
-  },
-  {
-    "category": "Pronouns",
-    "title": "Pronouns",
-    "description": "Use third person to reinforce our Supportive voice",
-    "examples": {
-      "good": "Users can customize their dashboard settings",
-      "bad": "You can customize your dashboard settings"
-    }
-  }
-]
-
-Return ONLY valid JSON array with exactly ${count} rules.`
-
-    // Generate rules with validation and repair loop
-    let validRules: any[] = []
-    let attempts = 0
-    const maxAttempts = 3
-
-    while (validRules.length < count && attempts < maxAttempts) {
-      attempts++
-
-    const result = await generateWithOpenAI(
-      prompt,
-        "You are a writing style guide expert. Return strict JSON only.",
-        "json",
-        2000,
-      "gpt-5.2",
-      "medium"
-    )
-
-    if (!result.success || !result.content) {
-        if (attempts === maxAttempts) {
-          return { success: false, error: result.error || 'Failed to generate preview rules after retries' }
-        }
-        continue
-      }
-
-      try {
-        console.log(`[generatePreviewRules] Raw JSON response (first 500 chars):`, result.content.substring(0, 500))
-        const parsed = JSON.parse(result.content)
-        const rules = Array.isArray(parsed) ? parsed : [parsed]
-        console.log(`[generatePreviewRules] Attempt ${attempts}: Parsed ${rules.length} rules from JSON`)
-        
-        const validation = validateRules(rules)
-        console.log(`[generatePreviewRules] Validation: ${validation.valid.length} valid, ${validation.invalid.length} invalid`)
-        
-        if (validation.invalid.length > 0) {
-          console.log('[generatePreviewRules] Invalid rules:', JSON.stringify(validation.invalid.map(r => r.category)))
-        }
-        
-        validRules = validation.valid
-        
-        // If we have invalid rules and haven't reached max attempts, try to repair them
-        if (validation.invalid.length > 0 && attempts < maxAttempts && validRules.length < count) {
-          console.log(`[generatePreviewRules] Attempt ${attempts}: ${validRules.length} valid, ${validation.invalid.length} invalid. Retrying...`)
-          
-          // Create repair prompt for invalid rules
-          const repairPrompt = `The following rules use invalid categories. Replace them with rules using ONLY these allowed categories:
-
-${allowedCategories}
-
-Invalid rules to replace:
-${JSON.stringify(validation.invalid, null, 2)}
-
-Brand context:
-- Name: ${brandDetails.name}
-- Audience: ${brandDetails.audience}
-- Type: ${brandDetails.brandDetailsDescription}
-
-Return ${validation.invalid.length} replacement rules as JSON array using ONLY allowed categories.`
-
-          const repairResult = await generateWithOpenAI(
-            repairPrompt,
-            "You are a writing style guide expert. Return strict JSON only.",
-            "json",
-            1000,
-            "gpt-4o"
-          )
-
-          if (repairResult.success && repairResult.content) {
-            try {
-              const repairedParsed = JSON.parse(repairResult.content)
-              const repairedRules = Array.isArray(repairedParsed) ? repairedParsed : [repairedParsed]
-              const repairedValidation = validateRules(repairedRules)
-              validRules = [...validRules, ...repairedValidation.valid]
-            } catch (e) {
-              console.error('[generatePreviewRules] Failed to parse repair response:', e)
-            }
-          }
-        }
-
-        // If we have enough valid rules, break
-        if (validRules.length >= count) {
-          break
-        }
-  } catch (error) {
-        console.error('[generatePreviewRules] Failed to parse JSON:', error)
-        if (attempts === maxAttempts) {
-          return { success: false, error: 'Failed to parse rules JSON after retries' }
-        }
-      }
-    }
-
-    // Take only the requested count
-    const finalRules = validRules.slice(0, count)
-    
-    console.log(`[generatePreviewRules] Final rules count: ${finalRules.length}`)
-    
-    if (finalRules.length === 0) {
-      console.log('[generatePreviewRules] No valid rules generated, returning empty')
-      // Return empty content instead of error to avoid breaking the preview
-      return { success: true, content: '' }
-    }
-
-    // Render to markdown
-    const markdown = renderRulesMarkdown(finalRules)
-    
-    console.log(`[generatePreviewRules] Successfully generated ${finalRules.length} rules, markdown length: ${markdown.length}`)
-    
-    return { success: true, content: markdown }
-  } catch (error) {
-    console.error('[generatePreviewRules] Error:', error)
-    console.error('[generatePreviewRules] Stack:', error instanceof Error ? error.stack : 'No stack')
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-  }
-}
-
-// Generate before/after content samples (limited count) - return JSON
-export async function generateBeforeAfterSamples(brandDetails: any, traitsContext?: string, count: number = 3): Promise<GenerationResult> {
-  try {
-    const prompt = `Create exactly ${count} "Before → After" content transformation examples for the ${brandDetails.name} brand.
-
-Brand Details:
-- Name: ${brandDetails.name}
-- Description: ${brandDetails.brandDetailsDescription}
-- Target Audience: ${brandDetails.audience}
-${traitsContext ? `- Brand Voice Traits: ${traitsContext.slice(0, 1000)}` : ''}
-
-Generate ${count} pairs showing how generic content transforms to match this brand's voice. Each pair should:
-- Be ≤12 words each (both before and after)
-- Show this brand's personality in the "After" version
-- Balance all selected brand voice traits - don't overemphasize one trait at the expense of others
-- Be relevant to the business type
-- Have obvious context (no channel labels needed)
-- Make the "Before" generic, "After" distinctly on-brand
-
-Return as JSON with this exact structure:
-{
-  "examples": [
-    { "before": "Try our pancakes today.", "after": "Taste the cosmos." }OUTPUT FORMAT:
-Start directly with ### 1. [Category Name]
-One sentence rule (8–12 words)
-✅ Good example in brand voice
-❌ Bad example in brand voice
-
-REQUIREMENTS:
-- Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
-- No duplicate categories
-- Exactly 25 rules
-  ]
-}
-
-Create ${count} similar transformations that feel natural for ${brandDetails.name} and their ${brandDetails.audience} audience.`
+Return JSON:
+{"examples":[{"contentType":"Homepage Headline","before":"...","after":"..."}, ...]}`;
 
     const result = await generateWithOpenAI(
       prompt,
       "You are an expert copywriter who transforms generic content into distinctive brand voice. Return strict JSON only.",
       "json",
-      400,
+      800,
       "gpt-5.2",
       "medium"
-    )
+    );
 
     if (!result.success || !result.content) {
-      return { success: false, error: result.error || 'Failed to generate before/after samples' }
+      return { success: false, error: result.error || "Failed to generate before/after samples" };
     }
 
-    return { success: true, content: result.content }
+    try {
+      const parsed = JSON.parse(result.content);
+      const examples = Array.isArray(parsed?.examples) ? parsed.examples : [];
+      const contentTypes = [
+        "Homepage Headline",
+        "Email Subject Line",
+        "Social Media Post",
+        "Error or Empty State Message",
+        "Blog Intro Paragraph",
+      ];
+      const markdown = examples
+        .slice(0, 5)
+        .map((ex: any, i: number) => {
+          const ct = ex.contentType || contentTypes[i] || `Example ${i + 1}`;
+          return `### ${ct}\n\n**Before:** ${ex.before || ""}\n\n**After:** ${ex.after || ""}`;
+        })
+        .join("\n\n");
+      return { success: true, content: markdown };
+    } catch (e) {
+      return { success: false, error: "Invalid before/after JSON response" };
+    }
   } catch (error) {
-    console.error('Error in generateBeforeAfterSamples:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    console.error("Error in generateBeforeAfterSamples:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
@@ -681,296 +484,222 @@ Use British English spelling
   return generateWithOpenAI(prompt, "You are an expert content strategist who creates clear, actionable style guide rules.", "markdown")
 }*/
 
-// Function to generate the entire core style guide in one go
-export async function generateFullCoreStyleGuide(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
-  console.log('[generateFullCoreStyleGuide] Generating core style guide for:', brandDetails?.name)
-  
+// Generate exactly 25 style rules (one per canonical category)
+export async function generateStyleRules(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
+  console.log("[generateStyleRules] Generating 25 rules for:", brandDetails?.name);
+
   try {
-    const rulesSchema = await import('./rules-schema')
-    const { getAllowedCategoriesPromptText } = rulesSchema
-    
-    const traitsSection = traitsContext ? `\nTraits Context:\n${traitsContext}\n` : ''
+    const rulesSchema = await import("./rules-schema");
+    const { getAllowedCategoriesPromptText, validateRules } = rulesSchema;
+    const { renderRulesMarkdown } = await import("./rules-renderer");
 
-    const allowedCategories = getAllowedCategoriesPromptText()
+    const traitsSection = traitsContext ? `\nTraits Context:\n${traitsContext}\n` : "";
+    const allowedCategories = getAllowedCategoriesPromptText();
+    const keywordSection =
+      Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
+        ? `\nKeywords: ${brandDetails.keywords.slice(0, 15).join(", ")}`
+        : "";
+    const traitNames = Array.isArray(brandDetails.traits)
+      ? brandDetails.traits.map((t: any) => (typeof t === "string" ? t : t?.name)).filter(Boolean)
+      : [];
 
-    const prompt = `Create exactly 25 writing style rules in markdown format for this brand. Rules are designed to support brand voice traits.
+    const prompt = `Create exactly 25 writing style rules for this brand. Use ONE rule per category from the list below. Rules support brand voice traits.
 
-- Brand
-  - Name: ${brandDetails.name}
-  - Audience: ${brandDetails.audience}
-  - Description: ${brandDetails.brandDetailsDescription}
-  - Formality: ${brandDetails.formalityLevel || 'Neutral'}
-  - Reading Level: ${brandDetails.readingLevel || '10-12'}
-  - English Variant: ${brandDetails.englishVariant || 'american'}
-  - Keywords: ${Array.isArray(brandDetails.keywords) && brandDetails.keywords.length ? brandDetails.keywords.slice(0, 15).join(', ') : 'None'}
-
+Brand:
+- Name: ${brandDetails.name}
+- Audience: ${brandDetails.audience}
+- Description: ${brandDetails.brandDetailsDescription}
+- Formality: ${brandDetails.formalityLevel || "Neutral"}
+- Reading Level: ${brandDetails.readingLevel || "10-12"}
+- English Variant: ${brandDetails.englishVariant || "american"}${keywordSection}
+${traitNames.length ? `- Selected Traits: ${traitNames.join(", ")}` : ""}
 ${traitsSection}
 
-- Allowed Categories
+Allowed categories (use each exactly once, in this order):
 ${allowedCategories}
 
-OUTPUT FORMAT:
-Start directly with ### 1. [Category Name]
-One sentence rule (8–12 words)
-✅ Good example in brand voice
-❌ Bad example in brand voice
+Return STRICT JSON array:
+[{"category": "Contractions", "title": "Contractions", "description": "One sentence rule 8-12 words", "examples": {"good": "Example", "bad": "Example"}}]
 
-REQUIREMENTS:
+Requirements:
+- Each rule description must FRONT-LOAD the reason (which trait it supports), then the concrete rule. Use instructive verbs (e.g. "Maintain a refined voice by…", "Project a supportive tone by…"). Example: "Maintain a refined voice by limiting exclamation points to launches." or "Project a supportive tone by avoiding emojis in product copy." — one trait per rule, not listing all traits.
+- Use lowercase for the trait when it appears as the descriptor: "Stay direct by…", "Keep refined by…", "Be supportive by…" — capitalise only the first word (the verb), not the trait name.
+- Pick the single trait that best fits each rule; vary which traits you use across rules.
+- Voice-shaping rules (1-7) must reference Selected Traits by name in that front-loaded reason.
 - Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
-- No duplicate categories
-- Exactly 25 rules`
+- Description 8-12 words max
+- Exactly 25 rules, one per category
+- Format times without extra spaces (e.g. "10:00 am" not "10: 00 am")
+- Use a space before quoted text (e.g. "Click \"Mark as duplicate\"" not "Click\"Mark as duplicate\"")
+- In the Emojis rule, do NOT use emoji characters in examples; use plain text only (avoids encoding artifacts)`;
 
-    // Generate markdown rules directly
-    let attempts = 0
-    const maxAttempts = 3
+    let attempts = 0;
+    const maxAttempts = 3;
 
     while (attempts < maxAttempts) {
-      attempts++
-      
+      attempts++;
       const result = await generateWithOpenAI(
         prompt,
-        "You are a writing style guide expert. Generate clean markdown with exactly 25 numbered rules.",
-        "markdown",
-        5000,
+        "You are a writing style guide expert. Return strict JSON array only.",
+        "json",
+        3500,
         "gpt-5.2",
         "medium"
-      )
+      );
 
       if (!result.success || !result.content) {
         if (attempts === maxAttempts) {
-          console.error('[generateFullCoreStyleGuide] Failed after all attempts:', result.error)
-          return { success: false, error: result.error || 'Failed to generate core rules after retries' }
+          return { success: false, error: result.error || "Failed after retries" };
         }
-        continue
+        continue;
       }
 
-      console.log(`[generateFullCoreStyleGuide] Success! Generated ${result.content.length} chars`)
-      return { success: true, content: result.content }
+      try {
+        const parsed = JSON.parse(result.content);
+        const rules = Array.isArray(parsed) ? parsed : [parsed];
+        const validation = validateRules(rules);
+        if (validation.valid.length >= 20) {
+          const markdown = renderRulesMarkdown(validation.valid.slice(0, 25));
+          return { success: true, content: markdown };
+        }
+      } catch (e) {
+        console.error("[generateStyleRules] Parse/validation failed:", e);
+      }
     }
-
-    return { success: false, error: 'Failed to generate rules after all attempts' }
+    return { success: false, error: "Failed to generate valid rules after retries" };
   } catch (error) {
-    console.error('[generateFullCoreStyleGuide] Error:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    console.error("[generateStyleRules] Error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
 
-// Function to generate the entire complete style guide in one go
-export async function generateCompleteStyleGuide(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
-  const traitsSection = traitsContext ? `\nTraits Context:\n${traitsContext}\n` : '';
-  const styleConstraints = `\nStyle Constraints:\n- Formality: ${brandDetails.formalityLevel || 'Neutral'} (Professional: avoid contractions; Casual: allow contractions; Very Formal: use third person)\n- Reading Level: ${brandDetails.readingLevel || '10-12'} (6–8: short sentences, simple vocab; 13+: technical precision allowed)\n- English Variant: ${brandDetails.englishVariant || 'american'} (apply spelling and punctuation accordingly)`;
-  const keywordSection = Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-    ? `\nBrand Keywords (use naturally in examples where helpful):\n- ${brandDetails.keywords.slice(0, 15).join('\n- ')}`
-    : '';
-  const prompt = `You are a writing style guide expert. Based on the brand info below, create a comprehensive set of writing style rules that support and reinforce the brand voice traits for this brand, covering all the detailed topics listed.
 
-Brand Info:
-  • Brand Name: ${brandDetails.name}
-  • Audience: ${brandDetails.audience}
-  • What they do: ${brandDetails.brandDetailsDescription}
+// Audience section: primary + optional secondary audience
+export async function generateAudienceSection(brandDetails: any): Promise<GenerationResult> {
+  const keywordSection =
+    Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
+      ? `\nKeywords: ${brandDetails.keywords.slice(0, 10).join(", ")}`
+      : "";
+  const prompt = `Based on this brand, write an Audience section (markdown) with:
+1. **Primary audience** (2-4 sentences): Who they are, what they care about, how to address them
+2. **Secondary audience** (optional, 1-2 sentences): If applicable, a secondary audience and how tone shifts. Omit if brand has single audience.
 
-${traitsSection}
-${styleConstraints}
-${keywordSection}
+Brand: ${brandDetails.name}
+What they do: ${brandDetails.brandDetailsDescription}
+Audience hint: ${brandDetails.audience || "general audience"}${keywordSection}
 
-Instructions:
-- Each main section should be H2 (##) without numbers (e.g., "## Spelling Conventions").
-- Each rule name should be H3 heading (###) with sequential numbering from 1 onwards.
-- Do NOT break lines for dashes, slashes, or quotes—keep them in the same line as the text.
-- Each rule must be about writing style, grammar, punctuation, spelling, or formatting.
-- Do NOT include general brand, marketing, or content strategy rules.
-- Each rule must:
-  1. Start with an H3 heading with sequential number and keyword (e.g., "### 1. Company Name Spelling", "### 2. Proper Nouns").
-  2. Give a **ONE SENTENCE** description of the rule (8–16 words). In ~60% of rules, explicitly reference 1–2 of the Selected Traits by name (e.g., "supports our Direct and Refined voice", "reinforces our Assertive tone").
-  3. Include a ✅ example and a ❌ example on separate lines. Examples MUST reflect the brand voice described in the Traits Context above. Write examples as if ${brandDetails.name} is speaking to ${brandDetails.audience}.
-  4. Be formatted in markdown.
-- Do not repeat rules or examples.
-- Make each rule unique, clear, and actionable.
-- Focus on how to write, edit, and format text for this brand.
-- **IMPORTANT**: Put each ✅ and ❌ example on separate lines with line breaks between them.
-- Organize the rules into the following sections and topics, in this order:
+Output markdown only, no code blocks. Use ### Primary Audience and ### Secondary Audience as subheadings.`;
 
-## Spelling Conventions
-   - ### 1. Capitalisation of Months of the Year
-   - ### 2. Capitalisation of Seasons & Directions
-   - ### 3. Company Name Spelling
-   - ### 4. Complex vs. Simple Words
-   - ### 5. Hyphenation in Heritage Terms
-   - ### 6. Possessives
-   - ### 7. Proper Nouns
-   - ### 8. Spelling for Loanwords
-   - ### 9. Spelling of Internet Terms
-   - ### 10. UK vs. US English
+  return generateWithOpenAI(
+    prompt,
+    "You are a brand strategist who writes precise audience definitions.",
+    "markdown",
+    400,
+    "gpt-5.2",
+    "medium"
+  );
+}
 
-## Grammar & Mechanics
-   - ### 11. Abbreviated Words
-   - ### 12. Acronyms
-   - ### 13. Active vs. Passive Voice
-   - ### 14. Capitalisation
-   - ### 15. Compound Adjectives
-   - ### 16. Contractions
-   - ### 17. eg / ie / etc.
-   - ### 18. Emojis
-   - ### 19. Jargon Translation
-   - ### 20. Job Titles
-   - ### 21. Languages
-   - ### 22. Sentence Case
-   - ### 23. Title Case
-   - ### 24. Upper Case
+// Content guidelines: short-form, long-form, product/UX copy
+export async function generateContentGuidelines(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
+  const traitsSection = traitsContext ? `\nTraits: ${traitsContext.slice(0, 600)}\n` : "";
+  const prompt = `Write brand-specific Content Guidelines (markdown) with 3 subsections. Each has 3-4 bullets derived from the brand's traits and audience. No generic platitudes.
 
-## Punctuation
-   - ### 25. Accents
-   - ### 26. Ampersands
-   - ### 27. Apostrophes
-   - ### 28. Asterisks
-   - ### 29. At Symbols
-   - ### 30. Colons
-   - ### 31. Commas
-   - ### 32. Ellipses
-   - ### 33. Ellipsis Spacing
-   - ### 34. Em Dash
-   - ### 35. En Dash
-   - ### 36. Exclamation Points
-   - ### 37. Hash Symbols
-   - ### 38. Hyphens
-   - ### 39. Multiple Punctuation
-   - ### 40. Parentheses
-   - ### 41. Periods
-   - ### 42. Pipes
-   - ### 43. Question Marks
-   - ### 44. Quotation Marks
-   - ### 45. Semicolons
-   - ### 46. Slashes
-   - ### 47. Special Characters
+### Short-form
+_social, ads, subject lines_
+- 3-4 bullets tailored to this brand
 
-## Formatting
-   - ### 48. Alignment
-   - ### 49. Bold and Italics
-   - ### 50. Bullet Points
-   - ### 51. Coloured Text
-   - ### 52. Numbered Lists
-   - ### 53. Spacing
-   - ### 54. Strikethrough
+### Long-form
+_blogs, newsletters, case studies_
+- 3-4 bullets tailored to this brand
 
-## Digital & Web
-   - ### 55. Alt Text
-   - ### 56. Button Capitalisation
-   - ### 57. Buttons
-   - ### 58. Call-to-Action Text
-   - ### 59. Character Limits for Inputs
-   - ### 60. Checkboxes
-   - ### 61. Email Addresses
-   - ### 62. Empty State Guidance
-   - ### 63. Error Message Tone
-   - ### 64. File Extensions
-   - ### 65. Forms
-   - ### 66. Image Captions
-   - ### 67. Loading State Messaging
-   - ### 68. Meta Descriptions
-   - ### 69. Radio Buttons
-   - ### 70. Social Media Hashtags
-   - ### 71. URL & Link Formatting
-   - ### 72. UTM & Tracking Rules
-   - ### 73. Video Transcripts
+### Product and UX copy
+_buttons, errors, onboarding_
+- 3-4 bullets tailored to this brand
 
-## Numbers & Data
-   - ### 74. Big Numbers
-   - ### 75. Dates
-   - ### 76. Decimals
-   - ### 77. Fractions
-   - ### 78. Measurements
-   - ### 79. Millions & Billions
-   - ### 80. Money
-   - ### 81. Numerals
-   - ### 82. Percentages
-   - ### 83. Ranges
-   - ### 84. Telephone Numbers
-   - ### 85. Temperature
-   - ### 86. Time & Time Zones
-   - ### 87. Weights
-   - ### 88. Whole Numbers
+Brand: ${brandDetails.name}
+Description: ${brandDetails.brandDetailsDescription}
+Audience: ${brandDetails.audience}${traitsSection}
 
-## People & Inclusive Language
-   - ### 89. Age References
-   - ### 90. Disability-related Terms
-   - ### 91. Gender & Sexuality Terminology
-   - ### 92. Heritage & Nationality Terminology
-   - ### 93. Mental Health Terminology
-   - ### 94. Neurodiversity References
-   - ### 95. Person-first Language
-   - ### 96. Socio-economic References
+Output markdown only.`;
 
-## Points of View
-   - ### 97. First vs. Third Person
-   - ### 98. Pronouns
+  return generateWithOpenAI(
+    prompt,
+    "You are a content strategist who creates actionable, brand-specific guidelines.",
+    "markdown",
+    800,
+    "gpt-5.2",
+    "medium"
+  );
+}
 
-## Style Consistency
-   - ### 99. AI-Generated Content Flags
-   - ### 100. Consistency Review
-   - ### 101. Disclaimers & Fine Print
-   - ### 102. Readability Grade Target
-   - ### 103. Sentence Length Limit
-   - ### 104. Serial Comma
-   - ### 105. Slang & Jargon
-   - ### 106. Source Attribution
-   - ### 107. Third-Party Brand References
-   - ### 108. Titles and Headings
-   - ### 109. Trademarks
+// How to Use: mostly static template, brand name injected
+export function getHowToUseContent(brandName: string): string {
+  return `This document outlines the rules for brand voice, spelling, grammar, and formatting across all content channels. Anyone writing or publishing content for ${brandName} should follow these guidelines.
 
-Example rules:
+**Who should use this document**
+Content team members, freelancers, agencies, and anyone creating branded materials—including when briefing AI tools.
 
-### 3. Company Name Spelling
-Always capitalize "${brandDetails.name}" consistently to maintain brand identity and our professional voice.
-✅ Right: ${brandDetails.name} offers innovative solutions for businesses.
-❌ Wrong: ${brandDetails.name.toLowerCase()} offers innovative solutions for businesses.
+**When to reference it**
+- Starting new campaigns or content projects
+- Onboarding new writers or contractors
+- Reviewing drafts for brand consistency
+- Setting up AI writing assistants (paste into system prompt)
 
-### 11. Abbreviated Words
-Spell out abbreviated words on first use to maintain clarity for all readers.
-✅ The World Health Organization (WHO) recommends...
-❌ WHO recommends... (without introduction)
+**Using with AI tools**
+Paste this guide into your AI tool's system prompt or instructions to ensure generated content matches your brand voice. Include the Brand Voice and Style Rules sections for best results.`;
+}
 
-### 71. URL & Link Formatting
-Format web addresses consistently and use descriptive link text for accessibility.
-✅ Read our [privacy policy](https://example.com/privacy) for details.
-❌ Click here: https://example.com/privacy
+// Word list: preferred terms, avoid terms, spelling/usage
+export async function generateWordList(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
+  const keywords =
+    Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
+      ? brandDetails.keywords.slice(0, 15).join(", ")
+      : "none";
+  const traitsSection = traitsContext ? `\nTraits: ${traitsContext.slice(0, 400)}` : "";
+  const ukUs = brandDetails.englishVariant === "british" ? "UK" : "US";
+  const prompt = `Create a Word List for this brand. Return JSON:
+{"preferredTerms":["Use X not Y",...],"avoidTerms":["Avoid X",...],"spellingUsage":["X not Y",...]}
 
-### 104. Serial Comma
-Use the Oxford comma in lists of three or more items for clarity.
-✅ We offer consulting, development, and support services.
-❌ We offer consulting, development and support services.
+- **preferredTerms** (5-8): Brand-specific language. Use keywords: ${keywords}. Format "Use X not Y"
+- **avoidTerms** (5-8): Words that conflict with brand voice. Derived from traits. Format "Avoid X"
+- **spellingUsage** (3-5): Contested spellings for ${ukUs} English and industry. Format "X not Y"
 
-### 81. Numerals 1–9
-Write out numbers one through nine; use numerals for 10 and above.
-✅ We have five products and 12 team members.
-❌ We have 5 products and twelve team members.
+Brand: ${brandDetails.name}
+Description: ${brandDetails.brandDetailsDescription}${traitsSection}
 
-### 16. Contractions
-Avoid contractions to support our authoritative tone.
-✅ We do not accept late submissions.
-❌ We don't accept late submissions.
+Return JSON only.`;
 
-### 49. Bold and Italics
-Use bold for emphasis and key terms; use italics for foreign words and publication titles.
-✅ Our **core values** include respect for all *stakeholders*.
-❌ Our *core values* include respect for all **stakeholders**.
+  const result = await generateWithOpenAI(
+    prompt,
+    "You are a brand voice expert. Return strict JSON only.",
+    "json",
+    600,
+    "gpt-5.2",
+    "medium"
+  );
 
-### 95. Person-first Language
-Put the person before their condition or characteristic to show respect and dignity.
-✅ We support employees with disabilities through accessible design.
-❌ We support disabled employees through accessible design.
+  if (!result.success || !result.content) return result;
 
----
-- Generate the rules in the exact order above with sequential ordering.
-- Use markdown H2 (##) for each main section WITHOUT numbers (e.g., "## Spelling Conventions").
-- Use H3 (###) for each rule name WITH sequential numbers (e.g., "### 1. Company Name Spelling").
-- Start numbering from 1 and continue sequentially through all sections.
-- Do not skip any rule or section.
-- Generate exactly 98 rules total across all sections as listed above.
-- Do not repeat rules or examples.
-- Make each rule unique, clear, and actionable.
-- Focus on how to write, edit, and format text for this brand.
-`;
-  return generateWithOpenAI(prompt, "You are a writing style guide expert.", "markdown", 9000, "gpt-5.2", "medium");
+  try {
+    const parsed = JSON.parse(result.content);
+    const pref = Array.isArray(parsed.preferredTerms) ? parsed.preferredTerms : [];
+    const avoid = Array.isArray(parsed.avoidTerms) ? parsed.avoidTerms : [];
+    const spell = Array.isArray(parsed.spellingUsage) ? parsed.spellingUsage : [];
+    const lines: string[] = [];
+    if (pref.length) {
+      lines.push("### Preferred Terms", ...pref.map((s: string) => `- ${s}`), "");
+    }
+    if (avoid.length) {
+      lines.push("### Avoid Terms", ...avoid.map((s: string) => `- ${s}`), "");
+    }
+    if (spell.length) {
+      lines.push("### Spelling and Usage", ...spell.map((s: string) => `- ${s}`));
+    }
+    return { success: true, content: lines.join("\n").trim() };
+  } catch (e) {
+    return { success: false, error: "Invalid word list JSON" };
+  }
 }
 
 // Generate keywords for content marketing and brand voice

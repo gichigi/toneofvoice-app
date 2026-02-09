@@ -199,6 +199,18 @@ export function getSectionContentFromMarkdown(markdown: string, sectionId: strin
 }
 
 /**
+ * Build markdown suitable for pasting into AI tools (Brand Voice + Style Rules).
+ * Used by "Copy for AI" post-export prompt.
+ */
+export function getCopyForAIMarkdown(markdown: string): string {
+  if (!markdown) return ""
+  const brandVoice = getSectionContentFromMarkdown(markdown, "brand-voice")
+  const styleRules = getSectionContentFromMarkdown(markdown, "style-rules")
+  const parts = [brandVoice, styleRules].filter(Boolean)
+  return parts.join("\n\n---\n\n")
+}
+
+/**
  * Replace a section's content in full markdown.
  * Finds section by id, replaces from ## Heading to next ## or end with newContent.
  * newContent should be the full section markdown (heading + body).

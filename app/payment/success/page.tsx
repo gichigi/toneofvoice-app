@@ -1,10 +1,10 @@
 "use client"
 
-import React, { Suspense } from "react"
-import { useEffect, useState } from "react"
+import React, { Suspense, useCallback } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { Loader2, PenLine, Download, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { callAPI, ErrorDetails } from "@/lib/api-utils"
 import { ErrorMessage } from "@/components/ui/error-message"
@@ -17,6 +17,8 @@ declare global {
   }
 }
 
+const AUTO_REDIRECT_SECONDS = 3
+
 function SuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -27,6 +29,26 @@ function SuccessContent() {
   const [isRetrying, setIsRetrying] = useState<boolean>(false)
   const [currentStep, setCurrentStep] = useState<string>('Preparing your brand details')
   const [progress, setProgress] = useState<number>(0)
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null)
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Auto-redirect countdown after generation completes
+  const goToGuide = useCallback(() => {
+    if (redirectUrl) router.push(redirectUrl)
+  }, [redirectUrl, router])
+
+  useEffect(() => {
+    if (redirectCountdown === null || redirectCountdown < 0) return
+    if (redirectCountdown === 0) {
+      goToGuide()
+      return
+    }
+    countdownRef.current = setInterval(() => {
+      setRedirectCountdown((c) => (c !== null && c > 0 ? c - 1 : 0))
+    }, 1000)
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
+  }, [redirectCountdown, goToGuide])
 
   const getProgressSteps = () => [
     { message: 'Preparing your brand details', progress: 10 },
@@ -157,14 +179,11 @@ function SuccessContent() {
         // Non-fatal; guide is in localStorage, user can still view
       }
       
-      // Update status
+      // Update status and start auto-redirect
       setGenerationStatus('complete')
-
-      // Show success message
-      toast({
-        title: "Style guide generated!",
-        description: "Your guide is ready to view.",
-      })
+      const gId = localStorage.getItem("savedGuideId")
+      setRedirectUrl(gId ? `/guide?guideId=${gId}` : "/guide?generated=true")
+      setRedirectCountdown(AUTO_REDIRECT_SECONDS)
 
     } catch (error) {
       if (progressInterval) clearInterval(progressInterval)
@@ -270,7 +289,7 @@ Thanks!`)}`
             </>
           )}
           {generationStatus === 'complete' && (
-            <svg className="w-10 h-10 text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-10 h-10 text-white animate-in zoom-in duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           )}
@@ -302,26 +321,56 @@ Thanks!`)}`
                 This might take 1–2 minutes. Please don&apos;t leave this page.
               </p>
             </div>
+            {/* Remind them what they can do once it's ready */}
+            <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-4 text-left space-y-3">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">When it&apos;s ready you can:</p>
+              <div className="flex items-center gap-2.5">
+                <PenLine className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-sm text-gray-700">Review and edit every section</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Download className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-sm text-gray-700">Export as PDF, Word, or Markdown</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-sm text-gray-700">Copy your brand voice for AI tools</span>
+              </div>
+            </div>
           </div>
         )}
 
         {generationStatus === 'complete' && (
-          <div className="space-y-4 animate-in fade-in duration-500">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 font-medium">Generation Complete</p>
-              <p className="text-green-700 text-sm">Your style guide is ready to view and download.</p>
+          <div className="space-y-5 animate-in fade-in duration-500">
+            {/* What you unlocked */}
+            <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-4 text-left space-y-3">
+              <div className="flex items-center gap-2.5">
+                <PenLine className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-sm text-gray-700">Review and edit every section</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Download className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-sm text-gray-700">Export as PDF, Word, or Markdown</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-sm text-gray-700">Copy your brand voice for AI tools</span>
+              </div>
             </div>
-            
-            <Button 
-              onClick={() => {
-                const guideId = localStorage.getItem("savedGuideId")
-                router.push(guideId ? `/guide?guideId=${guideId}` : "/guide?generated=true")
-              }}
+
+            <Button
+              onClick={goToGuide}
               className="w-full"
               size="lg"
             >
-              View My Style Guide
+              View My Style Guide &rarr;
             </Button>
+
+            {redirectCountdown !== null && redirectCountdown > 0 && (
+              <p className="text-xs text-gray-400 animate-in fade-in duration-300">
+                Redirecting in {redirectCountdown} second{redirectCountdown !== 1 ? 's' : ''}…
+              </p>
+            )}
           </div>
         )}
 

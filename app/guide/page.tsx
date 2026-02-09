@@ -28,6 +28,7 @@ import {
   getSectionContentFromMarkdown,
   replaceSectionInMarkdown,
 } from "@/lib/content-parser"
+import { PostExportPrompt } from "@/components/PostExportPrompt"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { createErrorDetails, ErrorDetails } from "@/lib/api-utils"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
@@ -93,6 +94,7 @@ function GuideContent() {
   const [hasEdits, setHasEdits] = useState(false)
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(guideId)
+  const [showPostExportPrompt, setShowPostExportPrompt] = useState(false)
   
   // Handle subscription redirect from payment flow
   const subscribeTriggered = useRef(false)
@@ -560,6 +562,7 @@ function GuideContent() {
         title: "Download started",
         description: `Your style guide is downloading in ${format.toUpperCase()} format.`,
       })
+      setShowPostExportPrompt(true)
     } catch (error) {
       console.error("Error generating file:", error)
       toast({
@@ -626,24 +629,44 @@ function GuideContent() {
     if (typeof window === "undefined") return
     const element = document.getElementById("pdf-export-content")
     if (!element) return
-    // @ts-ignore
-    const html2pdf = (await import('html2pdf.js')).default
-    const opt = {
-      margin: 0.5,
-      filename: `${brandDetails?.name?.replace(/\s+/g, '-').toLowerCase() || 'style'}-guide.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        letterRendering: true,
-        useCORS: true
-      },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-      pagebreak: { 
-        mode: ['avoid-all', 'css', 'legacy'],
-        avoid: ['h2', 'h3', '.voice-trait', '.rule-section']
+    setIsDownloading(true)
+    setDownloadFormat("pdf")
+    try {
+      // @ts-ignore
+      const html2pdf = (await import('html2pdf.js')).default
+      const opt = {
+        margin: 0.5,
+        filename: `${brandDetails?.name?.replace(/\s+/g, '-').toLowerCase() || 'style'}-guide.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          letterRendering: true,
+          useCORS: true
+        },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy'],
+          avoid: ['h2', 'h3', '.voice-trait', '.rule-section']
+        }
       }
+      await html2pdf().set(opt).from(element).save()
+      toast({
+        title: "Download started",
+        description: "Your style guide is downloading in PDF format.",
+      })
+      setShowPostExportPrompt(true)
+    } catch (err) {
+      console.error("[Guide] PDF export failed:", err)
+      toast({
+        title: "PDF export failed",
+        description: "Could not generate PDF. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setShowDownloadOptions(false)
+      setIsDownloading(false)
+      setDownloadFormat(null)
     }
-    html2pdf().set(opt).from(element).save()
   }
   
   // Retry function (full-access flow)
@@ -757,6 +780,13 @@ function GuideContent() {
         showEditTools={true}
         headerContent={headerContent}
       >
+        {!isPreviewFlow && showPostExportPrompt && (
+          <PostExportPrompt
+            content={content ?? ""}
+            onDismiss={() => setShowPostExportPrompt(false)}
+            className="mb-3 shrink-0"
+          />
+        )}
         <StyleGuideView
           sections={sections}
           activeSectionId={activeSectionId}

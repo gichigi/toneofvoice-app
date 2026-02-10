@@ -476,7 +476,8 @@ ${summary}`
       brandName,
       audience,
       keywords,
-      suggestedTraits
+      suggestedTraits,
+      ...(urlValidation?.url && { url: urlValidation.url }),
     })
   } catch (error) {
     Logger.error(

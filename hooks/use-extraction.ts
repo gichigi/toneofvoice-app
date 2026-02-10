@@ -416,11 +416,12 @@ export function useExtraction(): UseExtractionReturn {
       })
 
       if (data.success) {
-        const brandDetails = {
+        const brandDetails: Record<string, unknown> = {
           name: data.brandName || "",
           brandDetailsDescription: data.brandDetailsDescription,
           audience: data.audience || "",
         }
+        if (data.url) brandDetails.website_url = data.url
         if (data.keywords) {
           const kw = Array.isArray(data.keywords)
             ? data.keywords.join("\n")

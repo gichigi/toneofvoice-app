@@ -4,63 +4,7 @@ import { useRouter } from "next/navigation"
 import { track } from "@vercel/analytics"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, CheckCircle } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
-import { PRICING_TIERS, type PricingTier } from "@/lib/landing-data"
-
-// Single source of styling per tier; no ternaries in JSX
-const TIER_THEME: Record<
-  string,
-  {
-    border: string
-    gradient: string
-    nameClass: string
-    priceClass: string
-    buttonClass: string
-    Icon: LucideIcon
-    iconClass: string
-    iconMargin: string
-    listClass: string
-    itemClass: string
-  }
-> = {
-  starter: {
-    border: "border-2 border-gray-300",
-    gradient: "from-gray-50 to-background",
-    nameClass: "text-gray-700",
-    priceClass: "text-gray-700",
-    buttonClass: "bg-gray-800 hover:bg-gray-700 text-white",
-    Icon: CheckCircle,
-    iconClass: "text-gray-500",
-    iconMargin: "mr-2",
-    listClass: "space-y-2 text-left text-sm",
-    itemClass: "flex items-center",
-  },
-  pro: {
-    border: "border-4 border-indigo-600",
-    gradient: "from-indigo-50 to-background",
-    nameClass: "text-indigo-700",
-    priceClass: "text-indigo-700",
-    buttonClass: "bg-indigo-600 hover:bg-indigo-700 text-white",
-    Icon: Check,
-    iconClass: "text-indigo-600",
-    iconMargin: "",
-    listClass: "space-y-2 text-left text-sm",
-    itemClass: "flex items-center gap-2",
-  },
-  agency: {
-    border: "border-2 border-blue-500",
-    gradient: "from-blue-50 to-background",
-    nameClass: "text-blue-700",
-    priceClass: "text-blue-700",
-    buttonClass: "bg-blue-500 hover:bg-blue-600 text-white",
-    Icon: Check,
-    iconClass: "text-blue-500",
-    iconMargin: "",
-    listClass: "space-y-2 text-left text-sm",
-    itemClass: "flex items-center gap-2",
-  },
-}
+import { PRICING_TIERS, TIER_THEME, type PricingTier } from "@/lib/landing-data"
 
 function PricingCard({
   tier,

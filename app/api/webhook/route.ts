@@ -316,6 +316,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    const stripe = getStripe()
     // Verify webhook signature using raw buffer
     const event = stripe.webhooks.constructEvent(
       payloadBuffer,

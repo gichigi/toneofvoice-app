@@ -9,9 +9,11 @@ type Props = {
   tier: string;
   plan?: "pro" | "agency";
   compact?: boolean;
+  /** Optional class for the primary CTA (e.g. tier-themed button on billing cards). */
+  buttonClass?: string;
 };
 
-export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
+export function BillingActions({ hasCustomer, tier, plan, compact, buttonClass }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleManage = async () => {
@@ -45,7 +47,7 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
   // Main billing section: Manage in Stripe
   if (!plan && hasCustomer && (tier === "starter" || tier === "pro" || tier === "agency")) {
     return (
-      <Button onClick={handleManage} disabled={loading} size={compact ? "sm" : "default"}>
+      <Button onClick={handleManage} disabled={loading} size={compact ? "sm" : "default"} className={buttonClass}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Manage in Stripe"}
       </Button>
     );
@@ -55,7 +57,7 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
   if (plan) {
     if (tier === plan) {
       return hasCustomer ? (
-        <Button onClick={handleManage} disabled={loading} size="sm" variant="outline">
+        <Button onClick={handleManage} disabled={loading} size={compact ? "sm" : "default"} variant="outline" className={compact ? undefined : buttonClass}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Manage"}
         </Button>
       ) : null;
@@ -64,7 +66,7 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
     const canUpgrade = (tier === "starter" && (plan === "pro" || plan === "agency")) || (tier === "pro" && plan === "agency");
     if (canUpgrade) {
       return (
-        <Button onClick={() => handleSubscribe(plan)} disabled={loading} size="sm">
+        <Button onClick={() => handleSubscribe(plan)} disabled={loading} size={compact ? "sm" : "default"} className={buttonClass}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tier === "pro" ? "Upgrade" : "Subscribe"}
         </Button>
       );

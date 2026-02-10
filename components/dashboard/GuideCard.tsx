@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { FileText, Trash2 } from "lucide-react"
+import { BookOpen, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,9 +22,13 @@ interface GuideCardProps {
   title: string
   planType: string
   updatedAt: string
+  /** Favicon URL when guide was generated from a website (e.g. Google favicon service). */
+  faviconUrl?: string
 }
 
-export function GuideCard({ id, title, planType, updatedAt }: GuideCardProps) {
+export function GuideCard({ id, title, planType, updatedAt, faviconUrl }: GuideCardProps) {
+  const [faviconFailed, setFaviconFailed] = useState(false)
+  const showFavicon = faviconUrl && !faviconFailed
   const router = useRouter()
   const { toast } = useToast()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -75,10 +79,25 @@ export function GuideCard({ id, title, planType, updatedAt }: GuideCardProps) {
           href={`/guide?guideId=${id}`}
           className="flex flex-col flex-1"
         >
-          <FileText className="mb-2 h-8 w-8 text-muted-foreground" />
+          {/* Favicon when guide was generated from website; else sleek fallback icon */}
+          {showFavicon ? (
+            <span className="mb-2 flex h-8 w-8 items-center justify-center overflow-hidden rounded">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={faviconUrl}
+                alt=""
+                width={32}
+                height={32}
+                onError={() => setFaviconFailed(true)}
+                className="h-8 w-8 object-contain"
+              />
+            </span>
+          ) : (
+            <BookOpen className="mb-2 h-8 w-8 text-muted-foreground" />
+          )}
           <h3 className="font-medium">{title || "Untitled guide"}</h3>
-          <p className="mt-1 text-xs text-muted-foreground capitalize">
-            {planType} • Updated{" "}
+          <p className="mt-1 text-xs text-muted-foreground">
+            Updated{" "}
             {formatDistanceToNow(new Date(updatedAt), {
               addSuffix: true,
             })}

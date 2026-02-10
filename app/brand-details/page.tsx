@@ -777,7 +777,7 @@ export default function BrandDetailsPage() {
                 touchEndY.current = null
               }}
             >
-              {/* Step 1: Core Information */}
+              {/* Step 1: Brand information */}
               <Card
                 ref={stepRefs[0]}
                 className={`absolute inset-x-0 shadow-lg border-2 border-gray-200 bg-white transition-all duration-500 ease-in-out ${
@@ -1098,7 +1098,7 @@ export default function BrandDetailsPage() {
                         <svg className="mr-2 h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Complete
+                        Done
                       </>
                     ) : !isStep2Valid() ? (
                       `Pick ${3 - selectedTraits.length} trait${3 - selectedTraits.length !== 1 ? 's' : ''}`

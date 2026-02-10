@@ -25,7 +25,7 @@ export default async function DashboardPage() {
 
   const { data: guides } = await supabase
     .from("style_guides")
-    .select("id, title, brand_name, plan_type, updated_at")
+    .select("id, title, brand_name, plan_type, updated_at, brand_details")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false });
 
@@ -64,22 +64,35 @@ export default async function DashboardPage() {
               : profile?.subscription_tier === "pro"
               ? "Pro plan"
               : profile?.subscription_tier === "agency"
-              ? "Team plan"
+              ? "Agency plan"
               : "Starter plan"}{" "}
-            — {used} of {limit} guides
+            — {used} of {limit === 99 ? "unlimited" : limit} guides
           </p>
 
           {guides && guides.length > 0 ? (
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {guides.map((g) => (
-                <GuideCard
-                  key={g.id}
-                  id={g.id}
-                  title={g.title || "Untitled guide"}
-                  planType={g.plan_type || "core"}
-                  updatedAt={g.updated_at || new Date().toISOString()}
-                />
-              ))}
+              {guides.map((g) => {
+                const websiteUrl = (g.brand_details as { website_url?: string } | null)?.website_url;
+                let faviconUrl: string | undefined;
+                if (websiteUrl) {
+                  try {
+                    const host = new URL(websiteUrl).hostname;
+                    faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`;
+                  } catch {
+                    // invalid URL, no favicon
+                  }
+                }
+                return (
+                  <GuideCard
+                    key={g.id}
+                    id={g.id}
+                    title={g.title || "Untitled guide"}
+                    planType={g.plan_type || "core"}
+                    updatedAt={g.updated_at || new Date().toISOString()}
+                    faviconUrl={faviconUrl}
+                  />
+                );
+              })}
               {used < limit && (
                 <NewGuideButton variant="card" limit={limit} used={used} />
               )}

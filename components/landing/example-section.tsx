@@ -83,65 +83,57 @@ export default function ExampleSection() {
             className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden"
           >
             <div className="p-6 md:p-8">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-2">
                 <PenTool className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">
                   The &quot;{selectedTrait}&quot; trait
                 </h3>
               </div>
-              <p className="text-base text-muted-foreground mb-6">
-                One trait, one set of rules—here&apos;s how it shows up in your
-                guide.
+              <p className="text-base text-gray-700 mb-6">
+                {TRAITS[selectedTrait].definition}
               </p>
 
-              <div className="space-y-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-base font-semibold mb-2">Definition</p>
-                  <p className="text-base text-gray-700">
-                    {TRAITS[selectedTrait].definition}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
+                  <p className="text-base font-semibold mb-2 text-green-900">
+                    Do
                   </p>
+                  <ul className="text-base text-green-800 space-y-2">
+                    {TRAITS[selectedTrait].do.map((item, idx) => (
+                      <li key={idx}>• {item}</li>
+                    ))}
+                  </ul>
                 </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
-                    <p className="text-base font-semibold mb-2 text-green-900">
-                      Do
-                    </p>
-                    <ul className="text-base text-green-800 space-y-2">
-                      {TRAITS[selectedTrait].do.map((item, idx) => (
-                        <li key={idx}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="border-l-4 border-red-500 bg-red-50 rounded-r-lg p-4">
-                    <p className="text-base font-semibold mb-2 text-red-900">
-                      Don&apos;t
-                    </p>
-                    <ul className="text-base text-red-800 space-y-2">
-                      {TRAITS[selectedTrait].dont.map((item, idx) => (
-                        <li key={idx}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
+                <div className="border-l-4 border-red-500 bg-red-50 rounded-r-lg p-4">
+                  <p className="text-base font-semibold mb-2 text-red-900">
+                    Don&apos;t
+                  </p>
+                  <ul className="text-base text-red-800 space-y-2">
+                    {TRAITS[selectedTrait].dont.map((item, idx) => (
+                      <li key={idx}>• {item}</li>
+                    ))}
+                  </ul>
                 </div>
+              </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">
-                    Before / After
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <span className="text-red-600 font-medium">Before:</span>
-                      <p className="text-base text-gray-700 flex-1">
-                        &quot;{TRAITS[selectedTrait].example.before}&quot;
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-green-600 font-medium">After:</span>
-                      <p className="text-base text-gray-700 flex-1">
-                        &quot;{TRAITS[selectedTrait].example.after}&quot;
-                      </p>
-                    </div>
+              {/* Before / After: side-by-side transformation so the rewrite feels supportive and clear */}
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200">
+                  <div className="p-4 md:p-5 bg-red-50/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-red-700 mb-2">
+                      Before
+                    </p>
+                    <p className="text-base text-gray-800 leading-relaxed">
+                      &quot;{TRAITS[selectedTrait].example.before}&quot;
+                    </p>
+                  </div>
+                  <div className="p-4 md:p-5 bg-green-50/50">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-green-700 mb-2">
+                      After
+                    </p>
+                    <p className="text-base text-gray-800 leading-relaxed">
+                      &quot;{TRAITS[selectedTrait].example.after}&quot;
+                    </p>
                   </div>
                 </div>
               </div>

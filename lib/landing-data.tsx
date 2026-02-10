@@ -110,14 +110,11 @@ export interface PricingTier {
   features: string[]
   cta: string
   ctaSubtext: string
-  borderClass: string
-  gradientClass: string
   badge?: string
   highlight?: boolean
-  isPro?: boolean
-  isTeam?: boolean
 }
 
+// Content best practices: parallel structure, one idea per bullet, benefit-focused, consistent voice
 export const PRICING_TIERS: PricingTier[] = [
   {
     id: "starter",
@@ -126,15 +123,13 @@ export const PRICING_TIERS: PricingTier[] = [
     priceLabel: "$0",
     sublabel: "Free forever",
     features: [
-      "About your brand, How to use, Your audience",
-      "Content guidelines, Brand voice (with do's and don'ts)",
-      "Edit every section in the app",
+      "Brand, audience & how to use",
+      "Content guidelines & brand voice",
+      "Edit and save your guide",
       "Export as PDF",
     ],
     cta: "Get started free",
-    ctaSubtext: "Best for starting out",
-    borderClass: "border-2 border-gray-300",
-    gradientClass: "from-gray-50 to-background",
+    ctaSubtext: "Best for trying it out",
     highlight: false,
   },
   {
@@ -145,18 +140,17 @@ export const PRICING_TIERS: PricingTier[] = [
     sublabel: "per month",
     features: [
       "Everything in Starter, plus:",
-      "Style Rules, Before/After, Word List",
-      "5 style guides (saved to your account)",
-      "AI assist to refine copy",
-      "PDF & Word export",
+      "25 supporting style rules", 
+      "Before & After examples", 
+      "Key terminology",
+      "Generate up to 5 guidelines",
+      "AI assist to refine guidelines",
+      "Export as PDF/Markdown/Word",
     ],
     cta: "Get Pro",
     ctaSubtext: "Best for professionals",
-    borderClass: "border-4 border-indigo-600",
-    gradientClass: "from-indigo-50 to-background",
     badge: "Most Popular",
     highlight: true,
-    isPro: true,
   },
   {
     id: "team",
@@ -166,16 +160,13 @@ export const PRICING_TIERS: PricingTier[] = [
     sublabel: "per month",
     features: [
       "Everything in Pro, plus:",
-      "99 style guides (saved to your account)",
+      "99 style guides saved to your account",
       "5 seats included",
-      "Collaboration (shared guides, team access)",
+      "Shared guides and team access",
     ],
     cta: "Get Team",
-    ctaSubtext: "Best for agencies",
-    borderClass: "border-2 border-blue-500",
-    gradientClass: "from-blue-50 to-background",
+    ctaSubtext: "Best for agencies and teams",
     highlight: false,
-    isTeam: true,
   },
 ]
 

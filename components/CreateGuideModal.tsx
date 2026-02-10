@@ -362,9 +362,8 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
                 onOpenChange(false);
               }}
               className="text-gray-500 underline font-medium text-xs sm:text-sm whitespace-nowrap text-center sm:text-left"
-              style={{ textTransform: "lowercase" }}
             >
-              add manually
+              Add brand details manually
             </Link>
 
             <Button

@@ -37,7 +37,6 @@ import {
   ShieldOff,
   Hash,
   Eye,
-  BookOpen,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import dynamic from "next/dynamic"
@@ -83,8 +82,6 @@ export default function LandingPage() {
   const [traitCyclePaused, setTraitCyclePaused] = useState(false) // Pause auto-cycle when user clicks
   const traitCycleIntervalRef = useRef<NodeJS.Timeout | null>(null) // Ref for interval
   const traitCyclePausedRef = useRef(false) // Ref to track paused state without causing re-renders
-  const [ruleCount, setRuleCount] = useState(0) // Counter for animated rule count
-  const [hasAnimated, setHasAnimated] = useState(false) // Track if counter has animated
   const [inputAnimating, setInputAnimating] = useState(false) // Track input animation state
   const inputRef = useRef<HTMLInputElement>(null) // Ref for input field
 
@@ -171,64 +168,6 @@ export default function LandingPage() {
   useEffect(() => {
     traitCyclePausedRef.current = traitCyclePaused
   }, [traitCyclePaused])
-
-  // Counter animation for rules section with smooth easing
-  useEffect(() => {
-    if (hasAnimated) return
-
-    const observerOptions = {
-      threshold: 0.3,
-      rootMargin: '0px'
-    }
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true)
-          
-          const startTime = Date.now()
-          const duration = 2000 // 2 seconds
-          const start = 0
-          const end = 99
-          
-          // Ease-out function: easeOutQuad for gentler deceleration
-          const easeOutQuad = (t: number): number => {
-            return 1 - (1 - t) * (1 - t)
-          }
-
-          const animate = () => {
-            const elapsed = Date.now() - startTime
-            const progress = Math.min(elapsed / duration, 1)
-            const eased = easeOutQuad(progress)
-            const current = Math.floor(start + (end - start) * eased)
-            
-            setRuleCount(current)
-            
-            if (progress < 1) {
-              requestAnimationFrame(animate)
-            } else {
-              setRuleCount(end)
-            }
-          }
-          
-          requestAnimationFrame(animate)
-        }
-      })
-    }
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions)
-    const element = document.getElementById('whats-included')
-    
-    if (element) {
-      observer.observe(element)
-    }
-
-    return () => {
-      if (element) {
-        observer.unobserve(element)
-      }
-    }
-  }, [hasAnimated])
 
   // Progressive loading word arrays
   const descriptionWords = ["Thinking...", "Exploring...", "Assembling...", "Creating..."]
@@ -331,7 +270,7 @@ export default function LandingPage() {
     if (errorMessage.includes('SSL') || errorMessage.includes('certificate') || errorMessage.includes('CERT')) {
       return {
         type: 'SSL',
-        message: "Site has security issues. Add details manually."
+        message: "Site has security issues. Add brand details manually."
       }
     }
 
@@ -353,7 +292,7 @@ export default function LandingPage() {
     if (errorMessage.includes('content policy') || errorMessage.includes('safety') || errorMessage.includes('inappropriate')) {
       return {
         type: 'CONTENT_POLICY',
-        message: "Couldnt analyze content. Add details manually."
+        message: "Couldnt analyze content. Add brand details manually."
       }
     }
 
@@ -361,21 +300,21 @@ export default function LandingPage() {
     if (errorMessage.includes('javascript') || errorMessage.includes('dynamic content')) {
       return {
         type: 'JAVASCRIPT_SITE',
-        message: "Site uses dynamic content. Add details manually."
+        message: "Site uses dynamic content. Add brand details manually."
       }
     }
 
     if (errorMessage.includes('login') || errorMessage.includes('authentication') || errorMessage.includes('password')) {
       return {
         type: 'LOGIN_REQUIRED',
-        message: "Login required. Add details manually."
+        message: "Login required. Add brand details manually."
       }
     }
 
     if (errorMessage.includes('no content') || errorMessage.includes('empty') || errorMessage.includes('insufficient content')) {
       return {
         type: 'NO_CONTENT',
-        message: "Not enough content. Add details manually."
+        message: "Not enough content. Add brand details manually."
       }
     }
 
@@ -404,7 +343,7 @@ export default function LandingPage() {
     if (errorMessage.includes('unsupported') || errorMessage.includes('blocked')) {
       return {
         type: 'UNSUPPORTED_DOMAIN',
-        message: "Can't access this site type. Add details manually."
+        message: "Can't access this site type. Add brand details manually."
       }
     }
 
@@ -629,7 +568,7 @@ export default function LandingPage() {
                 Get ChatGPT to <em>finally</em> sound like you
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
-                Create a professional brand tone of voice and content style guide to use with AI so you always sound like you.  
+                Create a professional <strong>brand tone of voice</strong> and <strong>content style guide</strong> to use with AI so you always sound like you.
               </p>
 
               <form onSubmit={handleExtraction} className="w-full max-w-2xl">
@@ -769,32 +708,13 @@ export default function LandingPage() {
                     <Link 
                       href="/brand-details" 
                       onClick={() => track('Manual Entry Clicked', { location: 'hero' })}
-                      className="text-gray-500 underline font-medium text-xs whitespace-nowrap" 
-                      style={{ textTransform: 'lowercase' }}
+                      className="text-gray-500 underline font-medium text-xs whitespace-nowrap"
                     >
-                      add manually
+                      Add brand details manually
                     </Link>
                   </div>
                 </div>
               </form>
-              
-              {/* Secondary CTA: View Demo */}
-              <div className="mt-6 flex justify-center">
-                <Button
-                  asChild
-                  size="lg"
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 border-0"
-                >
-                  <Link 
-                    href="/demo"
-                    onClick={() => track('View Demo Clicked', { location: 'hero' })}
-                    className="flex items-center gap-2"
-                  >
-                    <BookOpen className="h-5 w-5" />
-                    See Example
-                  </Link>
-                </Button>
-              </div>
             </div>
           </div>
         </section>
@@ -926,82 +846,80 @@ export default function LandingPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                   {
-                    number: ruleCount > 0 ? ruleCount : '99',
-                    suffix: '+',
-                    title: "Enterprise writing rules",
-                    description: "Based on style guides from Apple, Spotify, BBC, and other top brands",
+                    number: 25,
+                    suffix: '',
+                    title: "Writing rules",
+                    description: "Clear, actionable rules (tone, grammar, format) in your guide—ready for AI and your team.",
                     iconBg: "bg-blue-100",
                     delay: '0ms'
                   },
                   {
-                    number: '3',
+                    number: 3,
                     suffix: '',
                     title: "Brand voice traits",
-                    description: "Complete definitions, do's, don'ts customised for your brand",
+                    description: "Complete definitions, do's, and don'ts customised for your brand.",
                     iconBg: "bg-purple-100",
                     delay: '100ms'
                   },
                   {
-                    number: '15',
+                    number: 10,
                     suffix: '',
-                    title: "Keywords",
-                    description: "Brand-specific terms included in your guide to ensure consistency",
+                    title: "Brand terms & phrases",
+                    description: "Preferred words and phrases so every piece of content stays on-brand.",
                     iconBg: "bg-green-100",
                     delay: '200ms'
                   },
                   {
-                    number: '3',
+                    number: 5,
                     suffix: '',
                     title: "Before/After examples",
-                    description: "See your brand voice applied to content examples for your brand",
+                    description: "Your brand voice applied to real content types (e.g. headlines, emails).",
                     iconBg: "bg-orange-100",
                     delay: '300ms'
                   },
                   {
-                    number: '4',
+                    number: 3,
                     suffix: '',
                     title: "Export formats",
-                    description: "Export as PDF to share, Microsoft Word to edit, or markdown for AI",
+                    description: "PDF to share, Word to edit, Markdown for AI tools.",
                     iconBg: "bg-indigo-100",
                     delay: '400ms'
                   },
                   {
-                    number: '5',
+                    number: 5,
                     suffix: '',
                     title: "Minutes to complete",
-                    description: "No prompting, no templates. Enter the URL or description to start",
+                    description: "No prompting, no templates. Enter a URL or short description to start.",
                     iconBg: "bg-pink-100",
                     delay: '500ms'
                   },
-                ].map((feature, index) => {
-                  return (
-                    <div
-                      key={`feature-${index}`}
-                      className={`${feature.iconBg} rounded-lg border border-transparent shadow-sm p-6 hover:shadow-md transition-shadow opacity-0 animate-slide-in-right-fade`}
-                      style={{
-                        animationDelay: feature.delay,
-                        animationFillMode: 'forwards'
-                      }}
-                    >
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <span className="text-5xl md:text-6xl font-bold text-gray-900 tabular-nums">
-                          {feature.number}
+                ].map((feature, index) => (
+                  <div
+                    key={`feature-${index}`}
+                    className={`${feature.iconBg} rounded-lg border border-transparent shadow-sm p-6 hover:shadow-md transition-shadow opacity-0 animate-slide-in-right-fade`}
+                    style={{
+                      animationDelay: feature.delay,
+                      animationFillMode: 'forwards'
+                    }}
+                  >
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-5xl md:text-6xl font-bold text-gray-900 tabular-nums">
+                        {feature.number}
+                      </span>
+                      {feature.suffix && (
+                        <span className="text-4xl md:text-5xl font-bold text-gray-900">
+                          {feature.suffix}
                         </span>
-                        {feature.suffix && (
-                          <span className="text-4xl md:text-5xl font-bold text-gray-900">
-                            {feature.suffix}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-lg md:text-xl text-gray-900 font-medium mb-2">
-                        {feature.title}
-                      </h3>
-                      <p className="text-sm text-gray-700">
-                        {feature.description}
-                      </p>
+                      )}
                     </div>
-                  )
-                })}
+                    <h3 className="text-lg md:text-xl text-gray-900 font-medium mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm text-gray-700">
+                      {feature.description}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1373,46 +1291,58 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* How It Works - Input to impact */}
+        {/* How It Works - Input to impact (matches trait card + Do/Don't accent pattern; editorial list, not step cards) */}
         <section id="how-it-works" className="w-full py-12 md:py-20 lg:py-24 bg-background">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                  Input to impact in 3 steps
-                </h2>
-                <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Generate a professional writing style guide tailored to your brand in just a few clicks
-                </p>
-              </div>
+            <div className="flex flex-col items-center justify-center space-y-2 text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+                Input to impact in 3 steps
+              </h2>
+              <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl">
+                No long forms. Just tell us your website, generate your guidelines and start using it to guide your writing.
+              </p>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-8 md:grid-cols-3 lg:gap-12">
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm bg-white">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <span className="text-xl font-bold text-primary">1</span>
-                </div>
-                <h3 className="text-xl font-bold">Get started</h3>
-                <p className="text-center text-muted-foreground">
-                  Enter the URL or description of your brand to get started
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm bg-white">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <span className="text-xl font-bold text-primary">2</span>
-                </div>
-                <h3 className="text-xl font-bold">Pick voice traits</h3>
-                <p className="text-center text-muted-foreground">
-                  Select the right voice traits and brand details for your style guide
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg border p-6 shadow-sm bg-white">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <span className="text-xl font-bold text-primary">3</span>
-                </div>
-                <h3 className="text-xl font-bold">Generate your guide</h3>
-                <p className="text-center text-muted-foreground">
-                  Generate your full writing style guide and export with just a click
-                </p>
+
+            <div className="mx-auto max-w-5xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-8 lg:gap-10">
+                {[
+                  {
+                    title: "Enter website or description",
+                    body: "Paste your site URL or a short brand description. We use it to match your voice and tone.",
+                    accent: "border-t-blue-300",
+                    numBg: "bg-blue-100 text-blue-700",
+                  },
+                  {
+                    title: "Generate your guidelines",
+                    body: "We build your style guide—voice traits, writing rules, and examples tailored to your brand.",
+                    accent: "border-t-purple-300",
+                    numBg: "bg-purple-100 text-purple-700",
+                  },
+                  {
+                    title: "Start writing in your voice",
+                    body: "Download as PDF or Word, or copy into your AI tools. Use it yourself or share with your team.",
+                    accent: "border-t-green-300",
+                    numBg: "bg-green-100 text-green-700",
+                  },
+                ].map(({ title, body, accent, numBg }, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col items-center text-center gap-4 p-6 rounded-lg border border-gray-200 border-t-4 bg-white shadow-sm ${accent} opacity-0 animate-slide-in-right-fade`}
+                    style={{ animationDelay: `${i * 100}ms`, animationFillMode: 'forwards' }}
+                  >
+                    <span className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold tabular-nums ${numBg}`}>
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {title}
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {body}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1432,7 +1362,7 @@ export default function LandingPage() {
                   Brand voice traits in action
                 </h2>
                 <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl mb-4">
-                  Click through different traits to see definitions, do's, don'ts, and before/after examples
+                  See how each trait shapes your guide. Click a trait for definitions, do&apos;s, don&apos;ts, and a before/after example.
                 </p>
               </div>
             </div>
@@ -1469,15 +1399,15 @@ export default function LandingPage() {
                     <PenTool className="h-5 w-5 text-primary" />
                     <h3 className="text-lg font-semibold">The "{selectedTrait}" trait</h3>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Here's how one trait translates into actionable writing guidance:
+                  <p className="text-base text-muted-foreground mb-6">
+                    One trait, one set of rules—here&apos;s how it shows up in your guide.
                   </p>
                   
                   <div className="space-y-6">
                     {/* Definition */}
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm font-medium mb-2">Definition</p>
-                      <p className="text-sm text-gray-700">
+                      <p className="text-base font-semibold mb-2">Definition</p>
+                      <p className="text-base text-gray-700">
                         {TRAITS[selectedTrait].definition}
                       </p>
                     </div>
@@ -1485,16 +1415,16 @@ export default function LandingPage() {
                     {/* Do's and Don'ts */}
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
-                        <p className="text-sm font-medium mb-2 text-green-900">Do</p>
-                        <ul className="text-sm text-green-800 space-y-2">
+                        <p className="text-base font-semibold mb-2 text-green-900">Do</p>
+                        <ul className="text-base text-green-800 space-y-2">
                           {TRAITS[selectedTrait].do.map((item, idx) => (
                             <li key={idx}>• {item}</li>
                           ))}
                         </ul>
                       </div>
                       <div className="border-l-4 border-red-500 bg-red-50 rounded-r-lg p-4">
-                        <p className="text-sm font-medium mb-2 text-red-900">Don't</p>
-                        <ul className="text-sm text-red-800 space-y-2">
+                        <p className="text-base font-semibold mb-2 text-red-900">Don&apos;t</p>
+                        <ul className="text-base text-red-800 space-y-2">
                           {TRAITS[selectedTrait].dont.map((item, idx) => (
                             <li key={idx}>• {item}</li>
                           ))}
@@ -1504,17 +1434,17 @@ export default function LandingPage() {
 
                     {/* Before/After Example */}
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm font-medium mb-3">Before → After</p>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-3">Before / After</h4>
                       <div className="space-y-3">
                         <div className="flex items-start gap-2">
                           <span className="text-red-600 font-medium">Before:</span>
-                          <p className="text-sm text-gray-700 flex-1">
+                          <p className="text-base text-gray-700 flex-1">
                             "{TRAITS[selectedTrait].example.before}"
                           </p>
                         </div>
                         <div className="flex items-start gap-2">
                           <span className="text-green-600 font-medium">After:</span>
-                          <p className="text-sm text-gray-700 flex-1">
+                          <p className="text-base text-gray-700 flex-1">
                             "{TRAITS[selectedTrait].example.after}"
                           </p>
                         </div>
@@ -1538,7 +1468,7 @@ export default function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-8 md:grid-cols-4">
+            <div className="mx-auto grid max-w-5xl gap-6 py-8 md:grid-cols-3">
               <Card className="relative overflow-hidden border-2 border-gray-300">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-background"></div>
                 <CardContent className="p-6 relative z-10">
@@ -1551,22 +1481,26 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-left">
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
-                        <span>Preview full guide</span>
+                        <span>About your brand, How to use, Your audience</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
-                        <span>About, Audience, Content Guidelines</span>
+                        <span>Content guidelines, Brand voice (with do&apos;s and don&apos;ts)</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
-                        <span>Brand Voice section</span>
+                        <span>Edit every section in the app</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4 text-gray-500" />
+                        <span>Export as PDF</span>
                       </li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
                       track('Pricing Card Clicked', { plan: 'starter', price: 0, location: 'homepage' });
                       router.push("/brand-details");
                     }}>Get started free</Button>
-                    <p className="text-xs text-muted-foreground">Best for trying out</p>
+                    <p className="text-xs text-muted-foreground">Best for starting out</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1582,15 +1516,17 @@ export default function LandingPage() {
                       <p className="text-sm text-muted-foreground">per month</p>
                     </div>
                     <ul className="text-left space-y-2 text-sm">
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />5 style guides</li>
-                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Full editing & AI assist</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Everything in Starter, plus:</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />Style Rules, Before/After, Word List</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />5 style guides (saved to your account)</li>
+                      <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />AI assist to refine copy</li>
                       <li className="flex items-center gap-2"><Check className="h-4 w-4 text-indigo-600" />PDF & Word export</li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
                       track('Pricing Card Clicked', { plan: 'pro', price: 29, location: 'homepage' });
                       router.push("/brand-details");
                     }}>Get Pro</Button>
-                    <p className="text-xs text-muted-foreground">Best for small teams</p>
+                    <p className="text-xs text-muted-foreground">Best for professionals</p>
                   </div>
                 </CardContent>
               </Card>
@@ -1607,7 +1543,11 @@ export default function LandingPage() {
                     <ul className="space-y-2 text-left">
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>99 style guides</span>
+                        <span>Everything in Pro, plus:</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
+                        <span>99 style guides (saved to your account)</span>
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
@@ -1615,11 +1555,7 @@ export default function LandingPage() {
                       </li>
                       <li className="flex items-center">
                         <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Collaboration features</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-blue-500" />
-                        <span>Full export & AI assist</span>
+                        <span>Collaboration (shared guides, team access)</span>
                       </li>
                     </ul>
                     <Button size="lg" className="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-full px-8 py-3 shadow-md" onClick={() => {
@@ -1630,88 +1566,12 @@ export default function LandingPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="relative overflow-hidden border-2 border-black">
-                <div className="absolute inset-0 bg-gradient-to-br from-black to-gray-900"></div>
-                <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-xs font-medium rounded-bl-lg shadow">Enterprise</div>
-                <CardContent className="p-6 relative z-10">
-                  <div className="flex flex-col items-center space-y-4 text-center">
-                    <h3 className="text-2xl font-bold text-white">Custom Enterprise</h3>
-                    <div className="space-y-1">
-                      <p className="text-5xl font-bold text-white">Contact</p>
-                      <p className="text-sm text-gray-200">Custom pricing</p>
-                    </div>
-                    <ul className="space-y-2 text-left">
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Everything in Style Guide</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Custom onboarding</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Dedicated account manager</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Team training sessions</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Custom integrations</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4 text-white" />
-                        <span className="text-white">Priority support</span>
-                      </li>
-                    </ul>
-                    <Button size="lg" className="mt-2 bg-white hover:bg-gray-200 text-black font-bold rounded-full px-8 py-3 shadow-md" variant="outline" asChild>
-                      <Link 
-                        href="mailto:enterprise@styleguideai.com"
-                        onClick={() => track('Contact Sales Clicked', { plan: 'enterprise', location: 'pricing' })}
-                      >
-                        Contact Sales
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </section>
 
-        {/* Who It's For - Redesigned and moved below pricing */}
-        <section className="w-full py-12 md:py-16 bg-background">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-2 text-center mb-8">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Who uses our style guides</h2>
-              <p className="text-base text-gray-500">For teams and creators who care about consistency.</p>
-            </div>
-            <div className="mx-auto grid max-w-4xl grid-cols-2 md:grid-cols-4 gap-6 lg:gap-10">
-              <div className="flex flex-col items-center p-6 rounded-xl border bg-gradient-to-b from-white to-gray-50 shadow-sm hover:shadow-md transition-all">
-                <PenTool className="h-10 w-10 text-blue-500 mb-2" />
-                <h3 className="text-lg font-bold">Copywriters</h3>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-xl border bg-gradient-to-b from-white to-gray-50 shadow-sm hover:shadow-md transition-all">
-                <Users className="h-10 w-10 text-indigo-600 mb-2" />
-                <h3 className="text-lg font-bold">Marketing</h3>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-xl border bg-gradient-to-b from-white to-gray-50 shadow-sm hover:shadow-md transition-all">
-                <Rocket className="h-10 w-10 text-green-600 mb-2" />
-                <h3 className="text-lg font-bold">Founders</h3>
-              </div>
-              <div className="flex flex-col items-center p-6 rounded-xl border bg-gradient-to-b from-white to-gray-50 shadow-sm hover:shadow-md transition-all">
-                <Briefcase className="h-10 w-10 text-gray-700 mb-2" />
-                <h3 className="text-lg font-bold">Agencies</h3>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ - BACKGROUND CHANGED TO MUTED FOR ALTERNATION */}
-        <section id="faq" className="w-full py-12 md:py-20 lg:py-24 bg-muted">
+        {/* FAQ - alternates with pricing (muted) */}
+        <section id="faq" className="w-full py-12 md:py-20 lg:py-24 bg-background">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -1724,40 +1584,36 @@ export default function LandingPage() {
             <div className="mx-auto max-w-3xl divide-y py-8">
               {[
                 {
-                  q: "What if I don't have a brand yet?",
-                  a: "Our tool helps you define your brand voice from scratch. Just answer a few questions about your audience and goals.",
+                  q: "What's in the free preview?",
+                  a: "You get a full preview of your style guide: About, Audience, Content Guidelines, Brand Voice, plus a sample of what Style Rules and Before/After look like. Export the preview as PDF. Upgrade to edit, add all sections, and export without limits.",
                 },
                 {
-                  q: "How long does it take?",
-                  a: "Most style guides are generated in under 2 minutes. You can review, download in multiple formats, and share with your team.",
-                },
-                {
-                  q: "What formats can I download?",
-                  a: "Your style guide is available in PDF, Word, HTML, and Markdown formats for easy sharing and integration with any workflow.",
-                },
-                {
-                  q: "What's included in the style guide?",
-                  a: "You'll get a brand voice definition, up to 99+ writing rules, tone guidelines, and practical examples tailored to your brand.",
+                  q: "How do I get the full guide?",
+                  a: "Subscribe to Pro or Team. You generate once; then you can edit any section, use AI to refine copy, and export as PDF or Word. Your guide is saved to your account and auto-saves as you edit.",
                 },
                 {
                   q: "Can I edit my style guide?",
-                  a: "Absolutely. Once generated, you can download Word, HTML, or Markdown, then edit however you like before saving or sharing.",
+                  a: "Yes. On Pro or Team you can edit every section in the app, use AI assist to rewrite parts, and export as PDF, Word, or Markdown. Edits auto-save.",
                 },
                 {
-                  q: "Is this better than hiring a copywriter?",
-                  a: "We deliver 90% of what most brands need in minutes instead of weeks, at a fraction of the cost of hiring a professional writer.",
+                  q: "What export formats do I get?",
+                  a: "PDF (to share), Word (to edit offline), and Markdown (for AI tools). Available on Pro and Team.",
                 },
                 {
-                  q: "Can I share with my team?",
-                  a: "Yes! Share your style guide with your entire team. You receive a permanent access link plus downloadable files.",
+                  q: "How long does it take?",
+                  a: "Most guides are generated in a few minutes. You can preview immediately, then subscribe to unlock editing and full exports.",
+                },
+                {
+                  q: "What's included in the guide?",
+                  a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, and preferred terms. Pro/Team also get full editing and AI assist.",
+                },
+                {
+                  q: "How do I cancel or get a refund?",
+                  a: <span>Manage subscription and billing in your account. We offer a 30-day money-back guarantee—email <a href="mailto:support@aistyleguide.com?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20AIStyleGuide%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20style%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide:%20Style%20Guide%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a> within 30 days of purchase for a full refund.</span>,
                 },
                 {
                   q: "How do I contact support?",
-                  a: <span>Email us at <a href="mailto:support@aistyleguide.com?subject=Support%20Request&body=Hello%20AIStyleGuide%20Support%20Team,%0A%0AI%20need%20help%20with:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a> for any questions. We typically respond within 24 hours on business days.</span>,
-                },
-                {
-                  q: "How do I get a refund?",
-                  a: <span>We offer a 30-day money-back guarantee. Simply email <a href="mailto:support@aistyleguide.com?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20AIStyleGuide%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20style%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide:%20Style%20Guide%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a> within 30 days of your purchase for a full refund. No questions asked - we process refunds quickly, usually within 1-2 business days.</span>,
+                  a: <span>Email us at <a href="mailto:support@aistyleguide.com?subject=Support%20Request&body=Hello%20AIStyleGuide%20Support%20Team,%0A%0AI%20need%20help%20with:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a>, 24 hours on business days.</span>,
                 },
               ].map((item, i) => (
                 <div key={i} className="py-6">
@@ -1769,8 +1625,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="w-full py-12 md:py-20 lg:py-24 bg-background text-foreground">
+        {/* Final CTA - alternates with FAQ (background) */}
+        <section className="w-full py-12 md:py-20 lg:py-24 bg-muted text-foreground">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">

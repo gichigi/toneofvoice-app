@@ -9,6 +9,9 @@ interface StyleGuideCoverProps {
   className?: string
 }
 
+// Eyebrow: short label above title (avoid "Brand Identity" – redundant/wrong for voice docs)
+const COVER_EYEBROW = "Brand Voice & Content Style"
+
 export function StyleGuideCover({ 
   brandName, 
   guideType, 
@@ -21,6 +24,7 @@ export function StyleGuideCover({
     month: 'long', 
     day: 'numeric' 
   })
+  const displayName = (brandName || "").trim() || "Brand Voice Guidelines"
 
   return (
     <div className={cn("min-h-[80vh] flex flex-col justify-center px-12 md:px-20 py-24 bg-white relative overflow-hidden", className)}>
@@ -38,22 +42,21 @@ export function StyleGuideCover({
             </Badge>
           )}
           <p className="text-sm font-medium text-gray-500 uppercase tracking-widest animate-in fade-in slide-in-from-bottom-2 duration-700 delay-200">
-            Brand Identity System
+            {COVER_EYEBROW}
           </p>
         </div>
 
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           <h1 
-            className="text-6xl md:text-8xl font-bold tracking-tight text-gray-900 leading-[0.9] transition-all duration-500 hover:tracking-tighter" 
+            className="text-6xl md:text-8xl font-bold tracking-tight text-gray-900 leading-[0.9] transition-all duration-500 hover:tracking-tighter hover:scale-[1.01] origin-left" 
             style={{ fontFamily: 'var(--font-display), serif' }}
           >
-            {brandName}
+            {displayName}
           </h1>
           <div className="h-1 w-24 bg-gray-900 animate-in slide-in-from-left-4 duration-700 delay-500 rounded-full" />
         </div>
 
         <div className="pt-12 space-y-1 text-gray-500 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-500">
-          <p className="text-lg font-light transition-colors duration-300 hover:text-gray-700">Prepared for {brandName}</p>
           <p className="text-sm transition-colors duration-300 hover:text-gray-600">Generated on {formattedDate}</p>
           <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
             Style Guide

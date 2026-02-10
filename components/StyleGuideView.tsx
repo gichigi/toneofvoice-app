@@ -78,8 +78,9 @@ export function StyleGuideView({
   useEffect(() => setMounted(true), [])
 
   const nonCover = sections.filter((s) => s.id !== "cover")
-  const unlockedSections = nonCover.filter((s) => isUnlocked(s.minTier))
-  const lockedSections = nonCover.filter((s) => !isUnlocked(s.minTier))
+  const hasContent = (s: StyleGuideSection) => (s.content || "").trim().length > 0
+  const unlockedSections = nonCover.filter((s) => isUnlocked(s.minTier) && hasContent(s))
+  const lockedSections = nonCover.filter((s) => !isUnlocked(s.minTier) && hasContent(s))
   const lockedMarkdown = lockedSections
     .map((s) => `## ${s.title}\n\n${s.content}`.trim())
     .join("\n\n")

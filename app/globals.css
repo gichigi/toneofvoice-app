@@ -452,3 +452,8 @@ html, body {
 .pdf-exclude {
   display: block; /* Visible on page by default, hidden during PDF generation */
 }
+
+/* Footer logo - white text for dark background */
+.logo-light span {
+  color: white !important;
+}

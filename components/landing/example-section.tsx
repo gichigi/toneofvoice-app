@@ -94,22 +94,22 @@ export default function ExampleSection() {
               </p>
 
               <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
-                  <p className="text-base font-semibold mb-2 text-green-900">
-                    Do
-                  </p>
-                  <ul className="text-base text-green-800 space-y-2">
-                    {TRAITS[selectedTrait].do.map((item, idx) => (
-                      <li key={idx}>• {item}</li>
-                    ))}
-                  </ul>
-                </div>
                 <div className="border-l-4 border-red-500 bg-red-50 rounded-r-lg p-4">
                   <p className="text-base font-semibold mb-2 text-red-900">
                     Don&apos;t
                   </p>
                   <ul className="text-base text-red-800 space-y-2">
                     {TRAITS[selectedTrait].dont.map((item, idx) => (
+                      <li key={idx}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
+                  <p className="text-base font-semibold mb-2 text-green-900">
+                    Do
+                  </p>
+                  <ul className="text-base text-green-800 space-y-2">
+                    {TRAITS[selectedTrait].do.map((item, idx) => (
                       <li key={idx}>• {item}</li>
                     ))}
                   </ul>

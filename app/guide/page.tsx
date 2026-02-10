@@ -80,7 +80,7 @@ function GuideContent() {
   
   // Preview flow specific state
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
-  const [processingPlan, setProcessingPlan] = useState<"pro" | "team" | null>(null)
+  const [processingPlan, setProcessingPlan] = useState<"pro" | "agency" | null>(null)
   const [shouldRedirect, setShouldRedirect] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   
@@ -100,7 +100,7 @@ function GuideContent() {
   const subscribeTriggered = useRef(false)
   useEffect(() => {
     const sub = searchParams.get("subscribe")
-    if (!sub || !["pro", "team"].includes(sub) || !user || subscribeTriggered.current) return
+    if (!sub || !["pro", "agency"].includes(sub) || !user || subscribeTriggered.current) return
     subscribeTriggered.current = true
     const run = async () => {
       try {
@@ -434,7 +434,7 @@ function GuideContent() {
   }, [currentGuideId, user, brandDetails, hasEdits, content, guideType])
   
   // Handle subscription (preview flow)
-  const handleSubscription = async (plan: "pro" | "team") => {
+  const handleSubscription = async (plan: "pro" | "agency") => {
     try {
       setProcessingPlan(plan)
       if (!user) {
@@ -888,17 +888,17 @@ function GuideContent() {
                   </Button>
                 </div>
                 <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold">Team — $79/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">99 guides, 5 seats, collaboration</p>
+                  <h4 className="font-semibold">Agency — $79/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, multiple brands, priority support</p>
                   <Button
                     onClick={() => {
-                      track("Payment Started", { plan: "team", type: "subscription" })
-                      handleSubscription("team")
+                      track("Payment Started", { plan: "agency", type: "subscription" })
+                      handleSubscription("agency")
                     }}
                     disabled={processingPlan !== null}
                     className="mt-3 w-full"
                   >
-                    {processingPlan === "team" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {processingPlan === "agency" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                     Subscribe
                   </Button>
                 </div>

@@ -63,7 +63,7 @@ export default async function DashboardPage() {
               ? "Starter plan"
               : profile?.subscription_tier === "pro"
               ? "Pro plan"
-              : profile?.subscription_tier === "team"
+              : profile?.subscription_tier === "agency"
               ? "Team plan"
               : "Starter plan"}{" "}
             — {used} of {limit} guides

@@ -11,7 +11,7 @@ import {
   type LucideIcon
 } from "lucide-react"
 
-export type Tier = 'starter' | 'pro' | 'team'  // starter = free plan
+export type Tier = 'starter' | 'pro' | 'agency'  // starter = free plan
 
 export interface SectionConfig {
   id: string

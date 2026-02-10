@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 type Props = {
   hasCustomer: boolean;
   tier: string;
-  plan?: "pro" | "team";
+  plan?: "pro" | "agency";
   compact?: boolean;
 };
 
@@ -26,7 +26,7 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
     }
   };
 
-  const handleSubscribe = async (p: "pro" | "team") => {
+  const handleSubscribe = async (p: "pro" | "agency") => {
     setLoading(true);
     try {
       const res = await fetch("/api/create-subscription-session", {
@@ -43,7 +43,7 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
   };
 
   // Main billing section: Manage in Stripe
-  if (!plan && hasCustomer && (tier === "starter" || tier === "pro" || tier === "team")) {
+  if (!plan && hasCustomer && (tier === "starter" || tier === "pro" || tier === "agency")) {
     return (
       <Button onClick={handleManage} disabled={loading} size={compact ? "sm" : "default"}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Manage in Stripe"}
@@ -60,8 +60,8 @@ export function BillingActions({ hasCustomer, tier, plan, compact }: Props) {
         </Button>
       ) : null;
     }
-    // Can subscribe/upgrade: starter -> pro/team; pro -> team
-    const canUpgrade = (tier === "starter" && (plan === "pro" || plan === "team")) || (tier === "pro" && plan === "team");
+    // Can subscribe/upgrade: starter -> pro/agency; pro -> agency
+    const canUpgrade = (tier === "starter" && (plan === "pro" || plan === "agency")) || (tier === "pro" && plan === "agency");
     if (canUpgrade) {
       return (
         <Button onClick={() => handleSubscribe(plan)} disabled={loading} size="sm">

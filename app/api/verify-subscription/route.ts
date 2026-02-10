@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     }
 
     const plan = matchingSession.metadata?.plan as string;
-    if (!["pro", "team"].includes(plan)) {
+    if (!["pro", "agency"].includes(plan)) {
       return NextResponse.json({
         subscription_tier: "starter",
         already_active: false,

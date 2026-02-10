@@ -21,12 +21,12 @@ const PRO_PRICE_ID =
   mode === "test"
     ? process.env.STRIPE_TEST_PRO_PRICE_ID
     : process.env.STRIPE_PRO_PRICE_ID;
-const TEAM_PRICE_ID =
+const AGENCY_PRICE_ID =
   mode === "test"
-    ? process.env.STRIPE_TEST_TEAM_PRICE_ID
-    : process.env.STRIPE_TEAM_PRICE_ID;
+    ? process.env.STRIPE_TEST_AGENCY_PRICE_ID
+    : process.env.STRIPE_AGENCY_PRICE_ID;
 
-/** Create Stripe Checkout session for subscription (Pro or Team). User must be logged in. */
+/** Create Stripe Checkout session for subscription (Pro or Agency). User must be logged in. */
 export async function POST(req: Request) {
   try {
     // Check Stripe configuration first
@@ -49,14 +49,14 @@ export async function POST(req: Request) {
     const body = await req.json();
     const plan = body.plan as string;
 
-    if (!["pro", "team"].includes(plan)) {
+    if (!["pro", "agency"].includes(plan)) {
       return NextResponse.json(
-        { error: "Invalid plan. Use 'pro' or 'team'." },
+        { error: "Invalid plan. Use 'pro' or 'agency'." },
         { status: 400 }
       );
     }
 
-    const priceId = plan === "pro" ? PRO_PRICE_ID : TEAM_PRICE_ID;
+    const priceId = plan === "pro" ? PRO_PRICE_ID : AGENCY_PRICE_ID;
     if (!priceId) {
       const envVarName = mode === "test" 
         ? `STRIPE_TEST_${plan.toUpperCase()}_PRICE_ID` 

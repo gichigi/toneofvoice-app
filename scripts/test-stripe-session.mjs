@@ -27,7 +27,7 @@ const secretKey = isTest
 
 const priceId = plan === 'pro'
   ? (isTest ? process.env.STRIPE_TEST_PRO_PRICE_ID : process.env.STRIPE_PRO_PRICE_ID)
-  : (isTest ? process.env.STRIPE_TEST_TEAM_PRICE_ID : process.env.STRIPE_TEAM_PRICE_ID);
+  : (isTest ? process.env.STRIPE_TEST_AGENCY_PRICE_ID : process.env.STRIPE_AGENCY_PRICE_ID);
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com';
 

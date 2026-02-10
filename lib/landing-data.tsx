@@ -153,19 +153,19 @@ export const PRICING_TIERS: PricingTier[] = [
     highlight: true,
   },
   {
-    id: "team",
-    name: "Team",
+    id: "agency",
+    name: "Agency",
     price: 79,
     priceLabel: "$79",
     sublabel: "per month",
     features: [
       "Everything in Pro, plus:",
-      "99 style guides saved to your account",
-      "5 seats included",
-      "Shared guides and team access",
+      "Unlimited style guides",
+      "Manage multiple client brands",
+      "Priority email support",
     ],
-    cta: "Get Team",
-    ctaSubtext: "Best for agencies and teams",
+    cta: "Get Agency",
+    ctaSubtext: "Best for agencies and freelancers",
     highlight: false,
   },
 ]
@@ -183,15 +183,15 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "How do I get the full guide?",
-    a: "Subscribe to Pro or Team. You generate once; then you can edit any section, use AI to refine copy, and export as PDF or Word. Your guide is saved to your account and auto-saves as you edit.",
+    a: "Subscribe to Pro or Agency. You generate once; then you can edit any section, use AI to refine copy, and export as PDF or Word. Your guide is saved to your account and auto-saves as you edit.",
   },
   {
     q: "Can I edit my style guide?",
-    a: "Yes. On Pro or Team you can edit every section in the app, use AI assist to rewrite parts, and export as PDF, Word, or Markdown. Edits auto-save.",
+    a: "Yes. On Pro or Agency you can edit every section in the app, use AI assist to rewrite parts, and export as PDF, Word, or Markdown. Edits auto-save.",
   },
   {
     q: "What export formats do I get?",
-    a: "PDF (to share), Word (to edit offline), and Markdown (for AI tools). Available on Pro and Team.",
+    a: "PDF (to share), Word (to edit offline), and Markdown (for AI tools). Available on Pro and Agency.",
   },
   {
     q: "How long does it take?",
@@ -199,7 +199,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What's included in the guide?",
-    a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, and preferred terms. Pro/Team also get full editing and AI assist.",
+    a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, and preferred terms. Pro/Agency also get full editing and AI assist.",
   },
   {
     q: "How do I cancel or get a refund?",

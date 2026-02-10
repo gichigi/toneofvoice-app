@@ -96,15 +96,15 @@ export default async function BillingPage() {
               }
             />
             <PlanCard
-              name="Team"
+              name="Agency"
               price="$79/mo"
-              features={["99 guides", "5 seats", "Collaboration", "Full export"]}
-              current={tier === "team"}
+              features={["Unlimited guides", "Multiple client brands", "Priority support", "Full export"]}
+              current={tier === "agency"}
               action={
                 <BillingActions
                   hasCustomer={!!profile?.stripe_customer_id}
                   tier={tier}
-                  plan="team"
+                  plan="agency"
                   compact
                 />
               }

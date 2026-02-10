@@ -40,14 +40,14 @@ export function StyleGuideSidebar({
 
   // Calculate progress
   // Starter (free) tier can access starter sections.
-  // 'pro'/'team' can access everything.
+  // 'pro'/'agency' can access everything.
   const totalSections = sections.length
   // unlocked count: sections where minTier is 'starter' OR user tier >= minTier
-  // Tier hierarchy: starter < pro < team
+  // Tier hierarchy: starter < pro < agency
   const isUnlocked = (minTier?: Tier) => {
     if (!minTier || minTier === 'starter') return true
     if (subscriptionTier === 'starter') return false
-    if (subscriptionTier === 'pro' && minTier === 'team') return false
+    if (subscriptionTier === 'pro' && minTier === 'agency') return false
     return true
   }
 

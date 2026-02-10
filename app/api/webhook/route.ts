@@ -66,7 +66,7 @@ async function handleSubscriptionCheckout(stripeClient: Stripe, session: Stripe.
     const subId = session.subscription as string | null;
     const customerId = session.customer as string | null;
 
-    if (!userId || !["pro", "team"].includes(plan)) {
+    if (!userId || !["pro", "agency"].includes(plan)) {
       console.error("[webhook] Subscription checkout missing user_id or invalid plan");
       return;
     }
@@ -231,11 +231,11 @@ async function handleSessionExpired(session: Stripe.Checkout.Session) {
 }
 
 // Map Stripe price to plan tier — must respect STRIPE_MODE to match correct IDs
-function priceIdToPlan(priceId: string | undefined): "pro" | "team" | null {
+function priceIdToPlan(priceId: string | undefined): "pro" | "agency" | null {
   const proId = mode === "test" ? process.env.STRIPE_TEST_PRO_PRICE_ID : process.env.STRIPE_PRO_PRICE_ID;
-  const teamId = mode === "test" ? process.env.STRIPE_TEST_TEAM_PRICE_ID : process.env.STRIPE_TEAM_PRICE_ID;
+  const agencyId = mode === "test" ? process.env.STRIPE_TEST_AGENCY_PRICE_ID : process.env.STRIPE_AGENCY_PRICE_ID;
   if (priceId === proId) return "pro";
-  if (priceId === teamId) return "team";
+  if (priceId === agencyId) return "agency";
   return null;
 }
 

@@ -255,11 +255,11 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
     }
   }, [content, brandDetails, activeSectionId, toast])
   
-  // Unlock check: starter (free) < pro < team
+  // Unlock check: starter (free) < pro < agency
   const isUnlocked = useCallback((minTier?: Tier) => {
     if (!minTier || minTier === 'starter') return true
     if (subscriptionTier === 'starter') return false
-    if (minTier === 'team' && subscriptionTier !== 'team') return false
+    if (minTier === 'agency' && subscriptionTier !== 'agency') return false
     return true
   }, [subscriptionTier])
   

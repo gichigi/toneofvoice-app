@@ -48,7 +48,7 @@ const TIER_THEME: Record<
     listClass: "space-y-2 text-left text-sm",
     itemClass: "flex items-center gap-2",
   },
-  team: {
+  agency: {
     border: "border-2 border-blue-500",
     gradient: "from-blue-50 to-background",
     nameClass: "text-blue-700",

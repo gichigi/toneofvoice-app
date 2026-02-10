@@ -50,15 +50,15 @@ if (proPriceId) {
   checks.push({ name: 'Pro Price ID', status: '❌', value: `Missing ${isTest ? 'STRIPE_TEST_PRO_PRICE_ID' : 'STRIPE_PRO_PRICE_ID'}` });
 }
 
-// Check Team price ID
-const teamPriceId = isTest
-  ? process.env.STRIPE_TEST_TEAM_PRICE_ID
-  : process.env.STRIPE_TEAM_PRICE_ID;
+// Check Agency price ID
+const agencyPriceId = isTest
+  ? process.env.STRIPE_TEST_AGENCY_PRICE_ID
+  : process.env.STRIPE_AGENCY_PRICE_ID;
 
-if (teamPriceId) {
-  checks.push({ name: 'Team Price ID', status: '✅', value: teamPriceId });
+if (agencyPriceId) {
+  checks.push({ name: 'Agency Price ID', status: '✅', value: agencyPriceId });
 } else {
-  checks.push({ name: 'Team Price ID', status: '❌', value: `Missing ${isTest ? 'STRIPE_TEST_TEAM_PRICE_ID' : 'STRIPE_TEAM_PRICE_ID'}` });
+  checks.push({ name: 'Agency Price ID', status: '❌', value: `Missing ${isTest ? 'STRIPE_TEST_AGENCY_PRICE_ID' : 'STRIPE_AGENCY_PRICE_ID'}` });
 }
 
 // Check base URL
@@ -87,8 +87,8 @@ if (hasErrors) {
   console.log('2. Create a product for "Pro" plan');
   console.log('3. Add a recurring price (e.g., $29/month)');
   console.log('4. Copy the Price ID (starts with price_)');
-  console.log('5. Repeat for "Team" plan');
-  console.log(`6. Set ${isTest ? 'STRIPE_TEST_' : 'STRIPE_'}PRO_PRICE_ID and ${isTest ? 'STRIPE_TEST_' : 'STRIPE_'}TEAM_PRICE_ID in .env\n`);
+  console.log('5. Repeat for "Agency" plan');
+  console.log(`6. Set ${isTest ? 'STRIPE_TEST_' : 'STRIPE_'}PRO_PRICE_ID and ${isTest ? 'STRIPE_TEST_' : 'STRIPE_'}AGENCY_PRICE_ID in .env\n`);
   process.exit(1);
 } else if (hasWarnings) {
   console.log('\n⚠️  Configuration warnings found. Review recommended.\n');

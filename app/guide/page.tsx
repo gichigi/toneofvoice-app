@@ -546,6 +546,91 @@ function GuideContent() {
     }
   }
   
+  // PDF: try POST /api/export-pdf (Puppeteer), then improved html2pdf fallback.
+  const PDF_EXPORT_TIMEOUT_MS = 25000
+
+  async function runHtml2PdfFallback(
+    clone: HTMLElement,
+    filename: string,
+    fullAccess: boolean
+  ): Promise<void> {
+    const wrapper = document.createElement("div")
+    wrapper.style.position = "fixed"
+    wrapper.style.left = "-99999px"
+    wrapper.style.top = "0"
+    wrapper.style.background = "#ffffff"
+    wrapper.style.width = "816px"
+    wrapper.appendChild(clone)
+    document.body.appendChild(wrapper)
+    try {
+      await document.fonts.ready
+      // @ts-expect-error - no declaration file for html2pdf.js
+      const html2pdf = (await import("html2pdf.js")).default as (opts?: object) => { set: (o: object) => { from: (el: HTMLElement) => { save: () => Promise<void> } } }
+      const opt = {
+        margin: 0.5,
+        filename,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          letterRendering: true,
+          logging: false,
+          onclone: (_doc: Document, el: HTMLElement) => {
+            el.classList.add("pdf-rendering")
+          },
+        },
+        jsPDF: { unit: "in" as const, format: "letter" as const, orientation: "portrait" as const },
+        ...(fullAccess && {
+          pagebreak: {
+            mode: ["avoid-all", "css", "legacy"] as const,
+            avoid: ["h2", "h3", ".voice-trait", ".rule-section"],
+          },
+        }),
+      }
+      await html2pdf().set(opt).from(clone).save()
+    } finally {
+      if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper)
+    }
+  }
+
+  async function exportPdfWithFallback(
+    clone: HTMLElement,
+    filename: string,
+    opts: { fullAccess: boolean }
+  ): Promise<{ usedFallback: boolean }> {
+    clone.classList.add("pdf-rendering")
+    const cssRes = await fetch("/pdf-styles")
+    if (!cssRes.ok) throw new Error("Critical CSS failed")
+    const css = await cssRes.text()
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), PDF_EXPORT_TIMEOUT_MS)
+    try {
+      const res = await fetch("/api/export-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: clone.outerHTML, css, filename }),
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+      if (!res.ok) throw new Error(`Export failed: ${res.status}`)
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      return { usedFallback: false }
+    } catch (_err) {
+      clearTimeout(timeoutId)
+      await runHtml2PdfFallback(clone, filename, opts.fullAccess)
+      return { usedFallback: true }
+    }
+  }
+
   // Handle download (preview flow)
   const handleDownload = async (format: string = "pdf") => {
     if (!content || !brandDetails) return
@@ -554,39 +639,22 @@ function GuideContent() {
 
     try {
       if (format === "pdf") {
-        const source = document.getElementById('pdf-export-content')
+        const source = document.getElementById("pdf-export-content")
         if (!source) {
-          throw new Error('PDF content not found')
+          throw new Error("PDF content not found")
         }
-
         const clone = source.cloneNode(true) as HTMLElement
-        const wrapper = document.createElement('div')
-        wrapper.style.position = 'fixed'
-        wrapper.style.left = '-99999px'
-        wrapper.style.top = '0'
-        wrapper.style.background = '#ffffff'
-        wrapper.style.width = `${source.offsetWidth || 800}px`
-        wrapper.appendChild(clone)
-        document.body.appendChild(wrapper)
-
-        clone.querySelectorAll('.pdf-only').forEach(el => (el as HTMLElement).style.display = 'block')
-        clone.querySelectorAll('.pdf-exclude').forEach(el => (el as HTMLElement).style.display = 'none')
-
-        // @ts-ignore
-        const html2pdf = (await import('html2pdf.js')).default
-        const opt = {
-          margin: 0.5,
-          filename: `${brandDetails.name.replace(/\s+/g, '-').toLowerCase()}-style-guide-preview.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        }
-
-        try {
-          await html2pdf().set(opt).from(clone).save()
-        } finally {
-          if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper)
-        }
+        clone.querySelectorAll("[data-locked-section]").forEach((el) => el.remove())
+        clone.querySelectorAll(".pdf-only").forEach(el => ((el as HTMLElement).style.display = "block"))
+        clone.querySelectorAll(".pdf-exclude").forEach(el => ((el as HTMLElement).style.display = "none"))
+        const filename = `${brandDetails.name.replace(/\s+/g, "-").toLowerCase()}-style-guide-preview.pdf`
+        const { usedFallback } = await exportPdfWithFallback(clone, filename, { fullAccess: false })
+        toast({
+          title: "Download started",
+          description: usedFallback
+            ? "Your style guide preview is downloading (fallback method; some styling may differ)."
+            : "Your style guide preview is downloading in PDF format.",
+        })
       } else {
         // Filter locked sections for non-PDF formats
         const filteredContent = filterLockedSections(content)
@@ -600,12 +668,11 @@ function GuideContent() {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
+        toast({
+          title: "Download started",
+          description: `Your style guide preview is downloading in ${format.toUpperCase()} format.`,
+        })
       }
-
-      toast({
-        title: "Download started",
-        description: `Your style guide preview is downloading in ${format.toUpperCase()} format.`,
-      })
     } catch (error) {
       console.error("Error generating file:", error)
       toast({
@@ -731,7 +798,7 @@ function GuideContent() {
     return lines.join('\n')
   }
   
-  // Export PDF (full-access flow)
+  // Export PDF (full-access flow): try Puppeteer API, then improved html2pdf fallback.
   const exportPDF = async () => {
     if (typeof window === "undefined") return
     const element = document.getElementById("pdf-export-content")
@@ -739,27 +806,17 @@ function GuideContent() {
     setIsDownloading(true)
     setDownloadFormat("pdf")
     try {
-      // @ts-ignore
-      const html2pdf = (await import('html2pdf.js')).default
-      const opt = {
-        margin: 0.5,
-        filename: `${brandDetails?.name?.replace(/\s+/g, '-').toLowerCase() || 'style'}-guide.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          letterRendering: true,
-          useCORS: true
-        },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-        pagebreak: {
-          mode: ['avoid-all', 'css', 'legacy'],
-          avoid: ['h2', 'h3', '.voice-trait', '.rule-section']
-        }
-      }
-      await html2pdf().set(opt).from(element).save()
+      const clone = element.cloneNode(true) as HTMLElement
+      clone.querySelectorAll("[data-locked-section]").forEach((el) => el.remove())
+      clone.querySelectorAll(".pdf-only").forEach(el => ((el as HTMLElement).style.display = "block"))
+      clone.querySelectorAll(".pdf-exclude").forEach(el => ((el as HTMLElement).style.display = "none"))
+      const filename = `${brandDetails?.name?.replace(/\s+/g, "-").toLowerCase() || "style"}-guide.pdf`
+      const { usedFallback } = await exportPdfWithFallback(clone, filename, { fullAccess: true })
       toast({
         title: "Download started",
-        description: "Your style guide is downloading in PDF format.",
+        description: usedFallback
+          ? "Your style guide is downloading (fallback method; some styling may differ)."
+          : "Your style guide is downloading in PDF format.",
       })
       setShowPostExportPrompt(true)
     } catch (err) {

@@ -20,7 +20,8 @@
     "test:style-guide-gen": "node scripts/test-style-guide-generation.mjs",
     "generate-logos": "node scripts/generate-logo-svgs.js",
     "generate-favicons": "node scripts/generate-favicons.js",
-    "generate-icons": "pnpm generate-logos && pnpm generate-favicons"
+    "generate-icons": "pnpm generate-logos && pnpm generate-favicons",
+    "generate-preview-pdf": "node scripts/generate-preview-pdf.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "latest",
@@ -86,6 +87,8 @@
     "platejs": "^52.0.17",
     "posthog-js": "^1.288.0",
     "posthog-node": "^5.11.1",
+    "puppeteer-core": "^23.9.0",
+    "@sparticuz/chromium": "^131.0.0",
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",

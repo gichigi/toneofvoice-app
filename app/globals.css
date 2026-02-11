@@ -453,6 +453,47 @@ html, body {
   display: block; /* Visible on page by default, hidden during PDF generation */
 }
 
+/* PDF rendering: shared by Puppeteer (server doc) and html2pdf fallback (clone). Fixes cover title, gradients, text visibility. */
+.pdf-rendering .animate-pulse,
+.pdf-rendering [class*="animate-in"] {
+  animation: none !important;
+  opacity: 1 !important;
+}
+.pdf-rendering #pdf-export-content h1,
+.pdf-rendering #pdf-export-content h2,
+.pdf-rendering #pdf-export-content h3,
+.pdf-rendering #pdf-export-content h4,
+.pdf-rendering #pdf-export-content h5,
+.pdf-rendering #pdf-export-content h6,
+.pdf-rendering h1,
+.pdf-rendering h2,
+.pdf-rendering h3,
+.pdf-rendering h4,
+.pdf-rendering h5,
+.pdf-rendering h6 {
+  font-family: "Playfair Display", Georgia, serif !important;
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+.pdf-rendering [class*="bg-gradient-to-l"] {
+  background: #f9fafb !important;
+  background-image: none !important;
+}
+.pdf-rendering [class*="linear-gradient(to_right,#80808012"] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+  background-image: none !important;
+}
+.pdf-rendering .text-gray-500,
+.pdf-rendering .text-gray-600,
+.pdf-rendering .text-gray-400 {
+  color: #4b5563 !important;
+  opacity: 1 !important;
+}
+.pdf-rendering .text-gray-900 {
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+
 /* Footer logo - white text for dark background */
 .logo-light span {
   color: white !important;

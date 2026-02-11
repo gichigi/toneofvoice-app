@@ -153,10 +153,10 @@ All typography tokens are defined in `lib/style-guide-styles.ts` to prevent CSS 
 - AI Assist toolbar appears on text selection
 
 ### PDF Export
-- Clones DOM from page, inherits all styles
-- Premium fonts must be available in cloned DOM (may need inline font-face)
-- Print-specific styles in `@media print` block
-- Page breaks configured to avoid breaking on H2, H3, trait cards, rule sections
+- **Primary**: Server-side via `POST /api/export-pdf` (Puppeteer + Chromium). Client sends serialized `#pdf-export-content` HTML and critical CSS from `/pdf-styles`; server returns PDF buffer.
+- **Fallback**: If the API fails or times out, client uses improved html2pdf.js (same clone with `.pdf-rendering` class, `document.fonts.ready`, improved html2canvas options). Both paths use the same `.pdf-rendering` styles in `globals.css` so cover title, gradients, and text render correctly.
+- **Structure**: Must remain cover + content + footer under `#pdf-export-content`; `.pdf-only` / `.pdf-exclude` control visibility during export.
+- Page breaks configured to avoid breaking on H2, H3, trait cards, rule sections.
 
 ### Word Export (DOCX)
 - Uses `docx` library to generate Word document

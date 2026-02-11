@@ -143,6 +143,7 @@ export function StyleGuideView({
                 <div
                   key={section.id}
                   id={section.id}
+                  data-locked-section
                   className={cn(
                     "scroll-mt-4 px-12 md:px-20 py-20 md:py-24 border-t border-gray-100",
                     (unlockedSections.length + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"
@@ -195,6 +196,7 @@ export function StyleGuideView({
                 <div
                   key={section.id}
                   id={section.id}
+                  data-locked-section
                   className="scroll-mt-4 px-12 md:px-20 py-16 md:py-20 border-t border-gray-100"
                 >
                   <div className="max-w-3xl mx-auto">

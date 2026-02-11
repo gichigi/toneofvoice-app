@@ -4,6 +4,10 @@
 
 /* Print-specific styles for PDF export */
 @media print {
+  .pdf-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
   .voice-trait, .rule-section {
     page-break-inside: avoid;
     break-inside: avoid;

@@ -174,12 +174,18 @@ function SuccessContent() {
           if (json.guide?.id) {
             localStorage.setItem("savedGuideId", json.guide.id)
           }
+        } else if (saveRes.status === 403) {
+          toast({
+            title: "Guide limit reached",
+            description: "Your guide is ready to view and export. Upgrade to save more guides.",
+            variant: "destructive",
+          })
         }
       } catch {
         // Non-fatal; guide is in localStorage, user can still view
       }
       
-      // Update status and start auto-redirect
+      // Update status and start auto-redirect (never stuck: guide in localStorage)
       setGenerationStatus('complete')
       const gId = localStorage.getItem("savedGuideId")
       setRedirectUrl(gId ? `/guide?guideId=${gId}` : "/guide?generated=true")

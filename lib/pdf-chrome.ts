@@ -1,6 +1,6 @@
 /**
  * Shared Chrome/Chromium launch options for PDF export (primary and fallback).
- * Use local Chrome when not on Vercel: set CHROME_EXECUTABLE_PATH or PDF_USE_LOCAL_CHROME=true.
+ * Local dev: uses system Chrome (set CHROME_EXECUTABLE_PATH to override). Vercel: uses @sparticuz/chromium.
  */
 import puppeteer from "puppeteer-core"
 import chromium from "@sparticuz/chromium"
@@ -21,9 +21,11 @@ export async function getChromeLaunchOptions(): Promise<{
   args: string[]
   headless: boolean | "shell"
 }> {
+  // Use system Chrome when not on Vercel (avoids ENOEXEC from @sparticuz/chromium on macOS).
   const useLocal =
-    process.env.VERCEL !== "1" &&
-    (process.env.CHROME_EXECUTABLE_PATH || process.env.PDF_USE_LOCAL_CHROME === "true")
+    process.env.VERCEL !== "1" ||
+    process.env.CHROME_EXECUTABLE_PATH ||
+    process.env.PDF_USE_LOCAL_CHROME === "true"
 
   if (useLocal) {
     const path = process.env.CHROME_EXECUTABLE_PATH || getDefaultChromePath()

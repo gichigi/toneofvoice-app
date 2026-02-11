@@ -119,9 +119,14 @@ function getPdfCriticalCss(): string {
 }
 .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
 
-/* Page breaks: avoid splitting headings and trait/rule blocks */
+/* Page breaks: keep sections on same page; avoid splitting headings and trait/rule blocks */
+#pdf-export-content .pdf-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
 h2, h3, .voice-trait, .rule-section {
   page-break-after: avoid;
+  break-after: avoid;
 }
 
 /* PDF rendering overrides: animations off, fonts/colors solid (Puppeteer + fallback) */

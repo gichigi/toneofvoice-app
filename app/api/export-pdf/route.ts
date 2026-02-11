@@ -81,7 +81,7 @@ export async function POST(request: Request) {
       }
     }
     return NextResponse.json(
-      { error: "PDF generation failed. Please try again or use the fallback download." },
+      { error: "PDF generation failed. Please try again." },
       { status: 500 }
     )
   }

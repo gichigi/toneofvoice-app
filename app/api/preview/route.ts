@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { renderPreviewStyleGuide, renderStyleGuideTemplate } from "@/lib/template-processor"
-import { createServerClient } from "@/lib/supabase-server"
+import { createClient } from "@/lib/supabase-server"
 
 // Simplified validation function
 function validateBrandDetails(details: any) {
@@ -54,12 +54,12 @@ export async function POST(request: Request) {
     // Check user's subscription tier to determine what to generate
     let subscriptionTier = 'starter'
     try {
-      const supabase = createServerClient()
+      const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
         const { data: tierData } = await supabase
-          .from('users')
+          .from('profiles')
           .select('subscription_tier')
           .eq('id', user.id)
           .single()

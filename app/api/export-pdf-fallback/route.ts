@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         jsPDF: { unit: "in" as const, format: "letter" as const, orientation: "portrait" as const },
         pagebreak: {
           mode: ["avoid-all", "css", "legacy"] as const,
-          avoid: ["h2", "h3", ".voice-trait", ".rule-section"],
+          avoid: ["h2", "h3", ".voice-trait", ".rule-section", ".pdf-section"],
         },
       }
       const pdf = await html2pdf().set(opt).from(el).outputPdf().get("pdf")

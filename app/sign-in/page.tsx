@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock, LogIn, Mail } from "lucide-react";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { AuthError } from "@/components/ui/auth-error";
 import { classifyAuthError } from "@/lib/auth-errors";
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
@@ -150,5 +150,17 @@ export default function SignInPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 }

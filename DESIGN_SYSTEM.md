@@ -158,6 +158,13 @@ All typography tokens are defined in `lib/style-guide-styles.ts` to prevent CSS 
 - **Structure**: Must remain cover + content + footer under `#pdf-export-content`; `.pdf-only` / `.pdf-exclude` control visibility during export.
 - Page breaks configured to avoid breaking on H2, H3, trait cards, rule sections.
 
+**Alternative services (future):** If we want to drop Puppeteer/Chrome and use a hosted HTML→PDF API instead, options with free monthly allocation: **PDFBolt** (~100 free/month), **html2pdfapi.com** (~50 free/month). Others: Api2Pdf, CloudConvert, pdfg.net. All accept HTML or URL and return PDF; no local Chrome needed.
+
+**Quality/control vs our implementation:**
+- **Our primary (Puppeteer)**: Chrome print engine, full control (viewport 816×1056, Letter, 0.5in margins, printBackground). We own HTML/CSS and server; no rate limits or request caps.
+- **PDFBolt / html2pdfapi**: Both use headless Chrome in the cloud. Output quality is on par with our primary (same engine). They expose page size, margins, waitUntil (e.g. networkidle0), printBackground, viewport/scale. PDFBolt adds print-production options (PDF/X, CMYK). Control is slightly less low-level (we’d use their params instead of our own launch/viewport) but sufficient for our use case. Trade-off: rate limits, request size limits, and dependency on their uptime.
+- **Our fallback (html2pdf.js)**: Canvas-based; quality and control are lower than any Chrome-based path (fonts/gradients can differ, fewer layout guarantees).
+
 ### Word Export (DOCX)
 - Uses `docx` library to generate Word document
 - Heading styles mapped: H1 → HeadingLevel.TITLE, H2 → HEADING_1, H3 → HEADING_2

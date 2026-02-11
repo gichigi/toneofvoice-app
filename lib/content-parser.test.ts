@@ -74,9 +74,9 @@ Rules here.
 More rules.`
     const result = parseStyleGuideContent(md)
     expect(result[0].id).toBe("how-to-use")
-    expect(result[1].id).toBe("content-guidelines")
-    expect(result[2].id).toBe("style-rules")
-    expect(result[2].minTier).toBe("pro")
+    // Content Guidelines is deprecated and skipped; next section is Style Rules
+    expect(result[1].id).toBe("style-rules")
+    expect(result[1].minTier).toBe("pro")
   })
 
   it("generates id for unknown headings", () => {
@@ -245,12 +245,12 @@ describe("STYLE_GUIDE_SECTIONS", () => {
     expect(ids).toContain("cover")
     expect(ids).toContain("about")
     expect(ids).toContain("how-to-use")
-    expect(ids).toContain("content-guidelines")
     expect(ids).toContain("audience")
     expect(ids).toContain("word-list")
     expect(ids).toContain("brand-voice")
     expect(ids).toContain("style-rules")
     expect(ids).toContain("examples")
+    expect(ids).toContain("contact")
   })
 
   it("has tier hierarchy for gating", () => {

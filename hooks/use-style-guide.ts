@@ -209,11 +209,20 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
           scope,
           selectedText,
         }),
+        credentials: "include",
       })
       
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to rewrite")
+        const error = await response.json().catch(() => ({}))
+        if (response.status === 401) {
+          toast({
+            title: "Sign in to use AI rewrite",
+            description: "Create an account or log in to rewrite sections with AI.",
+            variant: "destructive",
+          })
+          return
+        }
+        throw new Error((error as { error?: string }).error || "Failed to rewrite")
       }
       
       const data = await response.json()

@@ -368,10 +368,10 @@ export async function renderStyleGuideTemplate({
     "An innovative company focused on delivering exceptional results.";
   const audience = brandDetails.audience || "Business professionals and decision makers";
 
-  // Contact section with toneofvoice.app link
+  // Contact section
   const contactSection = userEmail && userEmail.trim()
-    ? `Need help applying these guidelines? Have questions about ${brandName}'s voice?\n\n**Contact:** ${userEmail.trim()}\n\n---\n\n*This style guide was created with [Tone of Voice](https://toneofvoice.app) — AI-powered brand voice guidelines for consistent content.*`
-    : `Need help applying these guidelines? Have questions about ${brandName}'s voice?\n\nContact the ${brandName} content team.\n\n---\n\n*This style guide was created with [Tone of Voice](https://toneofvoice.app) — AI-powered brand voice guidelines for consistent content.*`;
+    ? `Need help applying these guidelines? Have questions about ${brandName}'s voice?\n\n**Contact:** ${userEmail.trim()}`
+    : `Need help applying these guidelines? Have questions about ${brandName}'s voice?\n\nContact the ${brandName} content team.`;
 
   let result = template
     .replace(/{{DD MONTH YYYY}}/g, formattedDate)

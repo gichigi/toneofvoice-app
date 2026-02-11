@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { AlertCircle } from "lucide-react";
 import { AuthError } from "@/components/ui/auth-error";
 import { classifyAuthError } from "@/lib/auth-errors";
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const errorMessage = searchParams.get("message");
 
@@ -41,5 +42,17 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+      </div>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   );
 }

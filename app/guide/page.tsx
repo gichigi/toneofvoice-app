@@ -1072,6 +1072,7 @@ function GuideContent() {
         onSectionChange={handleSectionSelect}
         subscriptionTier={subscriptionTier}
         brandName={brandDetails?.name || 'Your Brand'}
+        showDashboardLink={!!user}
         onUpgrade={() => {
           if (isPreviewFlow) {
             track('Paywall Clicked', { 
@@ -1205,7 +1206,7 @@ function GuideContent() {
                   Log in
                 </Link>
               </Button>
-              <Button className="flex-1" asChild>
+              <Button className="flex-1 bg-gray-900 text-white hover:bg-gray-800 hover:text-white" asChild>
                 <Link href={`/sign-up?redirectTo=${encodeURIComponent("/guide")}`} onClick={() => setExportGateDialogOpen(false)}>
                   Sign up
                 </Link>

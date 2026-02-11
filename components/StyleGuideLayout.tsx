@@ -25,6 +25,8 @@ interface StyleGuideLayoutProps {
   onModeSwitch?: (mode: "preview" | "edit") => void
   /** Show edit tools (for Preview/Edit button visibility) */
   showEditTools?: boolean
+  /** Show Dashboard link in header (hide for unauthed users on /guide) */
+  showDashboardLink?: boolean
 }
 
 export function StyleGuideLayout({
@@ -39,6 +41,7 @@ export function StyleGuideLayout({
   viewMode,
   onModeSwitch,
   showEditTools = false,
+  showDashboardLink = true,
 }: StyleGuideLayoutProps) {
   return (
     <SidebarProvider
@@ -58,14 +61,18 @@ export function StyleGuideLayout({
         <header className="layout-header flex h-16 shrink-0 items-center gap-2 border-b bg-white/50 px-4 backdrop-blur-xl transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </Link>
+            {showDashboardLink && (
+              <>
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Link>
+              </>
+            )}
             <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
             <div className="md:hidden">
               <Logo size="sm" linkToHome={false} />

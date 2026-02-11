@@ -17,6 +17,8 @@ import { useSearchParams } from "next/navigation"
 import Header from "@/components/Header"
 import VoiceTraitSelector from "@/components/VoiceTraitSelector"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
+import { useAuth } from "@/components/AuthProvider"
+import { UpgradeNudgeModal } from "@/components/dashboard/UpgradeNudgeModal"
 
 // Default brand details
 const defaultBrandDetails = {
@@ -66,6 +68,9 @@ function formatAutoPopulatedDescription(description: string): string {
 export default function BrandDetailsPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { user } = useAuth()
+  const [atLimit, setAtLimit] = useState(false)
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [processingStep, setProcessingStep] = useState<'idle' | 'processing' | 'complete'>('idle')
   const [loadingMessage, setLoadingMessage] = useState("")
@@ -98,6 +103,27 @@ export default function BrandDetailsPage() {
 
   // Progressive loading words for brand details generation
   const loadingWords = ["Defining...", "Drafting...", "Crafting...", "Editing...", "Refining..."]
+
+  // When authed, check if user is at guide limit (for upgrade nudge on Generate)
+  useEffect(() => {
+    if (!user) {
+      setAtLimit(false)
+      return
+    }
+    let cancelled = false
+    fetch("/api/user-guide-limit", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.atLimit) setAtLimit(true)
+        if (!cancelled && data && !data.atLimit) setAtLimit(false)
+      })
+      .catch(() => {
+        if (!cancelled) setAtLimit(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   // Trigger fade-in animation after component mounts
   useEffect(() => {
@@ -611,6 +637,12 @@ export default function BrandDetailsPage() {
 
   // Update the handleSubmit function to use inline brand name extraction instead of external API
   const handleSubmit = async (e: React.FormEvent) => {
+    // Authed user at guide limit: show upgrade nudge instead of generating
+    if (user && atLimit) {
+      setUpgradeModalOpen(true)
+      return
+    }
+
     setLoading(true)
     setProcessingStep('processing')
     
@@ -1091,6 +1123,7 @@ export default function BrandDetailsPage() {
           </form>
         </div>
       </main>
+      <UpgradeNudgeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} />
     </div>
   )
 }

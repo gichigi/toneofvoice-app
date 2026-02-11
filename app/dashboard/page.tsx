@@ -92,9 +92,7 @@ export default async function DashboardPage() {
                   />
                 );
               })}
-              {used < limit && (
-                <NewGuideButton variant="card" limit={limit} used={used} />
-              )}
+              <NewGuideButton variant="card" limit={limit} used={used} />
             </div>
           ) : (
             <div className="mt-8 rounded-lg border bg-white p-8 dark:bg-gray-950">

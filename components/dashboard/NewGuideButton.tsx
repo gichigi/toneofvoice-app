@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { CreateGuideModal } from "@/components/CreateGuideModal";
-import Link from "next/link";
+import { UpgradeNudgeModal } from "@/components/dashboard/UpgradeNudgeModal";
 
 interface NewGuideButtonProps {
   variant?: "button" | "card";
@@ -15,23 +15,34 @@ interface NewGuideButtonProps {
 
 export function NewGuideButton({ variant = "button", limit = 1, used = 0, className }: NewGuideButtonProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const isAtLimit = used >= limit;
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const isAtLimit = limit > 0 && used >= limit;
 
+  // At limit: show clickable button/card that opens upgrade nudge (Relume-style)
   if (isAtLimit) {
-    // Show disabled state or upgrade prompt
     if (variant === "card") {
       return (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground opacity-50 cursor-not-allowed">
-          <Plus className="h-8 w-8" />
-          <span className="mt-2 text-sm">Limit reached</span>
-        </div>
+        <>
+          <button
+            type="button"
+            onClick={() => setUpgradeModalOpen(true)}
+            className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground transition hover:border-gray-300 hover:text-foreground dark:hover:border-gray-700"
+          >
+            <Plus className="h-8 w-8" />
+            <span className="mt-2 text-sm">New guide</span>
+          </button>
+          <UpgradeNudgeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} used={used} limit={limit} />
+        </>
       );
     }
     return (
-      <Button disabled size="sm" className={className}>
-        <Plus className="h-4 w-4" />
-        New guide
-      </Button>
+      <>
+        <Button onClick={() => setUpgradeModalOpen(true)} size="sm" className={className}>
+          <Plus className="h-4 w-4" />
+          New guide
+        </Button>
+        <UpgradeNudgeModal open={upgradeModalOpen} onOpenChange={setUpgradeModalOpen} used={used} limit={limit} />
+      </>
     );
   }
 

@@ -1,13 +1,14 @@
-import { 
-  LayoutTemplate, 
-  Info, 
-  HelpCircle, 
-  FileText, 
-  Megaphone, 
-  ScrollText, 
+import {
+  LayoutTemplate,
+  Info,
+  HelpCircle,
+  FileText,
+  Megaphone,
+  ScrollText,
   ArrowLeftRight,
   Users,
   BookOpen,
+  Mail,
   type LucideIcon
 } from "lucide-react"
 
@@ -51,13 +52,6 @@ export const STYLE_GUIDE_SECTIONS: SectionConfig[] = [
     matchHeading: /^Your Audience/i
   },
   {
-    id: 'content-guidelines',
-    label: 'Content Guidelines',
-    icon: FileText,
-    minTier: 'starter',
-    matchHeading: /^Content Guidelines/i
-  },
-  {
     id: 'brand-voice',
     label: 'Brand Voice',
     icon: Megaphone,
@@ -84,6 +78,13 @@ export const STYLE_GUIDE_SECTIONS: SectionConfig[] = [
     icon: BookOpen,
     minTier: 'pro',
     matchHeading: /^Word List/i
+  },
+  {
+    id: 'contact',
+    label: 'Questions?',
+    icon: Mail,
+    minTier: 'starter',
+    matchHeading: /^(Questions\?|Get in Touch|Contact)/i
   }
 ]
 
@@ -136,6 +137,11 @@ export function parseStyleGuideContent(markdown: string): StyleGuideSection[] {
   }
 
   matches.forEach((heading, i) => {
+    // Skip deprecated sections (Content Guidelines was removed)
+    if (/^Content Guidelines$/i.test(heading.title)) {
+      return
+    }
+
     // Content runs from end of this heading line to start of next heading (or end of string)
     const headingLineEnd = markdown.indexOf('\n', heading.index)
     const contentStart = headingLineEnd === -1 ? markdown.length : headingLineEnd + 1

@@ -43,6 +43,8 @@ export interface StyleGuideViewProps {
   pdfFooter?: React.ReactNode
   /** Optional class for the content wrapper (e.g. opacity when retrying) */
   contentClassName?: string
+  /** Website URL to show on cover page (if available) */
+  websiteUrl?: string
 }
 
 /**
@@ -73,6 +75,7 @@ export function StyleGuideView({
   editorBanner,
   pdfFooter = null,
   contentClassName,
+  websiteUrl,
 }: StyleGuideViewProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -115,6 +118,7 @@ export function StyleGuideView({
                   brandName={brandName}
                   guideType={guideType}
                   showPreviewBadge={showPreviewBadge}
+                  websiteUrl={websiteUrl}
                 />
               </div>
               {unlockedSections.map((section, index) => (

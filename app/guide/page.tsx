@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Loader2, Eye, PenLine, Check, ChevronDown, RefreshCw, FileText } from "lucide-react"
+import { Loader2, Eye, PenLine, Check, ChevronDown, RefreshCw, FileText, Download, Sparkles, Megaphone } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/AuthProvider"
 import { track } from "@vercel/analytics"
@@ -33,6 +33,8 @@ import { ErrorMessage } from "@/components/ui/error-message"
 import { createErrorDetails, ErrorDetails } from "@/lib/api-utils"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 import { useStyleGuide } from "@/hooks/use-style-guide"
+import { Progress } from "@/components/ui/progress"
+import { cn } from "@/lib/utils"
 
 function GuideContent() {
   const router = useRouter()
@@ -95,6 +97,12 @@ function GuideContent() {
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(guideId)
   const [showPostExportPrompt, setShowPostExportPrompt] = useState(false)
+
+  // Progress state for loading UI
+  const [loadingProgress, setLoadingProgress] = useState(10)
+  const [loadingStep, setLoadingStep] = useState("Loading your brand details...")
+  const [contentReady, setContentReady] = useState(false)
+  const [isQuickLoad, setIsQuickLoad] = useState(false)
   
   // Handle subscription redirect from payment flow
   const subscribeTriggered = useRef(false)
@@ -120,6 +128,19 @@ function GuideContent() {
     router.replace("/guide", { scroll: false })
   }, [searchParams.get("subscribe"), user, router, toast])
   
+  // Detect if we're loading cached content for better messaging
+  useEffect(() => {
+    if (guideId) {
+      setIsQuickLoad(true)
+    } else if (isPreviewFlow) {
+      const cached = localStorage.getItem("previewContent")
+      setIsQuickLoad(!!cached)
+    } else {
+      const cached = localStorage.getItem("generatedStyleGuide")
+      setIsQuickLoad(!!cached || alreadyGenerated)
+    }
+  }, [guideId, isPreviewFlow, alreadyGenerated])
+
   // Load content based on flow type
   useEffect(() => {
     // Loading existing guide by ID (from dashboard)
@@ -129,14 +150,19 @@ function GuideContent() {
         router.replace(`/sign-in?redirectTo=${encodeURIComponent(`/guide?guideId=${guideId}`)}`)
         return
       }
-      
+
       const loadGuide = async (retryCount = 0) => {
         try {
+          setLoadingStep("Loading your style guide...")
+          setLoadingProgress(25)
+
           const [guideResponse, tierResponse] = await Promise.all([
             fetch(`/api/load-style-guide?guideId=${guideId}`),
             fetch(`/api/user-subscription-tier`)
           ])
-          
+
+          setLoadingProgress(50)
+
           if (!guideResponse.ok) {
             if (guideResponse.status === 404) {
               router.replace("/dashboard")
@@ -144,25 +170,28 @@ function GuideContent() {
             }
             throw new Error("Failed to load guide")
           }
-          
+
           const guide = await guideResponse.json()
           const tierData = tierResponse.ok ? await tierResponse.json() : { subscription_tier: "starter" }
-          
+
           if (!guide) return
-          
+
+          setLoadingStep("Preparing content...")
+          setLoadingProgress(75)
+
           setContent(guide.content_md || "")
           setBrandDetails(guide.brand_details || { name: guide.brand_name || "Brand" })
           setGuideType(guide.plan_type || "style_guide")
-          
+
           const tier = (tierData?.subscription_tier === "free" ? "starter" : tierData?.subscription_tier) || (guide as any).subscription_tier || "starter"
-          
+
           // If subscription just succeeded but tier is still free, retry after a delay
           if (subscriptionSuccess && (tier === "starter" || tier === "free") && retryCount < 3) {
             console.log(`[Guide] Subscription success but tier still free, retrying... (${retryCount + 1}/3)`)
             setTimeout(() => loadGuide(retryCount + 1), 2000 * (retryCount + 1))
             return
           }
-          
+
           if (subscriptionSuccess && tier !== "starter" && tier !== "free") {
             toast({
               title: "Subscription activated!",
@@ -170,10 +199,12 @@ function GuideContent() {
             })
             router.replace(`/guide?guideId=${guideId}`, { scroll: false })
           }
-          
+
           setSavedToAccount(true)
           setCurrentGuideId(guide.id)
-          setIsLoading(false)
+
+          setLoadingProgress(100)
+          setTimeout(() => setIsLoading(false), 300)
         } catch (error) {
           console.error("[Guide] Error loading guide:", error)
           toast({ title: "Could not load guide", variant: "destructive" })
@@ -221,7 +252,7 @@ function GuideContent() {
     
     setBrandDetails(JSON.parse(savedBrandDetails))
     if (savedGuideType) setGuideType(savedGuideType)
-    
+
     if (alreadyGenerated && savedStyleGuide) {
       setContent(savedStyleGuide)
       setIsLoading(false)
@@ -240,26 +271,42 @@ function GuideContent() {
   // Load preview content when brand details are available
   useEffect(() => {
     if (!isPreviewFlow || !brandDetails) return
-    
+
     let isMounted = true
-    
+
     const loadPreview = async () => {
       try {
+        setLoadingStep("Loading your style guide...")
+        setLoadingProgress(30)
+
         const savedPreviewContent = localStorage.getItem("previewContent")
         if (savedPreviewContent) {
           if (isMounted) {
+            setLoadingStep("Finalizing...")
+            setLoadingProgress(90)
+
             setContent(savedPreviewContent)
-            
+
             const brandVoiceMatch = savedPreviewContent.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
             if (brandVoiceMatch) {
               const brandVoiceContent = brandVoiceMatch[1].trim()
               localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
               localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
             }
+
+            setLoadingProgress(100)
+            // Small delay to show 100% before content appears
+            setTimeout(() => {
+              if (isMounted) setIsLoading(false)
+            }, 300)
           }
           return
         }
-        
+
+        // Need to generate preview
+        setLoadingStep("Analyzing your brand voice...")
+        setLoadingProgress(25)
+
         let selectedTraits = []
         try {
           const savedSelectedTraits = localStorage.getItem("selectedTraits")
@@ -267,29 +314,41 @@ function GuideContent() {
         } catch (parseError) {
           console.warn('[Guide] Failed to parse selectedTraits:', parseError)
         }
-        
+
+        setLoadingStep("Creating your style guide...")
+        setLoadingProgress(50)
+
         const response = await fetch('/api/preview', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ brandDetails, selectedTraits })
         })
-        
+
         if (!response.ok) {
           const errorData = await response.json()
           throw new Error(errorData.error || 'Failed to generate preview')
         }
-        
+
+        setLoadingStep("Finalizing...")
+        setLoadingProgress(75)
+
         const data = await response.json()
-        
+
         if (isMounted) {
           setContent(data.preview)
-          
+          localStorage.setItem("previewContent", data.preview)
+
           const brandVoiceMatch = data.preview.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
           if (brandVoiceMatch) {
             const brandVoiceContent = brandVoiceMatch[1].trim()
             localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
             localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
           }
+
+          setLoadingProgress(100)
+          setTimeout(() => {
+            if (isMounted) setIsLoading(false)
+          }, 300)
         }
       } catch (error) {
         console.error("Error generating preview:", error)
@@ -300,45 +359,51 @@ function GuideContent() {
             variant: "destructive",
           })
           setShouldRedirect(true)
+          setIsLoading(false)
         }
       }
     }
-    
+
     loadPreview()
-    
+
     return () => {
       isMounted = false
     }
-  }, [brandDetails, toast, isPreviewFlow])
+  }, [brandDetails, toast, isPreviewFlow, setIsLoading])
   
   // Generate style guide function (for full-access flow)
   const generateStyleGuide = async () => {
     try {
       setApiError(null)
-      
+      setLoadingStep("Preparing your brand details...")
+      setLoadingProgress(10)
+
       const savedBrandDetails = localStorage.getItem("brandDetails")
       const savedGuideType = localStorage.getItem("styleGuidePlan")
       const savedSelectedTraits = localStorage.getItem("selectedTraits")
       const generatedPreviewTraits = localStorage.getItem("generatedPreviewTraits")
       const previewTraitsTimestamp = localStorage.getItem("previewTraitsTimestamp")
-      
+
       if (!savedBrandDetails) {
         throw new Error("No brand details found. Please fill them in again.")
       }
-      
+
       const parsedBrandDetails = JSON.parse(savedBrandDetails)
       const selectedTraits = savedSelectedTraits ? JSON.parse(savedSelectedTraits) : []
-      
+
       const TTL_MS = 24 * 60 * 60 * 1000
-      const canReuseTraits = generatedPreviewTraits && 
-                            previewTraitsTimestamp && 
+      const canReuseTraits = generatedPreviewTraits &&
+                            previewTraitsTimestamp &&
                             selectedTraits.length > 0 &&
                             (Date.now() - parseInt(previewTraitsTimestamp)) < TTL_MS
-      
+
       if (canReuseTraits) {
         parsedBrandDetails.previewTraits = generatedPreviewTraits
       }
-      
+
+      setLoadingStep("Analyzing your brand voice...")
+      setLoadingProgress(25)
+
       // Pass user email and preview content when available (preserve preview user liked)
       let userEmail = user?.email ?? null
       let previewContent = null
@@ -351,6 +416,10 @@ function GuideContent() {
       try {
         previewContent = localStorage.getItem("previewContent")
       } catch {}
+
+      setLoadingStep("Creating writing rules and examples...")
+      setLoadingProgress(50)
+
       const response = await fetch('/api/generate-styleguide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -360,17 +429,23 @@ function GuideContent() {
           previewContent: previewContent || undefined,
         }),
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: response.statusText }))
         throw new Error(errorData.error || `Server returned ${response.status}`)
       }
-      
+
+      setLoadingStep("Building your complete style guide...")
+      setLoadingProgress(75)
+
       const data = await response.json()
       if (!data.success) {
         throw new Error(data.error || 'Failed to generate style guide')
       }
-      
+
+      setLoadingStep("Finalizing...")
+      setLoadingProgress(90)
+
       setContent(data.styleGuide)
       localStorage.setItem("generatedStyleGuide", data.styleGuide)
       
@@ -397,10 +472,11 @@ function GuideContent() {
           // ignore save errors
         }
       }
-      
+
+      setLoadingProgress(100)
       setContentUpdated(true)
       setTimeout(() => setContentUpdated(false), 3000)
-      
+
       toast({
         title: "Style guide updated!",
         description: "Your guide has been regenerated.",
@@ -473,16 +549,16 @@ function GuideContent() {
   // Handle download (preview flow)
   const handleDownload = async (format: string = "pdf") => {
     if (!content || !brandDetails) return
-    
+
     setIsDownloading(true)
-    
+
     try {
       if (format === "pdf") {
         const source = document.getElementById('pdf-export-content')
         if (!source) {
           throw new Error('PDF content not found')
         }
-        
+
         const clone = source.cloneNode(true) as HTMLElement
         const wrapper = document.createElement('div')
         wrapper.style.position = 'fixed'
@@ -492,10 +568,10 @@ function GuideContent() {
         wrapper.style.width = `${source.offsetWidth || 800}px`
         wrapper.appendChild(clone)
         document.body.appendChild(wrapper)
-        
+
         clone.querySelectorAll('.pdf-only').forEach(el => (el as HTMLElement).style.display = 'block')
         clone.querySelectorAll('.pdf-exclude').forEach(el => (el as HTMLElement).style.display = 'none')
-        
+
         // @ts-ignore
         const html2pdf = (await import('html2pdf.js')).default
         const opt = {
@@ -505,14 +581,17 @@ function GuideContent() {
           html2canvas: { scale: 2 },
           jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         }
-        
+
         try {
           await html2pdf().set(opt).from(clone).save()
         } finally {
           if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper)
         }
       } else {
-        const file = await generateFile(format as FileFormat, content, brandDetails.name)
+        // Filter locked sections for non-PDF formats
+        const filteredContent = filterLockedSections(content)
+        const processedContent = processFullAccessContent(filteredContent, brandDetails.name)
+        const file = await generateFile(format as FileFormat, processedContent, brandDetails.name)
         const url = window.URL.createObjectURL(file)
         const a = document.createElement("a")
         a.href = url
@@ -522,7 +601,7 @@ function GuideContent() {
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
       }
-      
+
       toast({
         title: "Download started",
         description: `Your style guide preview is downloading in ${format.toUpperCase()} format.`,
@@ -577,11 +656,39 @@ function GuideContent() {
     }
   }
   
-  // Process content for download (remove redundant headers)
+  // Filter out locked sections from content (for exports)
+  const filterLockedSections = (content: string): string => {
+    if (!content) return content
+
+    // Parse the markdown into sections
+    const parsedSections = parseStyleGuideContent(content)
+
+    // Filter to only unlocked sections
+    const unlockedSections = parsedSections.filter(section => isUnlocked(section.minTier))
+
+    // Rebuild markdown from unlocked sections only
+    const filteredMarkdown = unlockedSections
+      .map(section => {
+        if (section.id === 'content') {
+          // Special case: single content section (no headings)
+          return section.content
+        }
+        // Regular section with heading
+        return `## ${section.title}\n\n${section.content}`.trim()
+      })
+      .join('\n\n---\n\n')
+
+    return filteredMarkdown
+  }
+
+  // Process content for download (remove redundant headers, filter locked sections)
   const processFullAccessContent = (content: string, brandName: string = "") => {
     if (!content) return content
-    
-    let lines = content.split('\n')
+
+    // First, filter out locked sections (dynamic based on subscription tier)
+    let filtered = filterLockedSections(content)
+
+    let lines = filtered.split('\n')
     const h1Idx = lines.findIndex(l => /^#\s+/.test(l))
     if (h1Idx !== -1) {
       const h1Text = lines[h1Idx].replace(/^#\s+/, '')
@@ -589,24 +696,24 @@ function GuideContent() {
         lines.splice(h1Idx, 1)
       }
     }
-    
+
     const dateIdx = lines.findIndex((l, i) => i < 10 && /^\w+\s+\d{1,2},\s+\d{4}/.test(l.trim()))
     if (dateIdx !== -1) lines.splice(dateIdx, 1)
-    
+
     lines = lines.filter(l => {
       const lower = l.trim().toLowerCase()
       return !lower.includes('essential guide') && !lower.includes('clear and consistent')
     })
-    
+
     lines = lines.filter(l => !/^-{3,}$/.test(l.trim()))
-    
+
     lines = lines.map(l => {
       if (/^##\s+Brand Voice/i.test(l) && brandName && !l.includes(brandName)) {
         return `## ${brandName} Brand Voice`
       }
       return l
     })
-    
+
     let inBrandVoice = false
     let traitNum = 1
     lines = lines.map(l => {
@@ -620,7 +727,7 @@ function GuideContent() {
       }
       return l
     })
-    
+
     return lines.join('\n')
   }
   
@@ -682,12 +789,125 @@ function GuideContent() {
     }
   }
   
-  // Loading state
+  // Set contentReady when loading completes
+  useEffect(() => {
+    if (!isLoading && content && sections.length > 0) {
+      // Small delay to ensure content is rendered before fade-in
+      setTimeout(() => setContentReady(true), 50)
+    } else {
+      setContentReady(false)
+    }
+  }, [isLoading, content, sections.length])
+
+  // Loading state: minimal for reloads, progress for generation
   if (isLoading || !content || sections.length === 0) {
+    // Quick reload: minimal spinner only
+    if (isQuickLoad) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
+          <div className="text-center space-y-4">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto bg-gray-100">
+              <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
+            </div>
+            <p className="text-sm font-medium text-gray-900">Loading...</p>
+          </div>
+        </div>
+      )
+    }
+
+    // Fresh generation: show progress with details
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="mt-4">Loading style guide...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 sm:p-6">
+        <div className="w-full max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-8 md:p-10 text-center">
+            {/* Spinner */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 bg-gray-100">
+              <Loader2 className="h-6 w-6 sm:h-7 sm:w-7 animate-spin text-gray-600" />
+            </div>
+
+            {/* Title & Description */}
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
+              {loadingProgress === 100 ? "Almost Ready" : "Creating Your Style Guide"}
+            </h1>
+
+            <p className="text-sm text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
+              {loadingProgress === 100
+                ? "Your guide is ready to view"
+                : "Preparing your personalized guidelines"}
+            </p>
+
+            {/* Progress Section */}
+            <div className="space-y-4 sm:space-y-5 w-full">
+              <div className="space-y-2">
+                <p className="text-xs sm:text-sm text-gray-600 min-h-[1.25rem]">
+                  {loadingStep}
+                </p>
+                <Progress
+                  value={loadingProgress}
+                  className="h-1.5 sm:h-2"
+                  aria-label={`Loading progress: ${loadingProgress}%`}
+                />
+              </div>
+
+              {/* Info Banner */}
+              {loadingProgress < 100 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+                  <p className="text-gray-700 text-xs sm:text-sm">
+                    This usually takes just a few seconds
+                  </p>
+                </div>
+              )}
+
+              {/* Feature Preview Card */}
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 sm:p-5 text-left space-y-3">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  What you&apos;ll get:
+                </p>
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                      <Megaphone className="h-3.5 w-3.5 text-gray-600" />
+                    </div>
+                    <div className="pt-1">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900">
+                        Brand voice guidelines
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Personalized to your brand
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                      <FileText className="h-3.5 w-3.5 text-gray-600" />
+                    </div>
+                    <div className="pt-1">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900">
+                        Export options
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        PDF, Word, and Markdown formats
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
+                      <PenLine className="h-3.5 w-3.5 text-gray-600" />
+                    </div>
+                    <div className="pt-1">
+                      <p className="text-xs sm:text-sm font-medium text-gray-900">
+                        Edit and refine
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Customize to match your needs
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -716,7 +936,22 @@ function GuideContent() {
   }
   
   // Build header content
-  const headerContent = isPreviewFlow ? null : (
+  const headerContent = isPreviewFlow ? (
+    <Button
+      onClick={() => handleDownload("pdf")}
+      disabled={isDownloading}
+      variant="outline"
+      size="sm"
+      className="gap-2"
+    >
+      {isDownloading ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Download className="h-3 w-3" />
+      )}
+      Download Preview
+    </Button>
+  ) : (
     <div className="flex items-center gap-3">
       {subscriptionTier !== "starter" && (
         <Button
@@ -751,7 +986,10 @@ function GuideContent() {
   )
   
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className={cn(
+      "transition-opacity duration-700 ease-out",
+      contentReady ? "opacity-100" : "opacity-0"
+    )}>
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://aistyleguide.com" },
         { name: "Brand Details", url: "https://aistyleguide.com/brand-details" },
@@ -811,7 +1049,7 @@ function GuideContent() {
           }}
           brandName={brandDetails?.name || "Your Brand"}
           guideType={guideType as "core" | "complete" | "style_guide"}
-          showPreviewBadge={isPreviewFlow}
+          showPreviewBadge={isPreviewFlow && subscriptionTier === "starter"}
           isUnlocked={isUnlocked}
           onRewrite={handleRewrite}
           isRewriting={isRewriting}
@@ -829,8 +1067,9 @@ function GuideContent() {
           storageKey={isPreviewFlow ? "preview-full" : "full-access-full"}
           editorId={isPreviewFlow ? "preview-single-editor" : "full-access-single-editor"}
           showEditTools={true}
+          websiteUrl={brandDetails?.websiteUrl}
           pdfFooter={
-            isPreviewFlow ? (
+            isPreviewFlow && subscriptionTier === "starter" ? (
               <div className="pdf-only mt-12 pt-8 border-t border-gray-200 px-8 pb-8">
                 <div className="text-center space-y-3 max-w-2xl mx-auto">
                   <div className="text-sm text-gray-600">

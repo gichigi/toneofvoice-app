@@ -8,6 +8,7 @@ import { NewGuideButton } from "@/components/dashboard/NewGuideButton";
 import { AutoSaveGuide } from "@/components/dashboard/AutoSaveGuide";
 import { GuideCard } from "@/components/dashboard/GuideCard";
 import { SubscriptionRefresh } from "@/components/dashboard/SubscriptionRefresh";
+import { UserMenu } from "@/components/UserMenu";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -47,10 +48,8 @@ export default async function DashboardPage() {
         containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
         rightContent={
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/billing">Billing</Link>
-            </Button>
             <NewGuideButton limit={limit} used={used} />
+            <UserMenu />
           </div>
         }
       />

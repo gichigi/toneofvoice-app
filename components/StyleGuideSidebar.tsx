@@ -12,12 +12,24 @@ import {
   SidebarGroupContent,
   useSidebar,
 } from "@/components/ui/sidebar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Lock, Sparkles } from "lucide-react"
+import { Lock, Sparkles, ChevronsUpDown, User, CreditCard, LogOut } from "lucide-react"
 import { StyleGuideSection, Tier } from "@/lib/content-parser"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/components/AuthProvider"
+import { createClient } from "@/lib/supabase-browser"
+import { useRouter } from "next/navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface StyleGuideSidebarProps {
   sections: StyleGuideSection[]
@@ -37,6 +49,19 @@ export function StyleGuideSidebar({
   onUpgrade,
 }: StyleGuideSidebarProps) {
   const { setOpenMobile } = useSidebar()
+  const { user } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+  }
+
+  const getUserInitials = (email?: string) => {
+    if (!email) return 'U'
+    return email.charAt(0).toUpperCase()
+  }
 
   // Calculate progress
   // Starter (free) tier can access starter sections.
@@ -126,6 +151,56 @@ export function StyleGuideSidebar({
 
       <SidebarFooter className="p-4 border-t border-gray-50/50 bg-white/50">
         <div className="group-data-[collapsible=icon]:hidden space-y-4">
+          {/* User Menu */}
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3 px-2 h-auto py-2 hover:bg-gray-100"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="bg-gray-200 text-gray-700 text-xs font-medium">
+                      {getUserInitials(user.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left truncate">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                  <ChevronsUpDown className="h-4 w-4 text-gray-400 shrink-0" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/billing')}>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Pricing
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {/* Progress Indicator (only if not fully unlocked) */}
           {subscriptionTier === 'starter' && (
             <div className="space-y-2 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-100">

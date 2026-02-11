@@ -7,24 +7,31 @@ interface StyleGuideCoverProps {
   date?: string
   showPreviewBadge?: boolean
   className?: string
+  websiteUrl?: string
 }
 
 // Eyebrow: short label above title (avoid "Brand Identity" – redundant/wrong for voice docs)
-const COVER_EYEBROW = "Brand Voice & Content Style"
+const COVER_EYEBROW = "Brand Voice & Content Guidelines"
 
-export function StyleGuideCover({ 
-  brandName, 
-  guideType, 
-  date, 
+export function StyleGuideCover({
+  brandName,
+  guideType,
+  date,
   showPreviewBadge,
-  className 
+  className,
+  websiteUrl
 }: StyleGuideCoverProps) {
-  const formattedDate = date || new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const formattedDate = date || new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   })
   const displayName = (brandName || "").trim() || "Brand Voice Guidelines"
+
+  // Use website URL if available, otherwise show generation date only
+  const subtitle = websiteUrl
+    ? websiteUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
+    : null
 
   return (
     <div className={cn("min-h-[80vh] flex flex-col justify-center px-12 md:px-20 py-24 bg-white relative overflow-hidden", className)}>
@@ -58,9 +65,11 @@ export function StyleGuideCover({
 
         <div className="pt-12 space-y-1 text-gray-500 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-500">
           <p className="text-sm transition-colors duration-300 hover:text-gray-600">Generated on {formattedDate}</p>
-          <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
-            Style Guide
-          </p>
+          {subtitle && (
+            <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
+              {subtitle}
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -24,14 +24,6 @@ const TestimonialsSection = dynamic(
   }
 )
 
-const CompanyLogosSection = dynamic(
-  () => import("../components/company-logos-section"),
-  {
-    ssr: false,
-    loading: () => <div className="w-full py-6 bg-muted"></div>,
-  }
-)
-
 export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -39,7 +31,6 @@ export default function LandingPage() {
       <main className="flex-1">
         <HeroSection />
         <BrandBanner />
-        <CompanyLogosSection />
         <FeaturesSection />
         <WhatsIncludedSection />
         <ComparisonSection />

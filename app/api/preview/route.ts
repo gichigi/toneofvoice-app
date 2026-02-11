@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { renderPreviewStyleGuide } from "@/lib/template-processor"
+import { renderPreviewStyleGuide, renderStyleGuideTemplate } from "@/lib/template-processor"
+import { createServerClient } from "@/lib/supabase-server"
 
 // Simplified validation function
 function validateBrandDetails(details: any) {
@@ -41,22 +42,45 @@ export async function POST(request: Request) {
       )
     }
     
-    console.log('[Preview API] Generating preview with AI content...')
+    console.log('[Preview API] Generating content with AI...')
     const startTime = Date.now()
-    
+
     // Include selectedTraits in brandDetails for processing
     const enhancedBrandDetails = {
       ...brandDetails,
       traits: selectedTraits || brandDetails.traits || []
     }
-    
-    // Generate preview with AI content using new preview-specific function
-    const preview = await renderPreviewStyleGuide({
-      brandDetails: enhancedBrandDetails
-    })
-    
+
+    // Check user's subscription tier to determine what to generate
+    let subscriptionTier = 'starter'
+    try {
+      const supabase = createServerClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: tierData } = await supabase
+          .from('users')
+          .select('subscription_tier')
+          .eq('id', user.id)
+          .single()
+
+        if (tierData?.subscription_tier && tierData.subscription_tier !== 'free') {
+          subscriptionTier = tierData.subscription_tier
+        }
+      }
+    } catch (error) {
+      console.warn('[Preview API] Could not fetch subscription tier, defaulting to starter:', error)
+    }
+
+    console.log(`[Preview API] User tier: ${subscriptionTier}`)
+
+    // Generate full content for paid users, preview for free users
+    const preview = subscriptionTier === 'starter'
+      ? await renderPreviewStyleGuide({ brandDetails: enhancedBrandDetails })
+      : await renderStyleGuideTemplate({ brandDetails: enhancedBrandDetails, useAIContent: true, isPreview: false })
+
     const duration = Date.now() - startTime
-    console.log(`[Preview API] Preview generated successfully in ${duration}ms`)
+    console.log(`[Preview API] Content generated successfully in ${duration}ms (tier: ${subscriptionTier})`)
     
     return NextResponse.json({
       success: true,

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import { ArrowLeft } from "lucide-react";
 import { BillingPlansGrid } from "./BillingPlansGrid";
+import { UserMenu } from "@/components/UserMenu";
 
 export default async function BillingPage() {
   const supabase = await createClient();
@@ -34,7 +35,10 @@ export default async function BillingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-muted">
-      <Header containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between" />
+      <Header
+        containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
+        rightContent={<UserMenu />}
+      />
 
       <main className="flex-1">
         <div className="max-w-5xl mx-auto px-8 pt-8 pb-0">

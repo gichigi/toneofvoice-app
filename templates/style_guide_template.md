@@ -16,12 +16,6 @@
 
 ---
 
-## Content Guidelines
-
-{{content_guidelines}}
-
----
-
 ## Brand Voice
 
 {{brand_voice_traits}}
@@ -46,4 +40,6 @@
 
 ---
 
-{{contact_footer}}
+## Questions?
+
+{{contact_section}}

@@ -2,7 +2,6 @@ import {
   generateBrandVoiceTraits,
   generateStyleRules,
   generateAudienceSection,
-  generateContentGuidelines,
   generateBeforeAfterSamples,
   generateWordList,
   getHowToUseContent,
@@ -369,18 +368,22 @@ export async function renderStyleGuideTemplate({
     "An innovative company focused on delivering exceptional results.";
   const audience = brandDetails.audience || "Business professionals and decision makers";
 
+  // Contact section with toneofvoice.app link
+  const contactSection = userEmail && userEmail.trim()
+    ? `Need help applying these guidelines? Have questions about ${brandName}'s voice?\n\n**Contact:** ${userEmail.trim()}\n\n---\n\n*This style guide was created with [Tone of Voice](https://toneofvoice.app) — AI-powered brand voice guidelines for consistent content.*`
+    : `Need help applying these guidelines? Have questions about ${brandName}'s voice?\n\nContact the ${brandName} content team.\n\n---\n\n*This style guide was created with [Tone of Voice](https://toneofvoice.app) — AI-powered brand voice guidelines for consistent content.*`;
+
   let result = template
     .replace(/{{DD MONTH YYYY}}/g, formattedDate)
     .replace(/{{brand_name}}/g, brandName)
     .replace(/{{brand_description}}/g, brandDesc)
     .replace(/{{brand_audience}}/g, audience)
-    .replace(/{{contact_footer}}/g, contactFooter);
+    .replace(/{{contact_section}}/g, contactSection);
 
   if (!useAIContent) {
     result = result
       .replace(/{{audience_section}}/g, "_Your audience will be described here._")
       .replace(/{{how_to_use_section}}/g, getHowToUseContent(brandName))
-      .replace(/{{content_guidelines}}/g, `${GENERIC_VOICE_TRAIT_1}\n\n${GENERIC_VOICE_TRAIT_2}`)
       .replace(/{{brand_voice_traits}}/g, `${GENERIC_VOICE_TRAIT_1}\n\n${GENERIC_VOICE_TRAIT_2}`)
       .replace(/{{style_rules}}/g, "_Unlock to see Style Rules._")
       .replace(/{{before_after_examples}}/g, "_Unlock to see Before/After examples._")
@@ -444,32 +447,22 @@ export async function renderStyleGuideTemplate({
   result = result.replace(/{{how_to_use_section}}/g, getHowToUseContent(brandName));
 
   if (isPreview) {
-    const [audienceResult, guidelinesResult] = await Promise.all([
-      generateAudienceSection(validatedDetails),
-      generateContentGuidelines(validatedDetails, traitsContext),
-    ]);
+    const audienceResult = await generateAudienceSection(validatedDetails);
     result = result.replace(
       /{{audience_section}}/g,
       audienceResult.success && audienceResult.content
         ? audienceResult.content
         : "_Could not generate audience section._"
     );
-    result = result.replace(
-      /{{content_guidelines}}/g,
-      guidelinesResult.success && guidelinesResult.content
-        ? guidelinesResult.content
-        : "_Could not generate content guidelines._"
-    );
     result = result.replace(/{{style_rules}}/g, "_Unlock to see Style Rules._");
     result = result.replace(/{{before_after_examples}}/g, "_Unlock to see Before/After examples._");
     result = result.replace(/{{word_list}}/g, "_Unlock to see Word List._");
   } else {
-    const [rulesResult, beforeAfterResult, wordListResult, audienceResult, guidelinesResult] = await Promise.all([
+    const [rulesResult, beforeAfterResult, wordListResult, audienceResult] = await Promise.all([
       generateStyleRules(validatedDetails, traitsContext),
       generateBeforeAfterSamples(validatedDetails, traitsContext),
       generateWordList(validatedDetails, traitsContext),
       generateAudienceSection(validatedDetails),
-      generateContentGuidelines(validatedDetails, traitsContext),
     ]);
     result = result.replace(
       /{{style_rules}}/g,
@@ -488,10 +481,6 @@ export async function renderStyleGuideTemplate({
     result = result.replace(
       /{{audience_section}}/g,
       audienceResult.success && audienceResult.content ? audienceResult.content : "_Could not generate audience._"
-    );
-    result = result.replace(
-      /{{content_guidelines}}/g,
-      guidelinesResult.success && guidelinesResult.content ? guidelinesResult.content : "_Could not generate guidelines._"
     );
   }
 

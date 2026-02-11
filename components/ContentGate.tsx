@@ -63,11 +63,17 @@ export function ContentGate({ content, showUpgradeCTA = true, onUpgrade, selecte
         {/* Visible section heading and explainer (same spacing as Brand Voice / MarkdownRenderer) */}
         {sectionTitle && (
           <>
-            {getSectionEyebrow(sectionTitle) && (
-              <p className={cn(PREVIEW_EYEBROW_CLASS, "mb-2")}>
-                {getSectionEyebrow(sectionTitle)}
-              </p>
-            )}
+            <div className="flex items-center gap-2 mb-2">
+              {getSectionEyebrow(sectionTitle) && (
+                <p className={PREVIEW_EYEBROW_CLASS}>
+                  {getSectionEyebrow(sectionTitle)}
+                </p>
+              )}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-600 dark:text-gray-400">
+                <Lock className="h-3 w-3" />
+                Locked
+              </span>
+            </div>
             <h2 className={cn(PREVIEW_H2_CLASS, PREVIEW_H2_MARGIN_TOP, PREVIEW_H2_MARGIN_BOTTOM, "first:mt-0")} style={PREVIEW_H2_STYLE}>
               {sectionTitle}
             </h2>
@@ -80,33 +86,34 @@ export function ContentGate({ content, showUpgradeCTA = true, onUpgrade, selecte
           </>
         )}
 
-        <div className="relative min-h-[40vh]">
+        <div className="relative min-h-[40vh] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
           {/* Blurred content preview */}
-          <div className="blur-sm select-none pointer-events-none opacity-30 transition-all duration-500">
+          <div className="blur-[6px] select-none pointer-events-none opacity-20 transition-all duration-500">
             <MarkdownRenderer content={strippedContent} selectedTraits={selectedTraits} sectionId={sectionId} />
           </div>
 
-          {/* Lock overlay */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-lg">
+          {/* Lock overlay with gradient */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-white/95 via-white/90 to-white/95 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-900/95 backdrop-blur-[2px]">
             <div className="text-center space-y-4 p-8 max-w-sm animate-in fade-in zoom-in-95 duration-500">
-              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                <Lock className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto shadow-lg ring-4 ring-white/50 dark:ring-gray-900/50">
+                <Lock className="h-9 w-9 text-gray-600 dark:text-gray-300" />
               </div>
               {previewSnippet && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic line-clamp-2 font-medium">
                   &ldquo;{previewSnippet}...&rdquo;
                 </p>
               )}
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 This section is locked
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Upgrade to unlock all sections and get full editing access.
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Upgrade to unlock all sections, edit your guide, and export in multiple formats.
               </p>
               {showUpgradeCTA && onUpgrade && (
                 <Button
                   onClick={onUpgrade}
-                  className="bg-gray-900 hover:bg-gray-800 text-white font-medium shadow-md transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  size="lg"
+                  className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] mt-2"
                 >
                   <Lock className="h-4 w-4 mr-2" />
                   Unlock Full Guide

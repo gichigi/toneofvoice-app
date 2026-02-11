@@ -1048,28 +1048,6 @@ export default function BrandDetailsPage() {
                         )}
                       </div>
 
-                      {/* Email Capture Section */}
-                      {showEmailCapture && (
-                        <div className="border border-blue-200 rounded-lg bg-white p-4 space-y-3">
-                          <div>
-                            <Label htmlFor="email" className="text-sm font-semibold text-gray-900">
-                              Send a copy
-                            </Label>
-                            <p className="text-xs text-muted-foreground mt-1">Get a copy sent to you or someone else</p>
-                          </div>
-                          <div>
-                            <Input
-                              id="email"
-                              type="email"
-                              placeholder="your@email.com"
-                              value={email}
-                              onChange={handleEmailChange}
-                              onBlur={handleEmailBlur}
-                              className="w-full bg-white border-blue-200 focus:border-blue-400 focus:ring-blue-400"
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

@@ -71,7 +71,7 @@ export interface HowItWorksStep {
 }
 
 export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
-  { title: "Enter website or description", body: "Paste your site URL or a short brand description. We use it to match your voice and tone.", accent: "border-t-blue-300", numBg: "bg-blue-100 text-blue-700" },
+  { title: "Enter website", body: "Paste your site URL or a short brand description. We use it to match your voice and tone.", accent: "border-t-blue-300", numBg: "bg-blue-100 text-blue-700" },
   { title: "Generate your guidelines", body: "We build your style guide—voice traits, writing rules, and examples tailored to your brand.", accent: "border-t-purple-300", numBg: "bg-purple-100 text-purple-700" },
   { title: "Start writing in your voice", body: "Download as PDF or Word, or copy into your AI tools. Use it yourself or share with your team.", accent: "border-t-green-300", numBg: "bg-green-100 text-green-700" },
 ]
@@ -233,7 +233,7 @@ export interface FaqItem {
 export const FAQ_ITEMS: FaqItem[] = [
   {
     q: "What's in the free preview?",
-    a: "You get a full preview of your style guide: About, Audience, Content Guidelines, Brand Voice, plus a sample of what Style Rules and Before/After look like. Export the preview as PDF. Upgrade to edit, add all sections, and export without limits.",
+    a: "You get a full preview of your style guide: About, Audience, Brand Voice, plus a sample of what Style Rules and Before/After look like. Export the preview as PDF. Upgrade to edit, add all sections, and export without limits.",
   },
   {
     q: "How do I get the full guide?",

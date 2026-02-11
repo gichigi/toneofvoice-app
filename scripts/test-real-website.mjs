@@ -48,11 +48,14 @@ async function main() {
       name: data.brandName || "Unknown",
       brandDetailsDescription: data.brandDetailsDescription || "",
       audience: data.audience || "",
-      keywords: Array.isArray(data.keywords) ? data.keywords : (data.keywords || "").split(",").map((k) => k.trim()).filter(Boolean).slice(0, 15),
+      keywords: Array.isArray(data.keywords) ? data.keywords : (data.keywords || "").split(",").map((k) => k.trim()).filter(Boolean).slice(0, 25),
       traits: Array.isArray(data.suggestedTraits) ? data.suggestedTraits.slice(0, 3) : [],
+      productsServices: Array.isArray(data.productsServices) ? data.productsServices : [],
     };
     console.log("  ✅ Extracted:", brandDetails.name);
     console.log("  Description length:", brandDetails.brandDetailsDescription?.length || 0, "chars");
+    console.log("  Keywords:", brandDetails.keywords?.length || 0);
+    console.log("  Products/Services:", brandDetails.productsServices?.length || 0);
     console.log("  Audience:", (brandDetails.audience || "").slice(0, 60) + "...");
     console.log("  Traits:", brandDetails.traits?.join(", ") || "none");
   } catch (e) {
@@ -113,11 +116,27 @@ async function main() {
   let score = 0;
   const maxScore = 10;
 
-  if (brandDetails.brandDetailsDescription?.length < 50) {
+  const descLen = brandDetails.brandDetailsDescription?.length || 0;
+  if (descLen < 50) {
     evalPoints.push("⚠️  Extraction: Description is thin (<50 chars). Website may be hard to scrape or content-light.");
-  } else {
-    evalPoints.push("✓  Extraction: Description has sufficient detail.");
+  } else if (descLen >= 400) {
+    evalPoints.push("✓  Extraction: Description is full (3-6 paragraphs, " + descLen + " chars).");
     score += 1;
+  } else {
+    evalPoints.push("✓  Extraction: Description has sufficient detail (" + descLen + " chars).");
+    score += 1;
+  }
+
+  const kwCount = brandDetails.keywords?.length || 0;
+  if (kwCount >= 15) {
+    evalPoints.push("✓  Extraction: Keywords rich (" + kwCount + ").");
+  } else if (kwCount >= 5) {
+    evalPoints.push("✓  Extraction: Keywords present (" + kwCount + ").");
+  }
+
+  const psCount = brandDetails.productsServices?.length || 0;
+  if (psCount > 0) {
+    evalPoints.push("✓  Extraction: Products/Services present (" + psCount + ").");
   }
 
   if (preview) {

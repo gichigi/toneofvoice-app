@@ -14,7 +14,7 @@ export const ERROR_MESSAGES = {
   
   // OpenAI API errors
   OPENAI_RATE_LIMIT: "Our AI service is busy right now. We'll try again in a moment.",
-  OPENAI_TOKEN_LIMIT: "Your brand description is too long (over 500 characters). Please shorten it and try again.",
+  OPENAI_TOKEN_LIMIT: "Your brand description is too long (over 2500 characters). Please shorten it and try again.",
   OPENAI_API_KEY: "There's a configuration issue on our end. Please contact support.",
   OPENAI_CONNECTION: "We're having trouble connecting to our AI service. Please try again.",
   
@@ -63,7 +63,7 @@ export function classifyError(error: any): keyof typeof ERROR_MESSAGES {
   if (errorMessage.includes('api key') || errorMessage.includes('unauthorized') || errorMessage.includes('401')) {
     return 'OPENAI_API_KEY'
   }
-  if (errorMessage.includes('openai') && (errorMessage.includes('connection') || errorMessage.includes('network'))) {
+  if (errorMessage.includes('openai') && (errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('empty response'))) {
     return 'OPENAI_CONNECTION'
   }
   
@@ -162,7 +162,7 @@ export function createErrorDetails(error: any): ErrorDetails {
       suggestedAction = "Try entering your brand details manually instead"
       break
     case 'OPENAI_TOKEN_LIMIT':
-      suggestedAction = "Shorten your brand description to under 500 characters (about 100 words)"
+      suggestedAction = "Shorten your brand description to under 2500 characters"
       break
     case 'PAYMENT_TIMEOUT':
       suggestedAction = "Start a new checkout session from the preview page"

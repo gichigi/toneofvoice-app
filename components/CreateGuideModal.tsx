@@ -216,11 +216,13 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
 
       if (data.success) {
         // Save to localStorage
-        const brandDetails = {
+        const brandDetails: Record<string, unknown> = {
           name: data.brandName || "",
           brandDetailsDescription: data.brandDetailsDescription,
           audience: data.audience || "",
         };
+        if (Array.isArray(data.productsServices))
+          brandDetails.productsServices = data.productsServices;
         if (data.keywords) {
           const kw = Array.isArray(data.keywords) ? data.keywords.join("\n") : String(data.keywords);
           localStorage.setItem("brandKeywords", kw);

@@ -42,8 +42,8 @@ const estimateTokens = (text: string): number => {
   return words.length + Math.ceil(punctuation * 0.5)
 }
 
-// Token limit for auto-generated descriptions (to ensure they don't exceed 400 char validation)
-const MAX_GENERATION_TOKENS = 60 // Conservative limit for generated descriptions
+// Description limit: fits 3-6 paragraphs from extraction (no truncation)
+const DESC_MAX_CHARS = 2500
 
 
 
@@ -403,8 +403,8 @@ export default function BrandDetailsPage() {
       return false
     }
 
-    if (desc.length > 500) {
-      setFormError("Description is too long (max 500 characters).")
+    if (desc.length > DESC_MAX_CHARS) {
+      setFormError(`Description is too long (max ${DESC_MAX_CHARS} characters).`)
       return false
     }
 
@@ -419,7 +419,7 @@ export default function BrandDetailsPage() {
       return false
     } else if (trimmed.length < 20) {
       return false
-    } else if (value.length > 400) {
+    } else if (value.length > DESC_MAX_CHARS) {
       return false
     }
     return true
@@ -533,7 +533,7 @@ export default function BrandDetailsPage() {
   // Step validation functions
   const isStep1Valid = () => {
     const nameValid = !!brandDetails.name?.trim() && brandDetails.name.trim().length > 0
-    const descValid = !!brandDetails.brandDetailsDescription?.trim() && brandDetails.brandDetailsDescription.trim().length >= 20 && brandDetails.brandDetailsDescription.length <= 500
+    const descValid = !!brandDetails.brandDetailsDescription?.trim() && brandDetails.brandDetailsDescription.trim().length >= 20 && brandDetails.brandDetailsDescription.length <= DESC_MAX_CHARS
     return nameValid && descValid
   }
 
@@ -635,7 +635,7 @@ export default function BrandDetailsPage() {
     }
   }
 
-  // Update the handleSubmit function to use inline brand name extraction instead of external API
+  // Redirect to guide page immediately; guide page handles API call and shows loading
   const handleSubmit = async (e: React.FormEvent) => {
     // Authed user at guide limit: show upgrade nudge instead of generating
     if (user && atLimit) {
@@ -645,29 +645,18 @@ export default function BrandDetailsPage() {
 
     setLoading(true)
     setProcessingStep('processing')
-    
-    // Set generation start time and initial loading message
-    const startTime = Date.now()
-    setGenerationStartTime(startTime)
-    setLoadingMessage(loadingWords[0])
 
     try {
-      // Clear any cached preview content before generating new preview
-      // This ensures fresh generation with updated keywords/description
+      // Clear cached preview so guide page triggers fresh generation
       localStorage.removeItem("previewContent")
       localStorage.removeItem("generatedPreviewTraits")
       localStorage.removeItem("previewTraitsTimestamp")
-      
-      // Use the required brand name field
-      const brandName = brandDetails.name?.trim() || ""
 
-      // Map the simplified form data to the expected template processor format
-      const detailsWithName = { 
-        ...brandDetails, 
+      const brandName = brandDetails.name?.trim() || ""
+      const detailsWithName = {
+        ...brandDetails,
         name: brandName,
-        // Use extracted audience if present; otherwise leave empty (server will generate if needed)
         audience: brandDetails.audience || "",
-        // Pass keywords (generated or user-edited) to backend
         keywords: keywordTags,
         traits: selectedTraits,
         englishVariant: brandDetails.englishVariant,
@@ -675,54 +664,23 @@ export default function BrandDetailsPage() {
         readingLevel: brandDetails.readingLevel,
       }
 
-      // Generate preview as before
-      const response = await fetch("/api/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandDetails: detailsWithName })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to generate")
-      }
-
-      const data = await response.json()
-      if (!data.success) {
-        throw new Error(data.error || "Failed to generate")
-      }
-
-      // Save brand details and preview
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[Brand Details] Saving to localStorage:", detailsWithName)
-      }
       localStorage.setItem("brandDetails", JSON.stringify(detailsWithName))
       localStorage.setItem("selectedTraits", JSON.stringify(selectedTraits))
-      localStorage.setItem("previewContent", data.preview)
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[Brand Details] Successfully saved brand details with extracted name")
-      }
 
       setProcessingStep('complete')
-      
-      // Brief pause to show completion
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Clean up loading state
       setLoadingMessage("")
-      setGenerationStartTime(null)
 
-      // Redirect to guide page
+      // Forward to guide page; it will call /api/preview and show loading
       router.push("/guide")
     } catch (error) {
       setLoading(false)
       setProcessingStep('idle')
       setLoadingMessage("")
       setGenerationStartTime(null)
-      console.error("Error:", error)
+      console.error("[Brand Details] Error preparing redirect:", error)
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        description: "Could not proceed. Please try again.",
         variant: "destructive",
       })
     }
@@ -849,7 +807,7 @@ export default function BrandDetailsPage() {
                     placeholder="Describe your brand in a few sentences. What do you do? Who do you serve?"
                     value={brandDetails.brandDetailsDescription || ""}
                     onChange={e => {
-                      const value = e.target.value.slice(0, 500)
+                      const value = e.target.value.slice(0, DESC_MAX_CHARS)
                       setBrandDetails(prev => {
                         const updatedDetails = { ...prev, brandDetailsDescription: value }
                         localStorage.setItem("brandDetails", JSON.stringify(updatedDetails))
@@ -863,8 +821,8 @@ export default function BrandDetailsPage() {
                         setFormError("")
                       }
                     }}
-                    rows={5}
-                    className="resize-none min-h-[144px] leading-relaxed text-sm p-3 placeholder:text-gray-400"
+                    rows={8}
+                    className="resize-none min-h-[200px] leading-relaxed text-sm p-3 placeholder:text-gray-400"
                     onFocus={e => setShowCharCount(true)}
                     onBlur={e => {
                       setShowCharCount(!!e.target.value)
@@ -873,15 +831,15 @@ export default function BrandDetailsPage() {
                   />
                   {showCharCount && (
                     <div className={`text-xs mt-1 ${
-                      (brandDetails.brandDetailsDescription?.length || 0) > 500
+                      (brandDetails.brandDetailsDescription?.length || 0) > DESC_MAX_CHARS
                         ? 'text-red-600'
                         : brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.trim().length < 20
                         ? 'text-red-600'
-                        : (brandDetails.brandDetailsDescription?.length || 0) > 450
+                        : (brandDetails.brandDetailsDescription?.length || 0) > DESC_MAX_CHARS * 0.9
                         ? 'text-yellow-600'
                         : 'text-muted-foreground'
                     }`}>
-                      {(brandDetails.brandDetailsDescription?.length || 0)}/500 characters
+                      {(brandDetails.brandDetailsDescription?.length || 0)}/{DESC_MAX_CHARS} characters
                       {brandDetails.brandDetailsDescription && brandDetails.brandDetailsDescription.trim().length < 20 && brandDetails.brandDetailsDescription.trim().length > 0 && (
                         <span className="ml-1">(min 20)</span>
                       )}

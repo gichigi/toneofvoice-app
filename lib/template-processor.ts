@@ -280,8 +280,8 @@ function validateBrandDetails(details: any) {
   // Description validation
   if (!details.brandDetailsDescription || details.brandDetailsDescription.trim().length === 0) {
     errors.push("Brand description is required")
-  } else if (details.brandDetailsDescription.length > 500) {
-    errors.push("Brand description must be 500 characters or less")
+  } else if (details.brandDetailsDescription.length > 2500) {
+    errors.push("Brand description must be 2500 characters or less")
   }
   
   // Audience validation
@@ -397,6 +397,9 @@ export async function renderStyleGuideTemplate({
     audience: audience.trim() || "general audience",
     traits: brandDetails.traits || [],
     keywords: Array.isArray(brandDetails.keywords) ? brandDetails.keywords : [],
+    productsServices: Array.isArray(brandDetails.productsServices)
+      ? brandDetails.productsServices
+      : [],
     formalityLevel: brandDetails.formalityLevel || "",
     readingLevel: brandDetails.readingLevel || "",
     englishVariant: brandDetails.englishVariant || "american",

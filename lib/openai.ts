@@ -211,55 +211,14 @@ ${trait.do.map(item => `→ ${item}`).join('\n')}
 ${trait.dont.map(item => `✗ ${item}`).join('\n')}`
 }
 
-// Function to generate custom trait description via AI
+// Function to generate custom trait description via AI (used by preview which needs 1 trait)
 async function generateCustomTraitDescription(traitName: string, brandDetails: any, index: number): Promise<string> {
-  console.log(`🔧 [DEBUG] generateCustomTraitDescription called for trait: ${traitName}`)
-  const keywordSection = Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-    ? `\n• Keywords: ${brandDetails.keywords.slice(0, 15).join(', ')}`
-    : '';
-  
-  const prompt = `You are a brand voice expert. Generate communication style guidelines for the trait "${traitName}" based on this brand information.
+  const genResult = await generateAllTraitsInOneCall(brandDetails, [traitName]);
+  if (genResult.success && genResult.content) return genResult.content.trim();
+  console.error("[generateCustomTraitDescription] Failed for", traitName, genResult.error);
+  return `### ${index}. ${traitName}
 
-Brand Info:
-• Brand Name: ${brandDetails.name}
-• What they do: ${brandDetails.brandDetailsDescription}
-• Audience: ${brandDetails.audience}${keywordSection}
-
-Create the trait description in this EXACT format:
-
-### ${index}. ${traitName}
-
-[ONE SENTENCE description of what this trait means for this specific brand and why it's important. Explicitly reference the core audience at least once (e.g., "instills confidence in healthcare providers", "helps CFOs make faster decisions").]
-
-Important constraints for the ONE SENTENCE description (3 rules):
-- Be neutral and explanatory; never adopt the trait’s tone.
-- Max 20 words; no first/second person, emojis, or hype.
-- Reading level/formality do NOT affect this sentence; they only affect examples.
-
-***What It Means***
-
-→ [Specific actionable writing instruction - around 10 words]
-→ [Specific actionable writing instruction - around 10 words] 
-→ [Specific actionable writing instruction - around 10 words]
-
-***What It Doesn't Mean***
-
-✗ [How the first instruction could be taken too far]
-✗ [How the second instruction could be taken too far]
-✗ [How the third instruction could be taken too far]
-
-Each "What It Doesn't Mean" should show how its corresponding "What It Means" could be taken too far - the same concept but pushed to an extreme. Focus on writing style, tone, and language use. Use → (unicode arrow) and ✗ (unicode cross) exactly as shown.`;
-
-  const result = await generateWithOpenAI(prompt, "You are a brand voice expert creating specific, actionable communication style guidelines.", "markdown", 800, "gpt-5.2", "medium");
-  
-  if (result.success && result.content) {
-    return result.content.trim()
-  } else {
-    // Fallback if AI generation fails
-    console.error(`Failed to generate trait description for ${traitName}:`, result.error)
-    return `### ${index}. ${traitName}
-
-This trait should be tailored specifically to ${brandDetails.name} and their ${brandDetails.audience || 'target audience'}.
+This trait should be tailored specifically to ${brandDetails.name} and their ${brandDetails.audience || "target audience"}.
 
 ***What It Means***
 
@@ -271,82 +230,93 @@ This trait should be tailored specifically to ${brandDetails.name} and their ${b
 
 ✗ Using generic examples that don't reflect your brand's uniqueness
 ✗ Applying this trait without considering your audience's expectations
-✗ Taking this trait to extremes that don't align with your brand context`
-  }
+✗ Taking this trait to extremes that don't align with your brand context`;
 }
 
-// Main function to generate brand voice traits using user's selected traits
+// Generate all trait descriptions in a single API call
+async function generateAllTraitsInOneCall(brandDetails: any, traitNames: string[]): Promise<GenerationResult> {
+  const keywordSection = Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
+    ? `\n• Keywords: ${brandDetails.keywords.slice(0, 25).join(', ')}`
+    : '';
+  const productsServicesSection = Array.isArray(brandDetails.productsServices) && brandDetails.productsServices.length
+    ? `\n• Products/Services: ${brandDetails.productsServices.slice(0, 12).join(', ')}`
+    : '';
+  const traitsList = traitNames.map((t, i) => `${i + 1}. ${t}`).join('\n');
+
+  const prompt = `You are a brand voice expert. Generate communication style guidelines for the following traits based on this brand information.
+
+Brand Info:
+• Brand Name: ${brandDetails.name}
+• What they do: ${brandDetails.brandDetailsDescription}
+• Audience: ${brandDetails.audience}${keywordSection}${productsServicesSection}
+
+Traits to generate (${traitNames.length} total):
+${traitsList}
+
+For EACH trait, create a description in this EXACT format. Use the exact heading level and structure:
+
+### 1. [TraitName]
+
+[ONE SENTENCE description of what this trait means for this specific brand and why it's important. Explicitly reference the core audience at least once.]
+
+Important constraints for the ONE SENTENCE (3 rules):
+- Be neutral and explanatory; never adopt the trait's tone.
+- Max 20 words; no first/second person, emojis, or hype.
+- Reading level/formality do NOT affect this sentence; they only affect examples.
+
+***What It Means***
+
+→ [Specific actionable writing instruction - around 10 words]
+→ [Specific actionable writing instruction - around 10 words]
+→ [Specific actionable writing instruction - around 10 words]
+
+***What It Doesn't Mean***
+
+✗ [How the first instruction could be taken too far]
+✗ [How the second instruction could be taken too far]
+✗ [How the third instruction could be taken too far]
+
+Repeat this block for each trait (### 2. [TraitName], ### 3. [TraitName], etc.). Each "What It Doesn't Mean" should show how its corresponding "What It Means" could be taken too far. Use → (unicode arrow) and ✗ (unicode cross) exactly as shown.`;
+
+  const result = await generateWithOpenAI(
+    prompt,
+    "You are a brand voice expert creating specific, actionable communication style guidelines.",
+    "markdown", 2500, "gpt-5.2", "medium"
+  );
+
+  if (result.success && result.content) {
+    return { success: true, content: result.content.trim() };
+  }
+  return { success: false, error: result.error || "Failed to generate traits" };
+}
+
+// Main function to generate brand voice traits (single API call for all traits)
 export async function generateBrandVoiceTraits(brandDetails: any): Promise<GenerationResult> {
   try {
-    // Check if we have selected traits
     if (!brandDetails.traits || !Array.isArray(brandDetails.traits) || brandDetails.traits.length === 0) {
-      return {
-        success: false,
-        error: "No traits selected for this brand"
-      }
+      return { success: false, error: "No traits selected for this brand" };
     }
 
-    console.log(`🎯 Processing ${brandDetails.traits.length} selected traits:`, brandDetails.traits)
-
-    // Create array of trait generation promises for parallel processing
-    const traitPromises = brandDetails.traits.map((trait: any, i: number) => {
-      const index = i + 1
-      
-      if (typeof trait === 'string') {
-        // Generate AI description for ALL traits (both predefined and custom)
-        console.log(`🎨 Generating AI description for trait: ${trait}`)
-        return generateCustomTraitDescription(trait, brandDetails, index)
-      } else if (trait && typeof trait === 'object') {
-        // Handle MixedTrait objects - generate AI descriptions for ALL traits
-        if (isPredefinedTrait(trait)) {
-          console.log(`🎨 Generating AI description for predefined trait: ${trait.name}`)
-          return generateCustomTraitDescription(trait.name, brandDetails, index)
-        } else if (isCustomTrait(trait)) {
-          console.log(`🎨 Generating AI description for custom trait: ${trait.name}`)
-          return generateCustomTraitDescription(trait.name, brandDetails, index)
-        }
-      }
-      return Promise.resolve("") // Fallback for invalid traits
-    })
-
-    // Execute all trait generations in parallel with error resilience
-    console.log(`🚀 Starting parallel generation of ${traitPromises.length} traits...`)
-    const traitResults = await Promise.allSettled(traitPromises)
-    
-    // Filter successful results and log any failures
-    const traitMarkdown: string[] = []
-    traitResults.forEach((result, i) => {
-      if (result.status === 'fulfilled' && result.value) {
-        traitMarkdown.push(result.value)
-      } else if (result.status === 'rejected') {
-        console.error(`❌ Trait ${i+1} failed:`, result.reason)
-      }
-    })
-
-    // Require minimum 2 out of 3 traits to succeed (or all if less than 3)
-    const minRequired = Math.min(2, brandDetails.traits.length)
-    if (traitMarkdown.length < minRequired) {
-      console.error(`❌ Only ${traitMarkdown.length} out of ${brandDetails.traits.length} traits succeeded (minimum ${minRequired} required)`)
-      return {
-        success: false,
-        error: `Only ${traitMarkdown.length} out of ${brandDetails.traits.length} traits could be generated (minimum ${minRequired} required)`
-      }
+    const traitNames = brandDetails.traits
+      .map((t: any) => (typeof t === 'string' ? t : t?.name))
+      .filter(Boolean);
+    if (traitNames.length === 0) {
+      return { success: false, error: "No valid traits found" };
     }
 
-    const finalContent = traitMarkdown.join('\n\n')
-    console.log(`✅ Generated brand voice traits successfully (${traitMarkdown.length} traits)`)
-    
-    return {
-      success: true,
-      content: finalContent
+    console.log(`[generateBrandVoiceTraits] Generating ${traitNames.length} traits in one call:`, traitNames);
+
+    const result = await generateAllTraitsInOneCall(brandDetails, traitNames);
+
+    if (result.success && result.content) {
+      console.log(`[generateBrandVoiceTraits] Generated ${traitNames.length} traits successfully`);
+      return { success: true, content: result.content };
     }
-    
+
+    return { success: false, error: result.error || "Failed to generate traits" };
   } catch (error) {
-    console.error("Error in generateBrandVoiceTraits:", error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error generating brand voice traits"
-    }
+    console.error("[generateBrandVoiceTraits] Error:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error generating brand voice traits" };
   }
 }
 
@@ -388,11 +358,15 @@ export async function generateBrandVoiceTraitsPreview(
 // Generate before/after examples (5 content types, 1-2 sentences each)
 export async function generateBeforeAfterSamples(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
   try {
+    const productsServicesSection =
+      Array.isArray(brandDetails.productsServices) && brandDetails.productsServices.length
+        ? `\nProducts/Services: ${brandDetails.productsServices.slice(0, 15).join(", ")}`
+        : "";
     const prompt = `Create exactly 5 "Before → After" content transformation examples for ${brandDetails.name}. Each tied to a content type.
 
 Brand: ${brandDetails.name}
 Description: ${brandDetails.brandDetailsDescription}
-Audience: ${brandDetails.audience}
+Audience: ${brandDetails.audience}${productsServicesSection}
 ${traitsContext ? `Traits: ${traitsContext.slice(0, 800)}` : ""}
 
 Content types (one example each):
@@ -497,7 +471,11 @@ export async function generateStyleRules(brandDetails: any, traitsContext?: stri
     const allowedCategories = getAllowedCategoriesPromptText();
     const keywordSection =
       Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-        ? `\nKeywords: ${brandDetails.keywords.slice(0, 15).join(", ")}`
+        ? `\nKeywords: ${brandDetails.keywords.slice(0, 25).join(", ")}`
+        : "";
+    const productsServicesSection =
+      Array.isArray(brandDetails.productsServices) && brandDetails.productsServices.length
+        ? `\nProducts/Services: ${brandDetails.productsServices.slice(0, 12).join(", ")}`
         : "";
     const traitNames = Array.isArray(brandDetails.traits)
       ? brandDetails.traits.map((t: any) => (typeof t === "string" ? t : t?.name)).filter(Boolean)
@@ -511,7 +489,7 @@ Brand:
 - Description: ${brandDetails.brandDetailsDescription}
 - Formality: ${brandDetails.formalityLevel || "Neutral"}
 - Reading Level: ${brandDetails.readingLevel || "10-12"}
-- English Variant: ${brandDetails.englishVariant || "american"}${keywordSection}
+- English Variant: ${brandDetails.englishVariant || "american"}${keywordSection}${productsServicesSection}
 ${traitNames.length ? `- Selected Traits: ${traitNames.join(", ")}` : ""}
 ${traitsSection}
 
@@ -519,10 +497,10 @@ Allowed categories (use each exactly once, in this order):
 ${allowedCategories}
 
 Return STRICT JSON array:
-[{"category": "Contractions", "title": "Contractions", "description": "One sentence rule 8-12 words", "examples": {"good": "Example", "bad": "Example"}}]
+[{"category": "Category Name", "title": "Category Name", "description": "One sentence rule 8-12 words", "examples": {"good": "Example", "bad": "Example"}}]
 
 Requirements:
-- Each rule description must FRONT-LOAD the reason (which trait it supports), then the concrete rule. Use instructive verbs (e.g. "Maintain a refined voice by…", "Project a supportive tone by…"). Example: "Maintain a refined voice by limiting exclamation points to launches." or "Project a supportive tone by avoiding emojis in product copy." — one trait per rule, not listing all traits.
+- Each rule description must FRONT-LOAD the reason for the chosen rule based on the brand details given, then the concrete rule. Use instructive verbs (e.g. "Maintain a refined voice by…", "Provide a supportive tone by…"). Example: "Maintain a refined voice by limiting contractions." or "Provide a supportive tone by avoiding emojis in product copy." — one trait per rule, not listing all traits.
 - Use lowercase for the trait when it appears as the descriptor: "Stay direct by…", "Keep refined by…", "Be supportive by…" — capitalise only the first word (the verb), not the trait name.
 - Pick the single trait that best fits each rule; vary which traits you use across rules.
 - Voice-shaping rules (1-7) must reference Selected Traits by name in that front-loaded reason.
@@ -542,7 +520,7 @@ Requirements:
         prompt,
         "You are a writing style guide expert. Return strict JSON array only.",
         "json",
-        3500,
+        5500,
         "gpt-5.2",
         "medium"
       );
@@ -578,7 +556,11 @@ Requirements:
 export async function generateAudienceSection(brandDetails: any): Promise<GenerationResult> {
   const keywordSection =
     Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-      ? `\nKeywords: ${brandDetails.keywords.slice(0, 10).join(", ")}`
+      ? `\nKeywords: ${brandDetails.keywords.slice(0, 25).join(", ")}`
+      : "";
+  const productsServicesSection =
+    Array.isArray(brandDetails.productsServices) && brandDetails.productsServices.length
+      ? `\nProducts/Services: ${brandDetails.productsServices.slice(0, 15).join(", ")}`
       : "";
   const prompt = `Based on this brand, write an Audience section (markdown) with:
 1. **Primary audience** (2-4 sentences): Who they are, what they care about, how to address them
@@ -586,7 +568,7 @@ export async function generateAudienceSection(brandDetails: any): Promise<Genera
 
 Brand: ${brandDetails.name}
 What they do: ${brandDetails.brandDetailsDescription}
-Audience hint: ${brandDetails.audience || "general audience"}${keywordSection}
+Audience hint: ${brandDetails.audience || "general audience"}${keywordSection}${productsServicesSection}
 
 Output markdown only, no code blocks. Use ### Primary Audience and ### Secondary Audience as subheadings.`;
 
@@ -654,8 +636,12 @@ Paste this guide into your AI tool's system prompt or instructions to ensure gen
 export async function generateWordList(brandDetails: any, traitsContext?: string): Promise<GenerationResult> {
   const keywords =
     Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-      ? brandDetails.keywords.slice(0, 15).join(", ")
+      ? brandDetails.keywords.slice(0, 25).join(", ")
       : "none";
+  const productsServicesSection =
+    Array.isArray(brandDetails.productsServices) && brandDetails.productsServices.length
+      ? `\nProducts/Services: ${brandDetails.productsServices.slice(0, 15).join(", ")}`
+      : "";
   const traitsSection = traitsContext ? `\nTraits: ${traitsContext.slice(0, 400)}` : "";
   const ukUs = brandDetails.englishVariant === "british" ? "UK" : "US";
   const prompt = `Create a Word List for this brand. Return JSON:
@@ -666,7 +652,7 @@ export async function generateWordList(brandDetails: any, traitsContext?: string
 - **spellingUsage** (3-5): Contested spellings for ${ukUs} English and industry. Format "X not Y"
 
 Brand: ${brandDetails.name}
-Description: ${brandDetails.brandDetailsDescription}${traitsSection}
+Description: ${brandDetails.brandDetailsDescription}${productsServicesSection}${traitsSection}
 
 Return JSON only.`;
 
@@ -706,7 +692,7 @@ Return JSON only.`;
 export async function generateKeywords(params: { name: string; brandDetailsDescription: string; audience?: string }): Promise<GenerationResult> {
   const { name, brandDetailsDescription, audience = 'general audience' } = params
   
-  const prompt = `Generate 8-10 high-value keywords for this brand's content marketing and communications.
+  const prompt = `Generate up to 25 high-value keywords for this brand's content marketing and communications.
 
 - Brand
   - Name: ${name}
@@ -722,8 +708,8 @@ export async function generateKeywords(params: { name: string; brandDetailsDescr
   - Choose terms that would appear in blog posts, marketing copy, and user communications
   
 - Output format
-  - Return clean JSON: {"keywords": ["keyword1", "keyword2", "keyword3"]}
-  - Must contain exactly 8-10 keywords, no more, no less`
+  - Return clean JSON: {"keywords": ["keyword1", "keyword2", ...]}
+  - 15-25 keywords`
 
   return generateWithOpenAI(
     prompt,

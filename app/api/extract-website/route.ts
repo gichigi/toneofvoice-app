@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { generateWithOpenAI, generateAudienceSummary, generateKeywords, generateTraitSuggestions } from "@/lib/openai"
 import Logger from "@/lib/logger"
 import { validateUrl } from "@/lib/url-validation"
-import { scrapeSiteForExtraction } from "@/lib/firecrawl-site-scraper"
+import { scrapeSiteForExtraction, scrapeSiteWithJsonExtraction } from "@/lib/firecrawl-site-scraper"
 import * as cheerio from "cheerio"
 import OpenAI from "openai"
 
@@ -199,19 +199,17 @@ export async function POST(request: Request) {
   - Be creative and distinctive rather than descriptive
 
 - Guidelines
-  - Description must be exactly 300-400 characters [50-60 tokens] (STRICT LIMIT)
+  - Description: 3-6 paragraphs. Accurate, concise but full. Suitable for About section.
   - Include what they do, their approach, and what makes them special
-  - Use clear, professional language
-  - Write in first person plural (use we/our language consistently)
-  - Focus on current offerings, not history
-  - CRITICAL: Never truncate mid-sentence. If approaching 400 characters, end at the last complete sentence before the limit.
-  - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
+  - Use clear, professional language. First person plural (we/our)
+  - Focus on current offerings, not history. Not short one-liners.
 
 - Output format
-  - Return clean JSON: {"name": "memorable brand name", "industry": "category", "description": "300-400 char description", "targetAudience": "audience details"}`
+  - Return clean JSON: {"name": "memorable brand name", "industry": "category", "description": "full brand description", "targetAudience": "audience details", "productsServices": ["product/service 1", "product/service 2"]}
+  - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.`
 
       try {
-        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context.", "json", 800, "gpt-4o")
+        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context.", "json", 1500, "gpt-4o")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -292,6 +290,10 @@ export async function POST(request: Request) {
             Logger.error("Failed to generate trait suggestions:", error)
           }
 
+          const productsServices = Array.isArray(brandDetails.productsServices)
+            ? (brandDetails.productsServices as string[]).filter((p) => typeof p === "string")
+            : []
+
           Logger.info("Successfully generated brand details from description")
           
           return NextResponse.json({
@@ -300,7 +302,8 @@ export async function POST(request: Request) {
             brandDetailsDescription: brandDetails.description,
             audience: audienceStr,
             keywords,
-            suggestedTraits
+            suggestedTraits,
+            productsServices,
           })
         } else {
           throw new Error("Failed to generate brand details")
@@ -342,22 +345,41 @@ export async function POST(request: Request) {
 
     let summary: string
 
-    // Prefer Firecrawl when API key is set (richer content, avoids bot protection)
+    // Prefer Firecrawl JSON extraction when API key is set (single call, richer description, up to 25 keywords)
     if (process.env.FIRECRAWL_API_KEY) {
-      Logger.info("Using Firecrawl for site extraction")
-      const fcResult = await scrapeSiteForExtraction(urlValidation.url)
-      if (fcResult.success && fcResult.markdown) {
-        summary = fcResult.markdown.slice(0, 7000)
-        Logger.debug("Firecrawl scrape completed", { pagesScraped: fcResult.pagesScraped, contentLength: summary.length })
+      Logger.info("Using Firecrawl JSON extraction for site")
+      const fcResult = await scrapeSiteWithJsonExtraction(urlValidation.url)
+      if (fcResult.success && fcResult.description) {
+        Logger.debug("Firecrawl JSON extraction completed", {
+          pagesScraped: fcResult.pagesScraped,
+          keywordsCount: fcResult.keywords.length,
+        })
+        return NextResponse.json({
+          success: true,
+          brandDetailsDescription: fcResult.description,
+          brandName: fcResult.name,
+          audience: fcResult.audience,
+          keywords: fcResult.keywords,
+          suggestedTraits: fcResult.suggestedTraits,
+          productsServices: fcResult.productsServices,
+          ...(urlValidation?.url && { url: urlValidation.url }),
+        })
+      }
+      Logger.warn("Firecrawl JSON extraction failed, falling back to markdown + OpenAI", {
+        error: fcResult.error,
+      })
+      // Fall through to markdown + OpenAI flow
+      const fcMdResult = await scrapeSiteForExtraction(urlValidation.url)
+      if (fcMdResult.success && fcMdResult.markdown) {
+        summary = fcMdResult.markdown.slice(0, 7000)
       } else {
-        Logger.warn("Firecrawl failed, falling back to Cheerio", { error: fcResult.error })
         summary = await fetchAndExtractWithCheerio(urlValidation.url)
       }
     } else {
       summary = await fetchAndExtractWithCheerio(urlValidation.url)
     }
 
-    // Generate prompt for website extraction with improved guidance
+    // Fallback: Generate prompt for website extraction (markdown + OpenAI)
     const prompt = `Analyze this website content and extract the brand's core identity.
 
 - Brand
@@ -371,20 +393,15 @@ export async function POST(request: Request) {
   - Be creative and descriptive
 
 - Guidelines
-  - Description must be exactly 300-400 characters (STRICT LIMIT)
+  - Description: 3-6 paragraphs. Accurate, concise but full. Suitable for About section.
   - Start with brand name followed by what they are/do
-  - Include main products/services
-  - Specify target audience
-  - Mention what makes them unique (if identifiable)
-  - Use professional, clear language
-  - Write in first person plural (use we/our language consistently)
-  - Focus on current offerings, not history
-  - CRITICAL: Never truncate mid-sentence. If approaching 400 characters, end at the last complete sentence before the limit.
-  - CRITICAL: Count characters carefully - descriptions over 400 characters will be rejected.
+  - Include main products/services, target audience, what makes them unique
+  - Use professional, clear language. First person plural (we/our)
+  - Focus on current offerings, not history. Not short one-liners.
 
 - Output format
-  - Return clean JSON: {"name": "memorable brand name", "description": "300-400 char description"}
-  - Description must be exactly 300-400 characters
+  - Return clean JSON: {"name": "memorable brand name", "description": "full brand description", "productsServices": ["product/service 1", "product/service 2"]}
+  - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.
 
 Website Content:
 ${summary}`
@@ -392,8 +409,8 @@ ${summary}`
     const result = await generateWithOpenAI(
       prompt,
       "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. You also write clear, readable brand summaries using simple language and short sentences.",
-      "json", // Use json format for faster processing
-      500, // Reduce max tokens since we only need a short paragraph
+      "json",
+      1500, // Allow longer descriptions for About section
       "gpt-4o"
     )
 
@@ -405,7 +422,10 @@ ${summary}`
     const parsed = JSON.parse(result.content)
     const brandName = parsed.name || ""
     const brandDetailsDescription = parsed.description || ""
-    
+    const productsServices = Array.isArray(parsed.productsServices)
+      ? (parsed.productsServices as string[]).filter((p) => typeof p === "string")
+      : []
+
     Logger.debug("Generated brand details", { brandName, brandDetailsDescription })
 
     // Generate audience and keywords in parallel
@@ -477,6 +497,7 @@ ${summary}`
       audience,
       keywords,
       suggestedTraits,
+      productsServices,
       ...(urlValidation?.url && { url: urlValidation.url }),
     })
   } catch (error) {

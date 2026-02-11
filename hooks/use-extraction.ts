@@ -422,6 +422,8 @@ export function useExtraction(): UseExtractionReturn {
           audience: data.audience || "",
         }
         if (data.url) brandDetails.website_url = data.url
+        if (Array.isArray(data.productsServices))
+          brandDetails.productsServices = data.productsServices
         if (data.keywords) {
           const kw = Array.isArray(data.keywords)
             ? data.keywords.join("\n")

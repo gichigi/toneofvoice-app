@@ -30,7 +30,7 @@ import {
 } from "@/lib/content-parser"
 import { PostExportPrompt } from "@/components/PostExportPrompt"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { createErrorDetails, ErrorDetails } from "@/lib/api-utils"
+import { createErrorDetails, ErrorDetails, getUserFriendlyError } from "@/lib/api-utils"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 import { useStyleGuide } from "@/hooks/use-style-guide"
 import { Progress } from "@/components/ui/progress"
@@ -325,15 +325,29 @@ function GuideContent() {
           body: JSON.stringify({ brandDetails, selectedTraits })
         })
 
+        let errorMessage = 'Failed to generate style guide'
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to generate preview')
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorData.details || errorMessage
+          } catch {
+            errorMessage = `Server error (${response.status}). Please try again.`
+          }
+          throw new Error(errorMessage)
         }
 
         setLoadingStep("Finalizing...")
         setLoadingProgress(75)
 
-        const data = await response.json()
+        let data: { preview?: string; success?: boolean }
+        try {
+          data = await response.json()
+        } catch {
+          throw new Error('Invalid response from server. Please try again.')
+        }
+        if (!data?.preview) {
+          throw new Error('Style guide generation failed. Please try again.')
+        }
 
         if (isMounted) {
           setContent(data.preview)
@@ -352,11 +366,12 @@ function GuideContent() {
           }, 300)
         }
       } catch (error) {
-        console.error("Error generating preview:", error)
+        console.error("[Guide] Preview generation failed:", error)
         if (isMounted) {
+          const message = error instanceof Error ? error.message : "Generation failed"
           toast({
-            title: "Preview generation failed",
-            description: "Could not generate preview. Please try again later.",
+            title: "Generation failed",
+            description: getUserFriendlyError(error) || message,
             variant: "destructive",
           })
           setShouldRedirect(true)

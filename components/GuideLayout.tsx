@@ -4,13 +4,13 @@ import { ReactNode } from "react"
 import Link from "next/link"
 import { ArrowLeft, Eye, PenLine } from "lucide-react"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { StyleGuideSidebar } from "@/components/StyleGuideSidebar"
+import { GuideSidebar } from "@/components/GuideSidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { StyleGuideSection, Tier } from "@/lib/content-parser"
 import Logo from "@/components/Logo"
 
-interface StyleGuideLayoutProps {
+interface GuideLayoutProps {
   sections: StyleGuideSection[]
   activeSectionId: string
   onSectionChange: (id: string) => void
@@ -29,7 +29,7 @@ interface StyleGuideLayoutProps {
   showDashboardLink?: boolean
 }
 
-export function StyleGuideLayout({
+export function GuideLayout({
   sections,
   activeSectionId,
   onSectionChange,
@@ -42,14 +42,14 @@ export function StyleGuideLayout({
   onModeSwitch,
   showEditTools = false,
   showDashboardLink = true,
-}: StyleGuideLayoutProps) {
+}: GuideLayoutProps) {
   return (
     <SidebarProvider
       style={{
         "--sidebar-width": "18rem",
       } as React.CSSProperties}
     >
-      <StyleGuideSidebar 
+      <GuideSidebar
         sections={sections}
         activeSectionId={activeSectionId}
         onSectionSelect={onSectionChange}

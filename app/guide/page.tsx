@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
-import type { StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
-import { StyleGuideLayout } from "@/components/StyleGuideLayout"
-import { StyleGuideView } from "@/components/StyleGuideView"
+import type { GuideEditorRef } from "@/components/editor/GuideEditor"
+import { GuideLayout } from "@/components/GuideLayout"
+import { GuideView } from "@/components/GuideView"
 import {
   parseStyleGuideContent,
   StyleGuideSection,
@@ -32,7 +32,7 @@ import { PostExportPrompt } from "@/components/PostExportPrompt"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { createErrorDetails, ErrorDetails, getUserFriendlyError } from "@/lib/api-utils"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
-import { useStyleGuide } from "@/hooks/use-style-guide"
+import { useGuide } from "@/hooks/use-guide"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 
@@ -74,7 +74,7 @@ function GuideContent() {
     isRewriting,
     isUnlocked,
     isSectionLocked,
-  } = useStyleGuide({
+  } = useGuide({
     guideId,
     defaultViewMode: "preview",
     isPreviewFlow,
@@ -1065,7 +1065,7 @@ function GuideContent() {
         { name: "Style Guide", url: "https://aistyleguide.com/guide" }
       ]} />
       
-      <StyleGuideLayout
+      <GuideLayout
         sections={sections}
         activeSectionId={activeSectionId}
         onSectionChange={handleSectionSelect}
@@ -1095,7 +1095,7 @@ function GuideContent() {
             className="mb-3 shrink-0"
           />
         )}
-        <StyleGuideView
+        <GuideView
           sections={sections}
           activeSectionId={activeSectionId}
           scrollContainerRef={scrollContainerRef}
@@ -1166,7 +1166,7 @@ function GuideContent() {
           }
           contentClassName={`transition-all duration-500 ${isRetrying ? "opacity-50 blur-sm" : "opacity-100"}`}
         />
-      </StyleGuideLayout>
+      </GuideLayout>
       
       {/* Export gate: sign in required to export (preview flow) */}
       {isPreviewFlow && (

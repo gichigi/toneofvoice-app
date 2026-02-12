@@ -4,5 +4,29 @@
       "path": "/api/process-abandoned-emails",
       "schedule": "0 * * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "aistyleguide.com"
+        }
+      ],
+      "destination": "https://toneofvoice.app/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.aistyleguide.com"
+        }
+      ],
+      "destination": "https://toneofvoice.app/:path*",
+      "permanent": true
+    }
   ]
 }

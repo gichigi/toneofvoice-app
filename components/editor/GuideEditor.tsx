@@ -63,9 +63,9 @@ import {
 } from "@/components/ui/list-classic-node";
 import { LinkElement } from "@/components/ui/link-node";
 
-const STORAGE_KEY_PREFIX = "style-guide-edits-";
+const STORAGE_KEY_PREFIX = "guide-edits-";
 
-interface StyleGuideEditorProps {
+interface GuideEditorProps {
   /** Initial markdown content */
   markdown: string;
   /** Callback when content changes (debounced) */
@@ -87,11 +87,11 @@ interface StyleGuideEditorProps {
 }
 
 /** Ref handle exposed to parent components */
-export interface StyleGuideEditorRef {
+export interface GuideEditorRef {
   getMarkdown: () => string;
 }
 
-export const StyleGuideEditor = forwardRef<StyleGuideEditorRef, StyleGuideEditorProps>(function StyleGuideEditor({
+export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function GuideEditor({
   markdown,
   onChange,
   storageKey,

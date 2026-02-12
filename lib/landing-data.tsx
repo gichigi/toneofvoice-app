@@ -72,7 +72,7 @@ export interface HowItWorksStep {
 
 export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   { title: "Enter website", body: "Paste your site URL or a short brand description. We use it to match your voice and tone.", accent: "border-t-blue-300", numBg: "bg-blue-100 text-blue-700" },
-  { title: "Generate your guidelines", body: "We build your style guide - voice traits, writing rules, and examples tailored to your brand.", accent: "border-t-purple-300", numBg: "bg-purple-100 text-purple-700" },
+  { title: "Generate your guidelines", body: "We build your tone of voice guide - voice traits, writing rules, and examples tailored to your brand.", accent: "border-t-purple-300", numBg: "bg-purple-100 text-purple-700" },
   { title: "Start writing in your voice", body: "Download as PDF or Word, or copy into your AI tools. Use it yourself or share with your team.", accent: "border-t-green-300", numBg: "bg-green-100 text-green-700" },
 ]
 
@@ -161,7 +161,7 @@ export const PRICING_TIERS: PricingTier[] = [
     sublabel: "per month",
     features: [
       "Everything in Pro, plus:",
-      "Unlimited style guides",
+      "Unlimited tone of voice guides",
       "Manage multiple client brands",
       "Priority email support",
     ],
@@ -233,14 +233,14 @@ export interface FaqItem {
 export const FAQ_ITEMS: FaqItem[] = [
   {
     q: "What's in the free preview?",
-    a: "You get a full preview of your style guide: About, Audience, Brand Voice, plus a sample of what Style Rules and Before/After look like. Export the preview as PDF. Upgrade to edit, add all sections, and export without limits.",
+    a: "You get a full preview of your tone of voice guide: About, Audience, Brand Voice, plus a sample of what Style Rules and Before/After look like. Export the preview as PDF. Upgrade to edit, add all sections, and export without limits.",
   },
   {
     q: "How do I get the full guide?",
     a: "Subscribe to Pro or Agency. You generate once; then you can edit any section, use AI to refine copy, and export as PDF or Word. Your guide is saved to your account and auto-saves as you edit.",
   },
   {
-    q: "Can I edit my style guide?",
+    q: "Can I edit my tone of voice guide?",
     a: "Yes. On Pro or Agency you can edit every section in the app, use AI assist to rewrite parts, and export as PDF, Word, or Markdown. Edits auto-save.",
   },
   {

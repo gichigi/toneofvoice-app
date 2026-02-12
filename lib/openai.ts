@@ -523,7 +523,7 @@ Requirements:
       attempts++;
       const result = await generateWithOpenAI(
         prompt,
-        "You are a writing style guide expert. Return strict JSON array only.",
+        "You are a tone of voice guide expert. Return strict JSON array only.",
         "json",
         5500,
         "gpt-5.2",

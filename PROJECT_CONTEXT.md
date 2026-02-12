@@ -1,14 +1,14 @@
-# AI Style Guide - Project Context
+# Tone of Voice App - Project Context
 
 **Last Updated:** 2026-02-13
-**Project:** AI-powered brand style guide generator
+**Project:** AI-powered tone of voice guide generator
 **Stack:** Next.js 15, React 19, TypeScript, Tailwind, Supabase, Stripe, OpenAI, Firecrawl
 
 ---
 
 ## 🎯 What This Project Does
 
-AI Style Guide is a SaaS platform that generates professional brand voice and style guides in under 5 minutes. Users input a website URL or brand description, and the app generates a comprehensive style guide including:
+Tone of Voice App is a SaaS platform that generates professional tone of voice guides in under 5 minutes. Users input a website URL or brand description, and the app generates a comprehensive guide including:
 
 - **3 Brand Voice Traits** with detailed definitions, do's, and don'ts
 - **25 Writing Rules** covering tone, grammar, and formatting

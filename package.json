@@ -1,7 +1,8 @@
 {
-  "name": "my-v0-project",
+  "name": "toneofvoice-app",
   "version": "0.1.0",
   "private": true,
+  "description": "Generate professional tone of voice guides",
   "type": "module",
   "scripts": {
     "dev": "next dev",

@@ -11,9 +11,9 @@ import { AuthProvider } from "@/components/AuthProvider"
 const geistSans = Geist({ subsets: ["latin"], display: "swap" })
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'),
-  title: "Build your brand tone of voice | AIStyleGuide",
-  description: "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://toneofvoice.app'),
+  title: "Define your brand tone of voice | Tone of Voice",
+  description: "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
   icons: {
     icon: [
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -25,33 +25,33 @@ export const metadata = {
     ],
   },
   generator: 'v0.dev',
-  authors: [{ name: 'AI Style Guide' }],
-  creator: 'AI Style Guide',
-  publisher: 'AI Style Guide',
+  authors: [{ name: 'Tone of Voice' }],
+  creator: 'Tone of Voice',
+  publisher: 'Tone of Voice',
   openGraph: {
-    title: "Build your brand tone of voice | AIStyleGuide",
-    description: "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
-    url: 'https://aistyleguide.com',
-    siteName: 'AI Style Guide',
+    title: "Define your brand tone of voice | Tone of Voice",
+    description: "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
+    url: 'https://toneofvoice.app',
+    siteName: 'Tone of Voice',
     type: 'website',
     locale: 'en_US',
     images: [
       {
-        url: 'https://aistyleguide.com/brand-voice-guidelines.png',
+        url: 'https://toneofvoice.app/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'AI Style Guide - Generate professional brand style guides in minutes',
+        alt: 'Tone of Voice - Define your brand tone of voice in minutes',
         type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Build your brand tone of voice | AIStyleGuide",
-    description: "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+    title: "Define your brand tone of voice | Tone of Voice",
+    description: "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
     creator: '@tahigichigi',
-    site: '@aistyleguide',
-    images: ['https://aistyleguide.com/brand-voice-guidelines.png'],
+    site: '@toneofvoiceapp',
+    images: ['https://toneofvoice.app/og-image.png'],
   },
   robots: {
     index: true,
@@ -84,8 +84,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         
         {/* Explicit meta tags for compatibility */}
-        <title>Build your brand tone of voice | AIStyleGuide</title>
-        <meta name="description" content="Generate a complete content style guide including tone of voice, rules, and examples — all tailored to your brand." />
+        <title>Define your brand tone of voice | Tone of Voice</title>
+        <meta name="description" content="Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand." />
         
         {/* WebPage Schema */}
         <script
@@ -94,17 +94,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebPage",
-              "@id": "https://aistyleguide.com#webpage",
-              "name": "AIStyleGuide — Build your brand tone of voice",
-              "description": "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
-              "url": "https://aistyleguide.com",
-              "primaryImageOfPage": "https://aistyleguide.com/brand-voice-guidelines.png",
+              "@id": "https://toneofvoice.app#webpage",
+              "name": "Tone of Voice - Define your brand tone of voice",
+              "description": "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
+              "url": "https://toneofvoice.app",
+              "primaryImageOfPage": "https://toneofvoice.app/og-image.png",
               "inLanguage": "en",
               "isPartOf": {
-                "@id": "https://aistyleguide.com#website"
+                "@id": "https://toneofvoice.app#website"
               },
               "mainEntity": {
-                "@id": "https://aistyleguide.com#software"
+                "@id": "https://toneofvoice.app#software"
               },
               "datePublished": "2024-01-01",
               "dateModified": "2024-11-04"
@@ -119,10 +119,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "@id": "https://aistyleguide.com#website",
-              "name": "AIStyleGuide",
-              "url": "https://aistyleguide.com",
-              "description": "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+              "@id": "https://toneofvoice.app#website",
+              "name": "Tone of Voice",
+              "url": "https://toneofvoice.app",
+              "description": "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
             })
           }}
         />
@@ -134,16 +134,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "@id": "https://aistyleguide.com#software",
-              "name": "AIStyleGuide",
-              "description": "Generate a complete content style guide — tone of voice, rules, and examples — tailored to your brand.",
+              "@id": "https://toneofvoice.app#software",
+              "name": "Tone of Voice",
+              "description": "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
               "brand": {
                 "@type": "Brand",
-                "name": "AIStyleGuide"
+                "name": "Tone of Voice"
               },
               "applicationCategory": "BusinessApplication",
               "operatingSystem": "Web Browser",
-              "url": "https://aistyleguide.com",
+              "url": "https://toneofvoice.app",
               "offers": {
                 "@type": "Offer",
                 "price": "0",
@@ -151,7 +151,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 "availability": "https://schema.org/InStock"
               },
               "creator": {
-                "@id": "https://aistyleguide.com#organization"
+                "@id": "https://toneofvoice.app#organization"
               }
             })
           }}
@@ -226,7 +226,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   "name": "How do I contact support?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Email us at support@aistyleguide.com for any questions. We typically respond within 24 hours on business days."
+                    "text": "Email us at support@toneofvoice.app for any questions. We typically respond within 24 hours on business days."
                   }
                 },
                 {
@@ -234,7 +234,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   "name": "How do I get a refund?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "We offer a 30-day money-back guarantee. Simply email support@aistyleguide.com within 30 days of your purchase for a full refund. No questions asked - we process refunds quickly, usually within 1-2 business days."
+                    "text": "We offer a 30-day money-back guarantee. Simply email support@toneofvoice.app within 30 days of your purchase for a full refund. No questions asked - we process refunds quickly, usually within 1-2 business days."
                   }
                 }
               ]
@@ -249,8 +249,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "HowTo",
-              "name": "How to Create a Brand Style Guide",
-              "description": "Generate a comprehensive style guide with just a few clicks",
+              "name": "How to Define Your Brand Tone of Voice",
+              "description": "Generate a comprehensive tone of voice guide with just a few clicks",
               "step": [
                 {
                   "@type": "HowToStep",
@@ -259,8 +259,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
                 {
                   "@type": "HowToStep",
-                  "name": "Get personalized rules",
-                  "text": "Receive a tailored tone of voice + 99+ writing rules for your brand"
+                  "name": "Get personalized voice guide",
+                  "text": "Receive a tailored tone of voice guide with traits, rules, and examples for your brand"
                 },
                 {
                   "@type": "HowToStep",
@@ -279,22 +279,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
-              "@id": "https://aistyleguide.com#organization",
-              "name": "AIStyleGuide",
-              "url": "https://aistyleguide.com",
+              "@id": "https://toneofvoice.app#organization",
+              "name": "Tone of Voice",
+              "url": "https://toneofvoice.app",
               "logo": {
                 "@type": "ImageObject",
-                "url": "https://aistyleguide.com/logo-wordmark.svg",
+                "url": "https://toneofvoice.app/logo-wordmark.svg",
                 "width": 184,
                 "height": 32
               },
               "contactPoint": {
                 "@type": "ContactPoint",
-                "email": "support@aistyleguide.com",
+                "email": "support@toneofvoice.app",
                 "contactType": "customer support"
               },
               "sameAs": [
-                "https://twitter.com/aistyleguide"
+                "https://twitter.com/toneofvoiceapp"
               ]
             })
           }}

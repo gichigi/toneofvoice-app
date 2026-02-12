@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-interface StyleGuideCoverProps {
+interface GuideCoverProps {
   brandName: string
   guideType?: 'core' | 'complete' | 'style_guide'
   date?: string
@@ -13,14 +13,14 @@ interface StyleGuideCoverProps {
 // Eyebrow: short label above title (avoid "Brand Identity" – redundant/wrong for voice docs)
 const COVER_EYEBROW = "Brand Voice & Content Guidelines"
 
-export function StyleGuideCover({
+export function GuideCover({
   brandName,
   guideType,
   date,
   showPreviewBadge,
   className,
   websiteUrl
-}: StyleGuideCoverProps) {
+}: GuideCoverProps) {
   const formattedDate = date || new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',

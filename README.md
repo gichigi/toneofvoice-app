@@ -1,10 +1,10 @@
-# AI Style Guide
+# Tone of Voice App
 
-Generate professional brand voice and style guides in under 5 minutes using AI. No prompt engineering required.
+Generate professional tone of voice guides in under 5 minutes using AI. No prompt engineering required.
 
 ## Features
 
-- **AI-Powered Style Guide Generation**: Complete brand style guides from a website URL or description
+- **AI-Powered Tone of Voice Guides**: Complete tone of voice guides from a website URL or description
 - **Smart Website Extraction**: Firecrawl integration for intelligent brand analysis
 - **Subscription Tiers**: Free preview (1 guide), Starter (10/month), Agency (unlimited)
 - **Multiple Export Formats**: PDF (Puppeteer + fallback), Word-compatible HTML, and Markdown
@@ -40,8 +40,8 @@ Generate professional brand voice and style guides in under 5 minutes using AI. 
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-username/style-guide-ai.git
-   cd style-guide-ai
+   git clone https://github.com/your-username/toneofvoice-app.git
+   cd toneofvoice-app
    ```
 
 2. Install dependencies

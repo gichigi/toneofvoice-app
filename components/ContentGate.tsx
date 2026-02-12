@@ -12,7 +12,7 @@ import {
   PREVIEW_EYEBROW_CLASS,
   getSectionDescription,
   getSectionEyebrow,
-} from "@/lib/style-guide-styles"
+} from "@/lib/guide-styles"
 import { cn } from "@/lib/utils"
 import { Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"

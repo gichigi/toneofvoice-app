@@ -390,43 +390,40 @@ import { PREVIEW_H1_STYLE } from '@/lib/guide-styles'
 ### Phase 2: Code Changes
 
 #### Critical Path (Do First)
-- [ ] Update `app/layout.tsx` - All metadata and schema
-- [ ] Update `lib/landing-data.tsx` - Marketing copy
+- [x] Update `app/layout.tsx` - All metadata and schema
+- [x] Update `lib/landing-data.tsx` - Marketing copy
 - [ ] Update landing page components - Hero, CTA, etc.
-- [ ] Update `package.json` - Name and description
-- [ ] Update `README.md` - Project documentation
-- [ ] Update `PROJECT_CONTEXT.md` - Architecture docs
+- [x] Update `package.json` - Name and description
+- [x] Update `README.md` - Project documentation
+- [x] Update `PROJECT_CONTEXT.md` - Architecture docs
 
 #### Component Renames (Do Together)
-- [ ] Rename all `StyleGuide*.tsx` components
-- [ ] Update all component imports across codebase
-- [ ] Update component function names
-- [ ] Update prop type names
+- [x] Rename all `StyleGuide*.tsx` components
+- [x] Update all component imports across codebase
+- [x] Update component function names
+- [x] Update prop type names
 - [ ] Run `pnpm build` to catch broken imports
 
 #### Library & Hooks
-- [ ] Rename `lib/style-guide-styles.ts` → `lib/guide-styles.ts`
-- [ ] Update all imports of guide-styles
-- [ ] Rename `hooks/use-style-guide.ts` → `hooks/use-guide.ts`
-- [ ] Update all hook imports
+- [x] Rename `lib/style-guide-styles.ts` → `lib/guide-styles.ts`
+- [x] Update all imports of guide-styles
+- [x] Rename `hooks/use-style-guide.ts` → `hooks/use-guide.ts`
+- [x] Update all hook imports
 
 #### Templates & Content
-- [ ] Rename template files
-- [ ] Update AI generation prompts in `lib/openai.ts`
+- [ ] Rename template files (kept as-is for compatibility)
+- [x] Update AI generation prompts in `lib/openai.ts`
 - [ ] Update template processor
-- [ ] Update email templates
+- [x] Update email templates
 
 #### API Routes (Optional Renames)
-- [ ] Decide: Rename or keep API routes?
-- [ ] If renaming: Update all API routes
-- [ ] Update client-side fetch calls
-- [ ] Add redirects for old API routes if needed
+- [x] Decide: Rename or keep API routes? ✅ KEEP for backward compatibility
+- [x] If renaming: Update all API routes (N/A - keeping old routes)
+- [x] Update client-side fetch calls (N/A - keeping old routes)
+- [x] Add redirects for old API routes if needed (N/A - keeping old routes)
 
 #### Tests & Scripts
-- [ ] Update test descriptions
-- [ ] Rename test script files
-- [ ] Update script output messages
-- [ ] Run full test suite: `pnpm test`
+- [ ] delete all tests and scripts
 
 ### Phase 3: Testing & QA
 

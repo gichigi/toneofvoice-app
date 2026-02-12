@@ -31,7 +31,7 @@ import { createClient } from "@/lib/supabase-browser"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-interface StyleGuideSidebarProps {
+interface GuideSidebarProps {
   sections: StyleGuideSection[]
   activeSectionId: string
   onSectionSelect: (id: string) => void
@@ -40,14 +40,14 @@ interface StyleGuideSidebarProps {
   onUpgrade: () => void
 }
 
-export function StyleGuideSidebar({
+export function GuideSidebar({
   sections,
   activeSectionId,
   onSectionSelect,
   subscriptionTier,
   brandName,
   onUpgrade,
-}: StyleGuideSidebarProps) {
+}: GuideSidebarProps) {
   const { setOpenMobile } = useSidebar()
   const { user } = useAuth()
   const router = useRouter()

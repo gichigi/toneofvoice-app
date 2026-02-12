@@ -9,12 +9,12 @@ import {
 } from "@/components/ui/accordion"
 import { parseStyleGuideContent, getDefaultOpenSections, type StyleGuideSection } from "@/lib/content-parser"
 
-interface StyleGuideAccordionProps {
+interface GuideAccordionProps {
   content: string
   defaultOpenSections?: string[]
 }
 
-export function StyleGuideAccordion({ content, defaultOpenSections }: StyleGuideAccordionProps) {
+export function GuideAccordion({ content, defaultOpenSections }: GuideAccordionProps) {
   const [sections, setSections] = useState<StyleGuideSection[]>([])
   const [openSection, setOpenSection] = useState<string | undefined>(undefined)
 

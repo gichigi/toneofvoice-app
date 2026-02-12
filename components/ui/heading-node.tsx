@@ -24,7 +24,7 @@ import {
   EDITOR_H4_CLASS,
   EDITOR_H4_MARGIN_TOP,
   EDITOR_H4_MARGIN_BOTTOM,
-} from '@/lib/style-guide-styles';
+} from '@/lib/guide-styles';
 import { cn } from '@/lib/utils';
 
 /** Recursively extract plain text from Slate element children */

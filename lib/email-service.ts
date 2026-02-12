@@ -94,15 +94,15 @@ export function generateSecureToken(): string {
 export async function sendPurchaseConfirmationEmail(email: string, accessToken: string): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Your Style Guide is Ready!",
+    subject: "Your Tone of Voice Guide is Ready!",
     template: "purchase-confirmation",
     variables: {
-      accessLink: `https://styleguideai.com/guide?token=${accessToken}`,
+      accessLink: `https://toneofvoice.app/guide?token=${accessToken}`,
       downloadLinks: {
-        pdf: `https://styleguideai.com/download/pdf?token=${accessToken}`,
-        markdown: `https://styleguideai.com/download/md?token=${accessToken}`,
-        docx: `https://styleguideai.com/download/docx?token=${accessToken}`,
-        html: `https://styleguideai.com/download/html?token=${accessToken}`,
+        pdf: `https://toneofvoice.app/download/pdf?token=${accessToken}`,
+        markdown: `https://toneofvoice.app/download/md?token=${accessToken}`,
+        docx: `https://toneofvoice.app/download/docx?token=${accessToken}`,
+        html: `https://toneofvoice.app/download/html?token=${accessToken}`,
       },
     },
   })
@@ -152,7 +152,7 @@ class EmailService {
   }
 
   async sendAbandonedCartEmail(data: AbandonedCartEmailData) {
-    const subject = 'Complete Your Style Guide – 20% Off';
+    const subject = 'Complete Your Tone of Voice Guide - 20% Off';
     const html = this.generateAbandonedCartEmailHTML(data);
     const text = this.generateAbandonedCartEmailText(data);
 
@@ -173,7 +173,7 @@ class EmailService {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Thank you for downloading AI Style Guide!</title>
+          <title>Thank you for using Tone of Voice App!</title>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           
@@ -186,7 +186,7 @@ class EmailService {
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
             <p style="margin: 0 0 15px 0; font-weight: 500;">If you have 2 minutes:</p>
             <ol style="margin: 0; padding-left: 20px;">
-              <li style="margin-bottom: 8px;">What problem were you hoping AI Style Guide would solve?</li>
+              <li style="margin-bottom: 8px;">What problem were you hoping Tone of Voice App would solve?</li>
               <li style="margin-bottom: 8px;">What nearly stopped you from buying?</li>
               <li style="margin-bottom: 0;">Anything else you wanna share :)</li>
             </ol>
@@ -204,7 +204,7 @@ class EmailService {
           <div style="text-align: center; margin: 25px 0;">
             <a href="${process.env.NEXT_PUBLIC_APP_URL}/guide?session_id=${data.sessionId}" 
                style="background: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
-              Access Your Style Guide
+              Access Your Tone of Voice Guide
             </a>
           </div>
           
@@ -253,14 +253,14 @@ x.com/tahigichigi`;
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Complete Your Style Guide</title>
+          <title>Complete Your Tone of Voice Guide</title>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-          
+
           <div style="margin-bottom: 40px;">
             <p style="font-size: 18px; margin-bottom: 30px;">Hey there,</p>
-            
-            <p style="font-size: 16px; margin-bottom: 30px;">I noticed you started creating your style guide but didn't finish. Totally get it - big decisions take time.</p>
+
+            <p style="font-size: 16px; margin-bottom: 30px;">I noticed you started creating your tone of voice guide but didn't finish. Totally get it - big decisions take time.</p>
             
             <p style="font-size: 16px; margin-bottom: 8px;">Here's 20% off when you're ready:</p>
             ${data.discountCode ? `<p style="font-size: 18px; font-weight: bold; margin-bottom: 30px;">${data.discountCode}</p>` : ''}
@@ -270,16 +270,16 @@ x.com/tahigichigi`;
             <p style="font-size: 16px; margin-bottom: 40px;">No pressure, just wanted to make sure you had it.</p>
             
             <div style="text-align: center; margin: 40px 0;">
-              <a href="${data.recoveryUrl}" 
+              <a href="${data.recoveryUrl}"
                  style="background: #333; color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
-                Generate Your Style Guide
+                Generate Your Tone of Voice Guide
               </a>
             </div>
           </div>
-          
+
           <div style="border-top: 1px solid #ddd; padding-top: 30px; margin-top: 40px;">
             <p style="font-size: 16px; margin-bottom: 8px;">Tahi</p>
-            <p style="color: #666; font-size: 14px; margin-bottom: 8px;">Founder, AI Style Guide</p>
+            <p style="color: #666; font-size: 14px; margin-bottom: 8px;">Founder, Tone of Voice App</p>
             <p style="color: #666; font-size: 14px;">x.com/tahigichigi</p>
           </div>
         </body>
@@ -291,7 +291,7 @@ x.com/tahigichigi`;
     return `
 Hey how's it going?
 
-I noticed you started generating your content style guide but didn't finish. I know how busy things get.
+I noticed you started generating your tone of voice guide but didn't finish. I know how busy things get.
 
 Here's 20% off when you're ready: ${data.discountCode || 'COMEBACK20'}
 
@@ -299,10 +299,10 @@ Just add the code at checkout.
 
 No pressure, just wanted to make sure you had it.
 
-Generate Your Style Guide: ${data.recoveryUrl}
+Generate Your Tone of Voice Guide: ${data.recoveryUrl}
 
 Tahi
-Founder, AI Style Guide
+Founder, Tone of Voice App
 
     `;
   }

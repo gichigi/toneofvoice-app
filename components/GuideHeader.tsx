@@ -1,13 +1,13 @@
 // Design system: see DESIGN_SYSTEM.md for typography/spacing decisions
 
-interface StyleGuideHeaderProps {
+interface GuideHeaderProps {
   brandName: string
   guideType?: 'core' | 'complete' | 'style_guide'
   date?: string
   showPreviewBadge?: boolean
 }
 
-export function StyleGuideHeader({ brandName, guideType, date, showPreviewBadge }: StyleGuideHeaderProps) {
+export function GuideHeader({ brandName, guideType, date, showPreviewBadge }: GuideHeaderProps) {
   const formattedDate = date || new Date().toLocaleDateString(undefined, { 
     year: 'numeric', 
     month: 'long', 

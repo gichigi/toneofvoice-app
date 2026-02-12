@@ -5,8 +5,8 @@ import Link from "next/link"
 import { playfairDisplay } from "@/lib/fonts"
 import { createPortal } from "react-dom"
 import { Eye, PenLine } from "lucide-react"
-import { StyleGuideCover } from "@/components/StyleGuideCover"
-import { StyleGuideEditor, type StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
+import { GuideCover } from "@/components/GuideCover"
+import { GuideEditor, type GuideEditorRef } from "@/components/editor/GuideEditor"
 import { ContentGate } from "@/components/ContentGate"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
 import { RewriteBar } from "@/components/RewriteBar"
@@ -17,7 +17,7 @@ import {
 } from "@/lib/content-parser"
 import { cn } from "@/lib/utils"
 
-export interface StyleGuideViewProps {
+export interface GuideViewProps {
   sections: StyleGuideSection[]
   activeSectionId: string
   scrollContainerRef: RefObject<HTMLDivElement | null>
@@ -34,7 +34,7 @@ export interface StyleGuideViewProps {
   isSectionLocked: boolean
   onUpgrade: () => void
   editorKey: number
-  editorRef: RefObject<StyleGuideEditorRef | null>
+  editorRef: RefObject<GuideEditorRef | null>
   storageKey: string
   editorId: string
   /** Show RewriteBar and floating toggle (true for preview always, true for full-access when paid) */
@@ -51,10 +51,10 @@ export interface StyleGuideViewProps {
 }
 
 /**
- * Single shared style guide view: cover, sections, preview/editor modes,
+ * Single shared guide view: cover, sections, preview/editor modes,
  * RewriteBar, floating toggle. Used by both /preview and /full-access.
  */
-export function StyleGuideView({
+export function GuideView({
   sections,
   activeSectionId,
   scrollContainerRef,
@@ -80,7 +80,7 @@ export function StyleGuideView({
   pdfFooter = null,
   contentClassName,
   websiteUrl,
-}: StyleGuideViewProps) {
+}: GuideViewProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -118,7 +118,7 @@ export function StyleGuideView({
           {viewMode === "preview" ? (
             <>
               <div id="cover" className="scroll-mt-4">
-                <StyleGuideCover
+                <GuideCover
                   brandName={brandName}
                   guideType={guideType}
                   showPreviewBadge={showPreviewBadge}
@@ -175,7 +175,7 @@ export function StyleGuideView({
                 <div className="scroll-mt-4 px-12 md:px-20 py-16 md:py-20 relative" data-single-editor-root>
                   {editorBanner}
                   <div className="max-w-3xl mx-auto">
-                    <StyleGuideEditor
+                    <GuideEditor
                       key={editorKey}
                       ref={editorRef}
                       editorId={editorId}

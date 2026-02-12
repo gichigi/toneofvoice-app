@@ -29,7 +29,7 @@ import {
   PREVIEW_P_MARGIN_BOTTOM,
   getSectionDescription,
   getSectionEyebrow,
-} from "@/lib/style-guide-styles"
+} from "@/lib/guide-styles"
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import { cn } from '@/lib/utils'

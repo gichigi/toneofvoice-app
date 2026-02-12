@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, PenLine, Send, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
+import { GuideEditorRef } from "@/components/editor/GuideEditor"
 import {
   Select,
   SelectContent,
@@ -20,7 +20,7 @@ interface RewriteBarProps {
   onRewrite: (instruction: string, scope: RewriteScope, selectedText?: string) => Promise<void>
   isLoading: boolean
   className?: string
-  editorRef?: RefObject<StyleGuideEditorRef | null>
+  editorRef?: RefObject<GuideEditorRef | null>
   activeSectionId?: string
 }
 

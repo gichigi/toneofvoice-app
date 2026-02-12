@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/AuthProvider"
 import { useToast } from "@/hooks/use-toast"
-import type { StyleGuideEditorRef } from "@/components/editor/StyleGuideEditor"
+import type { GuideEditorRef } from "@/components/editor/GuideEditor"
 import {
   parseStyleGuideContent,
   StyleGuideSection,
@@ -14,7 +14,7 @@ import {
   replaceSectionInMarkdown,
 } from "@/lib/content-parser"
 
-export interface UseStyleGuideOptions {
+export interface UseGuideOptions {
   /** Guide ID from query params (for loading saved guide from DB) */
   guideId?: string | null
   /** Default view mode */
@@ -23,7 +23,7 @@ export interface UseStyleGuideOptions {
   isPreviewFlow?: boolean
 }
 
-export interface UseStyleGuideReturn {
+export interface UseGuideReturn {
   // Content state
   content: string | null
   setContent: (content: string) => void
@@ -43,7 +43,7 @@ export interface UseStyleGuideReturn {
   setIsLoading: (loading: boolean) => void
   
   // Editor state
-  editorRef: React.RefObject<StyleGuideEditorRef | null>
+  editorRef: React.RefObject<GuideEditorRef | null>
   scrollContainerRef: React.RefObject<HTMLDivElement | null>
   editorKey: number
   setEditorKey: (key: number | ((prev: number) => number)) => void
@@ -59,7 +59,7 @@ export interface UseStyleGuideReturn {
   isSectionLocked: boolean
 }
 
-export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuideReturn {
+export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
   const { guideId, defaultViewMode = "preview", isPreviewFlow = false } = options
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -79,7 +79,7 @@ export function useStyleGuide(options: UseStyleGuideOptions = {}): UseStyleGuide
   const [isLoading, setIsLoading] = useState(true)
   
   // Editor state
-  const editorRef = useRef<StyleGuideEditorRef>(null)
+  const editorRef = useRef<GuideEditorRef>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const scrollTopBeforeSwitchRef = useRef<number>(0)
   const [editorKey, setEditorKey] = useState(0)

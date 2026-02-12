@@ -6,13 +6,13 @@ import Pagination from '@/components/blog/Pagination'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
-  title: 'Blog | AI Style Guide - Brand Voice & Content Strategy Insights',
+  title: 'Blog | Tone of Voice - Brand Voice & Content Strategy Insights',
   description: 'Discover expert insights on brand voice, content strategy, and marketing best practices. Learn how to create consistent, converting content for your brand.',
-  keywords: 'brand voice, content strategy, marketing blog, brand consistency, content creation, AI style guide',
+  keywords: 'brand voice, content strategy, marketing blog, brand consistency, content creation, tone of voice',
   openGraph: {
-    title: 'Blog | AI Style Guide - Brand Voice & Content Strategy Insights',
+    title: 'Blog | Tone of Voice - Brand Voice & Content Strategy Insights',
     description: 'Discover expert insights on brand voice, content strategy, and marketing best practices.',
-    url: 'https://aistyleguide.com/blog',
+    url: 'https://toneofvoice.app/blog',
     type: 'website',
   },
 }

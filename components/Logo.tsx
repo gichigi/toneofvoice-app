@@ -47,7 +47,7 @@ export default function Logo({ size = "md", linkToHome = true }: LogoProps) {
     <div className={`group flex items-center ${sizeClasses[size].gap}`}>
       <ColorBlockLogo />
       <span className={`${sizeClasses[size].text} font-semibold text-gray-900 dark:text-gray-100`}>
-        AIStyleGuide
+        Tone of Voice
       </span>
     </div>
   )

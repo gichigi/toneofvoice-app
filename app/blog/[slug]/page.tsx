@@ -81,7 +81,7 @@ export async function generateMetadata({
   
   if (!post) {
     return {
-      title: 'Post Not Found | AI Style Guide',
+      title: 'Post Not Found | Tone of Voice',
       description: 'The requested blog post could not be found.',
     }
   }
@@ -90,18 +90,18 @@ export async function generateMetadata({
   const titlePrefix = !post.is_published ? '[Draft] ' : ''
 
   return {
-    title: `${titlePrefix}${post.title} | AI Style Guide`,
+    title: `${titlePrefix}${post.title} | Tone of Voice`,
     description: post.excerpt,
     keywords: post.keywords,
     authors: [{ name: post.author_name }],
     alternates: {
-      canonical: `https://aistyleguide.com/blog/${post.slug}`,
+      canonical: `https://toneofvoice.app/blog/${post.slug}`,
     },
     openGraph: {
       title: `${titlePrefix}${post.title}`,
       description: post.excerpt,
-      url: `https://aistyleguide.com/blog/${post.slug}`,
-      siteName: 'AI Style Guide',
+      url: `https://toneofvoice.app/blog/${post.slug}`,
+      siteName: 'Tone of Voice',
       type: 'article',
       publishedTime: post.published_at || undefined,
       modifiedTime: post.updated_at,
@@ -148,8 +148,8 @@ function BlogSchema({ post }: { post: BlogPost }) {
     genre: post.category,
     isPartOf: {
       '@type': 'Blog',
-      name: 'AI Style Guide Blog',
-      url: 'https://aistyleguide.com/blog'
+      name: 'Tone of Voice Blog',
+      url: 'https://toneofvoice.app/blog'
     },
     author: {
       '@type': 'Person',
@@ -157,14 +157,14 @@ function BlogSchema({ post }: { post: BlogPost }) {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'AI Style Guide',
+      name: 'Tone of Voice',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://aistyleguide.com/aistyleguide-logo.png',
+        url: 'https://toneofvoice.app/logo.png',
       },
     },
-    mainEntityOfPage: `https://aistyleguide.com/blog/${post.slug}`,
-    url: `https://aistyleguide.com/blog/${post.slug}`,
+    mainEntityOfPage: `https://toneofvoice.app/blog/${post.slug}`,
+    url: `https://toneofvoice.app/blog/${post.slug}`,
     keywords: post.keywords.join(', '),
     wordCount: post.word_count,
     articleSection: post.category,
@@ -194,13 +194,13 @@ function BreadcrumbSchema({ slug, title }: { slug: string; title: string }) {
         '@type': 'ListItem',
         position: 1,
         name: 'Blog',
-        item: 'https://aistyleguide.com/blog'
+        item: 'https://toneofvoice.app/blog'
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: title,
-        item: `https://aistyleguide.com/blog/${slug}`
+        item: `https://toneofvoice.app/blog/${slug}`
       }
     ]
   }
@@ -358,7 +358,7 @@ export default async function BlogPostPage({
 
                 {post.is_published && (
                   <ShareButton 
-                    url={`https://aistyleguide.com/blog/${post.slug}`}
+                    url={`https://toneofvoice.app/blog/${post.slug}`}
                     title={post.title}
                   />
                 )}

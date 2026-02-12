@@ -50,10 +50,10 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <a
-                  href="mailto:support@aistyleguide.com"
+                  href="mailto:support@toneofvoice.app"
                   className="text-sm hover:underline"
                 >
-                  support@aistyleguide.com
+                  support@toneofvoice.app
                 </a>
               </li>
             </ul>
@@ -78,7 +78,7 @@ export default function Footer() {
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-primary-foreground/80">
-            © {new Date().getFullYear()} AIStyleGuide. All rights reserved.
+            © {new Date().getFullYear()} Tone of Voice. All rights reserved.
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <Link

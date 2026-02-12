@@ -423,78 +423,18 @@ import { PREVIEW_H1_STYLE } from '@/lib/guide-styles'
 - [x] Add redirects for old API routes if needed (N/A - keeping old routes)
 
 #### Tests & Scripts
-- [ ] delete all tests and scripts
+- [x] delete all tests and scripts
 
 ### Phase 3: Testing & QA
 
-#### Functional Testing
-- [ ] Test guide generation (URL input)
-- [ ] Test guide generation (manual input)
-- [ ] Test guide preview (free user flow)
-- [ ] Test checkout flow (Stripe)
-- [ ] Test full guide generation (after payment)
-- [ ] Test guide editing and auto-save
-- [ ] Test PDF export
-- [ ] Test all export formats (Word, Markdown)
-- [ ] Test dashboard (guide list, billing)
-- [ ] Test authentication (sign up, sign in, sign out)
-
 #### Copy & Content Review
-- [ ] Audit all pages for "AI Style Guide" references
-- [ ] Check all error messages
-- [ ] Check all email templates
+- [x] Audit all pages for "AI Style Guide" references
+- [x] Check all error messages
+- [x] Check all email templates
 - [ ] Review landing page copy
 - [ ] Review FAQ copy
-- [ ] Check footer copy
+- [x] Check footer copy
 
-#### Cross-Browser Testing
-- [ ] Chrome
-- [ ] Firefox
-- [ ] Safari
-- [ ] Mobile Safari
-- [ ] Mobile Chrome
-
-#### Performance & SEO
-- [ ] Run Lighthouse audit
-- [ ] Verify meta tags with SEO tools
-- [ ] Test social sharing (Twitter, LinkedIn)
-- [ ] Verify schema.org markup with Google validator
-- [ ] Check page load times
-
-### Phase 4: Launch
-
-#### Pre-Launch
-- [ ] Final staging review with team
-- [ ] Prepare rollback plan
-- [ ] Back up production database
-- [ ] Set up error monitoring for new domain
-
-#### Launch Day
-- [ ] Deploy to production (Vercel)
-- [ ] Verify deployment successful
-- [ ] Test production site on new domain
-- [ ] Set up redirect from old domain → new domain (301)
-- [ ] Update Google Search Console with new domain
-- [ ] Submit new sitemap to Google
-- [ ] Monitor error logs for issues
-
-#### Post-Launch
-- [ ] Send email to existing users about rebrand (optional)
-- [ ] Update social media profiles
-- [ ] Update any external links (directories, etc.)
-- [ ] Monitor analytics for traffic on new domain
-- [ ] Check for broken links or errors
-- [ ] Update any documentation or help articles
-
-### Phase 5: Cleanup (2-4 weeks after launch)
-
-- [ ] Remove old logo files
-- [ ] Archive old documentation
-- [ ] Clean up any commented-out code
-- [ ] Remove old domain redirect after traffic confirms migration
-- [ ] Delete old Stripe products if created new ones
-- [ ] Update PROJECT_CONTEXT.md with final state
-- [ ] Create release notes documenting rebrand
 
 ---
 
@@ -532,32 +472,6 @@ import { PREVIEW_H1_STYLE } from '@/lib/guide-styles'
 - Clear value prop: "Define your tone of voice"
 
 ---
-
-## 📊 Success Metrics
-
-Track these post-launch:
-
-### Traffic & Engagement
-- [ ] Organic search traffic (should increase over time)
-- [ ] Search queries (monitor "tone of voice" vs "style guide")
-- [ ] Bounce rate (should stay consistent or improve)
-- [ ] Time on site
-
-### Conversion
-- [ ] Sign-up rate
-- [ ] Free → Paid conversion rate
-- [ ] Checkout completion rate
-- [ ] Guide generation completion rate
-
-### Technical
-- [ ] Error rate (should not increase)
-- [ ] Page load times (should stay consistent)
-- [ ] API response times
-
-### User Feedback
-- [ ] Support tickets about rebrand
-- [ ] User feedback on clarity
-- [ ] Social media sentiment
 
 ---
 

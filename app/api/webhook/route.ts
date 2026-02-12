@@ -46,9 +46,20 @@ function normalizeWebhookUrl(url: string): string {
   try {
     const urlObj = new URL(url)
     // Check if this is the www version
-    if (urlObj.hostname === 'www.aistyleguide.com') {
-      urlObj.hostname = 'aistyleguide.com'
+    if (urlObj.hostname === 'www.toneofvoice.app') {
+      urlObj.hostname = 'toneofvoice.app'
       console.log(`Normalized webhook URL from ${url} to ${urlObj.toString()}`)
+      return urlObj.toString()
+    }
+    // Legacy domain support during transition
+    if (urlObj.hostname === 'www.aistyleguide.com') {
+      urlObj.hostname = 'toneofvoice.app'
+      console.log(`Normalized legacy webhook URL from ${url} to ${urlObj.toString()}`)
+      return urlObj.toString()
+    }
+    if (urlObj.hostname === 'aistyleguide.com') {
+      urlObj.hostname = 'toneofvoice.app'
+      console.log(`Normalized legacy webhook URL from ${url} to ${urlObj.toString()}`)
       return urlObj.toString()
     }
     return url

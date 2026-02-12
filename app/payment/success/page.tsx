@@ -205,9 +205,9 @@ function SuccessContent() {
           message: "Something unexpected happened. Please try again or contact support if the issue persists.",
           type: "UNKNOWN_ERROR",
           canRetry: true,
-          supportEmailLink: `mailto:support@aistyleguide.com?subject=${encodeURIComponent("Style Guide Generation Issue")}&body=${encodeURIComponent(`Hi AIStyleGuide Support Team,
+          supportEmailLink: `mailto:support@toneofvoice.app?subject=${encodeURIComponent("Tone of Voice Guide Generation Issue")}&body=${encodeURIComponent(`Hi Tone of Voice Support Team,
 
-I'm having trouble generating my style guide. Here are the details:
+I'm having trouble generating my tone of voice guide. Here are the details:
 
 Error: UNKNOWN_ERROR
 Time: ${new Date().toLocaleString()}

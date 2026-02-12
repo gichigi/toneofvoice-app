@@ -706,8 +706,8 @@ export default function BrandDetailsPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://aistyleguide.com" },
-        { name: "Brand Details", url: "https://aistyleguide.com/brand-details" }
+        { name: "Home", url: "https://toneofvoice.app" },
+        { name: "Brand Details", url: "https://toneofvoice.app/brand-details" }
       ]} />
       <Header />
       <main

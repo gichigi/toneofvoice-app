@@ -1,7 +1,7 @@
 import { OpenAI } from "openai"
 import Logger from "./logger"
 
-// Enhanced Error Handling for AI Style Guide API calls
+// Enhanced Error Handling for Tone of Voice App API calls
 // Phase 1: Error mapping and user-friendly messages
 
 // Error types mapped to user-friendly messages
@@ -120,9 +120,9 @@ export interface ErrorDetails {
 // Create support email link with pre-filled subject and body
 function createSupportEmailLink(errorType: keyof typeof ERROR_MESSAGES, additionalInfo?: string): string {
   const subject = encodeURIComponent("Style Guide Generation Issue")
-  const body = encodeURIComponent(`Hi AIStyleGuide Support Team,
+  const body = encodeURIComponent(`Hi Tone of Voice Support Team,
 
-I'm having trouble generating my style guide. Here are the details:
+I'm having trouble generating my tone of voice guide. Here are the details:
 
 Error: ${errorType}
 Time: ${new Date().toLocaleString()}${additionalInfo ? `

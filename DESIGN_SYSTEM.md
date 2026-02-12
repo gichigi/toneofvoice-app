@@ -1,6 +1,6 @@
-# Style Guide Document Design System
+# Tone of Voice Guide Design System
 
-This document defines the visual design system for AI Style Guide document output. All styling decisions for the style guide document (cover page, content sections, trait cards, rules, examples) are documented here.
+This document defines the visual design system for Tone of Voice App document output. All styling decisions for the tone of voice guide document (cover page, content sections, trait cards, rules, examples) are documented here.
 
 **Cross-reference**: Typography and Edit → Preview mapping are implemented in `lib/style-guide-styles.ts`. If you change this doc (e.g. the mapping table or font sizes), update the corresponding tokens in `lib/style-guide-styles.ts`; if you change that file, update this doc so they stay in sync.
 

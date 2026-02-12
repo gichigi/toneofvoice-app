@@ -1,4 +1,4 @@
-# Claude Code Instructions for AI Style Guide
+# Claude Code Instructions for Tone of Voice App
 
 This file contains durable instructions for Claude Code when working on this codebase.
 

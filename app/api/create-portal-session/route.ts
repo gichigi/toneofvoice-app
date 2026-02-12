@@ -16,7 +16,7 @@ function getStripe() {
   });
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://aistyleguide.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://toneofvoice.app";
 
 /** Create Stripe Customer Portal session. User must be logged in and have stripe_customer_id. */
 export async function POST() {

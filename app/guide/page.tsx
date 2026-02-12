@@ -997,7 +997,7 @@ function GuideContent() {
       <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
         <header className="border-b bg-white">
           <div className="max-w-5xl mx-auto px-8 flex h-16 items-center">
-            <Link href="/" className="font-semibold text-lg">AI Style Guide</Link>
+            <Link href="/" className="font-semibold text-lg">Tone of Voice</Link>
           </div>
         </header>
         <main className="flex-1 py-8">
@@ -1060,9 +1060,9 @@ function GuideContent() {
       contentReady ? "opacity-100" : "opacity-0"
     )}>
       <BreadcrumbSchema items={[
-        { name: "Home", url: "https://aistyleguide.com" },
-        { name: "Brand Details", url: "https://aistyleguide.com/brand-details" },
-        { name: "Style Guide", url: "https://aistyleguide.com/guide" }
+        { name: "Home", url: "https://toneofvoice.app" },
+        { name: "Brand Details", url: "https://toneofvoice.app/brand-details" },
+        { name: "Tone of Voice Guide", url: "https://toneofvoice.app/guide" }
       ]} />
       
       <GuideLayout

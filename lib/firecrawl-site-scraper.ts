@@ -22,7 +22,7 @@ const BRAND_EXTRACTION_SCHEMA = {
     description: {
       type: "string",
       description:
-        "Full brand description for About section. 3-6 paragraphs. Accurate, concise but comprehensive. First person plural. Not short one-liners.",
+        "Full brand description for About section. Write 2-3 cohesive, flowing paragraphs that read naturally. Each paragraph should be 3-5 sentences that connect smoothly. Avoid bullet-like or choppy sentences. First person plural (we/our). Create a narrative flow covering what they do, their approach, and what makes them unique.",
     },
     audience: { type: "string", description: "Target audience summary" },
     keywords: {
@@ -48,9 +48,9 @@ const BRAND_EXTRACTION_SCHEMA = {
   required: ["name", "description", "audience", "keywords", "suggestedTraits"],
 }
 
-const BRAND_EXTRACTION_PROMPT = `Extract brand identity from this website. 
+const BRAND_EXTRACTION_PROMPT = `Extract brand identity from this website.
 - name: Brand/company name (1-3 words)
-- description: Full, accurate brand description for the About section. 3-6 paragraphs. Concise but comprehensive. First person plural (we/our). Cover what they do, approach, and what makes them unique. Not short one-liners.
+- description: Write 2-3 cohesive, flowing paragraphs that read naturally. Each paragraph should be 3-5 sentences that connect smoothly. Avoid bullet-like or choppy sentences. First paragraph: what they do and who they serve. Second paragraph: their approach and what makes them unique. Optional third paragraph: their impact or value proposition. First person plural (we/our). Create a narrative flow, not a list.
 - audience: Who they serve (demographics, context)
 - keywords: Up to 25 high-value keywords for content (products, services, values, industry terms)
 - suggestedTraits: Exactly 3 brand voice traits (e.g. warm, professional, bold)

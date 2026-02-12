@@ -34,7 +34,7 @@ export function StyleGuideCover({
     : null
 
   return (
-    <div className={cn("min-h-[80vh] flex flex-col justify-center px-12 md:px-20 py-24 bg-white relative overflow-hidden", className)}>
+    <div className={cn("min-h-[60vh] flex flex-col justify-center px-12 md:px-20 py-16 bg-white relative overflow-hidden", className)}>
       {/* Decorative background element - subtle animated pattern */}
       <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-gray-50/50 via-gray-50/30 to-transparent pointer-events-none animate-pulse" />
       
@@ -54,8 +54,8 @@ export function StyleGuideCover({
         </div>
 
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <h1 
-            className="text-6xl md:text-8xl font-bold tracking-tight text-gray-900 leading-[0.9] transition-all duration-500 hover:tracking-tighter hover:scale-[1.01] origin-left" 
+          <h1
+            className="text-7xl md:text-9xl font-bold tracking-tight text-gray-900 leading-[0.9] transition-all duration-500 hover:tracking-tighter hover:scale-[1.01] origin-left"
             style={{ fontFamily: 'var(--font-display), serif' }}
           >
             {displayName}

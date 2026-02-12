@@ -502,3 +502,15 @@ html, body {
 .logo-light span {
   color: white !important;
 }
+
+/* AI-changed text highlight (temporary indicator) */
+.ai-changed-text {
+  background-color: rgba(59, 130, 246, 0.15) !important; /* Subtle blue highlight */
+  border-radius: 2px;
+  transition: background-color 0.3s ease-in;
+}
+
+.ai-changed-text-fade {
+  background-color: transparent !important;
+  transition: background-color 0.5s ease-out;
+}

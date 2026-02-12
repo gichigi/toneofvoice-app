@@ -276,6 +276,8 @@ Important constraints for the ONE SENTENCE (3 rules):
 ✗ [How the second instruction could be taken too far]
 ✗ [How the third instruction could be taken too far]
 
+IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-) or rewrite sentences instead.
+
 Repeat this block for each trait (### 2. [TraitName], ### 3. [TraitName], etc.). Each "What It Doesn't Mean" should show how its corresponding "What It Means" could be taken too far. Use → (unicode arrow) and ✗ (unicode cross) exactly as shown.`;
 
   const result = await generateWithOpenAI(
@@ -378,16 +380,18 @@ Content types (one example each):
 
 For each: "Before" = plausible generic copy (not absurdly bad). "After" = on-brand, demonstrates voice. 1-2 sentences each.
 
+IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-) or rewrite sentences instead.
+
 Return JSON:
 {"examples":[{"contentType":"Homepage Headline","before":"...","after":"..."}, ...]}`;
 
     const result = await generateWithOpenAI(
       prompt,
-      "You are an expert copywriter who transforms generic content into distinctive brand voice. Return strict JSON only.",
+      "You are an expert copywriter who transforms generic content into distinctive brand voice. Return strict JSON only. Never use em dashes.",
       "json",
       800,
       "gpt-5.2",
-      "medium"
+      "low"
     );
 
     if (!result.success || !result.content) {
@@ -509,7 +513,8 @@ Requirements:
 - Exactly 25 rules, one per category
 - Format times without extra spaces (e.g. "10:00 am" not "10: 00 am")
 - Use a space before quoted text (e.g. "Click \"Mark as duplicate\"" not "Click\"Mark as duplicate\"")
-- In the Emojis rule, do NOT use emoji characters in examples; use plain text only (avoids encoding artifacts)`;
+- In the Emojis rule, do NOT use emoji characters in examples; use plain text only (avoids encoding artifacts)
+- IMPORTANT: Never use em dashes (—) anywhere in your output. Use hyphens (-) or rewrite sentences instead.`;
 
     let attempts = 0;
     const maxAttempts = 3;
@@ -564,11 +569,13 @@ export async function generateAudienceSection(brandDetails: any): Promise<Genera
       : "";
   const prompt = `Based on this brand, write an Audience section (markdown) with:
 1. **Primary audience** (2-4 sentences): Who they are, what they care about, how to address them
-2. **Secondary audience** (optional, 1-2 sentences): If applicable, a secondary audience and how tone shifts. Omit if brand has single audience.
+2. **Secondary audience** (optional, 1-2 sentences): Brief description only. Do NOT include tone guidance or how to address them.
 
 Brand: ${brandDetails.name}
 What they do: ${brandDetails.brandDetailsDescription}
 Audience hint: ${brandDetails.audience || "general audience"}${keywordSection}${productsServicesSection}
+
+IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-) or rewrite sentences instead.
 
 Output markdown only, no code blocks. Use ### Primary Audience and ### Secondary Audience as subheadings.`;
 
@@ -578,7 +585,7 @@ Output markdown only, no code blocks. Use ### Primary Audience and ### Secondary
     "markdown",
     400,
     "gpt-5.2",
-    "medium"
+    "low"
   );
 }
 
@@ -603,15 +610,17 @@ Brand: ${brandDetails.name}
 Description: ${brandDetails.brandDetailsDescription}
 Audience: ${brandDetails.audience}${traitsSection}
 
+IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-) or rewrite sentences instead.
+
 Output markdown only.`;
 
   return generateWithOpenAI(
     prompt,
-    "You are a content strategist who creates actionable, brand-specific guidelines.",
+    "You are a content strategist who creates actionable, brand-specific guidelines. Never use em dashes.",
     "markdown",
     800,
     "gpt-5.2",
-    "medium"
+    "low"
   );
 }
 
@@ -620,7 +629,7 @@ export function getHowToUseContent(brandName: string): string {
   return `This document outlines the rules for brand voice, spelling, grammar, and formatting across all content channels. Anyone writing or publishing content for ${brandName} should follow these guidelines.
 
 **Who should use this document**
-Content team members, freelancers, agencies, and anyone creating branded materials—including when briefing AI tools.
+Content team members, freelancers, agencies, and anyone creating branded materials (including when briefing AI tools).
 
 **When to reference it**
 - Starting new campaigns or content projects
@@ -644,17 +653,24 @@ export async function generateWordList(brandDetails: any, traitsContext?: string
       : "";
   const traitsSection = traitsContext ? `\nTraits: ${traitsContext.slice(0, 400)}` : "";
   const ukUs = brandDetails.englishVariant === "british" ? "UK" : "US";
-  const prompt = `Create a Word List for this brand. Return JSON:
-{"preferredTerms":["Use X not Y",...],"avoidTerms":["Avoid X",...],"spellingUsage":["X not Y",...]}
+  const prompt = `Create a Word List for this brand. Return JSON with three arrays:
 
-- **preferredTerms** (5-8): Brand-specific language. Use keywords: ${keywords}. Format "Use X not Y"
-- **avoidTerms** (5-8): Words that conflict with brand voice. Derived from traits. Format "Avoid X"
-- **spellingUsage** (3-5): Contested spellings for ${ukUs} English and industry. Format "X not Y"
+{
+  "preferredTerms": [{"use": "term to use", "insteadOf": "term to avoid"}, ...],
+  "avoidTerms": ["word to avoid", ...],
+  "spellingUsage": [{"use": "correct spelling", "insteadOf": "incorrect spelling"}, ...]
+}
+
+- **preferredTerms** (5-8 items): Brand-specific language using keywords: ${keywords}. Each item has "use" and "insteadOf" fields.
+- **avoidTerms** (5-8 items): Words that conflict with brand voice (derived from traits). Simple string array.
+- **spellingUsage** (3-5 items): Contested spellings for ${ukUs} English and industry terms. Each item has "use" and "insteadOf" fields.
 
 Brand: ${brandDetails.name}
 Description: ${brandDetails.brandDetailsDescription}${productsServicesSection}${traitsSection}
 
-Return JSON only.`;
+IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-) or rewrite instead.
+
+Return strict JSON only.`;
 
   const result = await generateWithOpenAI(
     prompt,
@@ -662,7 +678,7 @@ Return JSON only.`;
     "json",
     600,
     "gpt-5.2",
-    "medium"
+    "low"
   );
 
   if (!result.success || !result.content) return result;
@@ -673,15 +689,41 @@ Return JSON only.`;
     const avoid = Array.isArray(parsed.avoidTerms) ? parsed.avoidTerms : [];
     const spell = Array.isArray(parsed.spellingUsage) ? parsed.spellingUsage : [];
     const lines: string[] = [];
+
+    // Preferred Terms - two-column table
     if (pref.length) {
-      lines.push("### Preferred Terms", ...pref.map((s: string) => `- ${s}`), "");
+      lines.push("### Preferred Terms", "");
+      lines.push("| Use | Instead of |");
+      lines.push("|-----|------------|");
+      pref.forEach((item: any) => {
+        const use = typeof item === 'object' ? (item.use || '') : item.split(' not ')[0] || '';
+        const instead = typeof item === 'object' ? (item.insteadOf || '') : item.split(' not ')[1] || '';
+        lines.push(`| ${use} | ${instead} |`);
+      });
+      lines.push("");
     }
+
+    // Avoid Terms - simple list (no table needed for single column)
     if (avoid.length) {
-      lines.push("### Avoid Terms", ...avoid.map((s: string) => `- ${s}`), "");
+      lines.push("### Avoid Terms", "");
+      avoid.forEach((term: string) => {
+        lines.push(`- ${term}`);
+      });
+      lines.push("");
     }
+
+    // Spelling and Usage - two-column table
     if (spell.length) {
-      lines.push("### Spelling and Usage", ...spell.map((s: string) => `- ${s}`));
+      lines.push("### Spelling and Usage", "");
+      lines.push("| Use | Instead of |");
+      lines.push("|-----|------------|");
+      spell.forEach((item: any) => {
+        const use = typeof item === 'object' ? (item.use || '') : item.split(' not ')[0] || '';
+        const instead = typeof item === 'object' ? (item.insteadOf || '') : item.split(' not ')[1] || '';
+        lines.push(`| ${use} | ${instead} |`);
+      });
     }
+
     return { success: true, content: lines.join("\n").trim() };
   } catch (e) {
     return { success: false, error: "Invalid word list JSON" };
@@ -734,7 +776,8 @@ What they do: ${brandDetailsDescription}`
     "You are a brand strategist who writes precise, practical audience descriptions.",
     "markdown",
     200,
-    "gpt-4o-mini"
+    "gpt-5.2",
+    "low"
   )
 }
 
@@ -769,6 +812,6 @@ Return ONLY a JSON array with exactly 3 trait names, like this:
     "json",
     100,
     "gpt-5.2",
-    "medium"
+    "low"
   )
 }

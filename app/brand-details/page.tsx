@@ -45,6 +45,12 @@ const estimateTokens = (text: string): number => {
 // Description limit: fits 3-6 paragraphs from extraction (no truncation)
 const DESC_MAX_CHARS = 2500
 
+// Capitalize first letter of string
+const capitalizeFirstLetter = (str: string): string => {
+  if (!str || str.length === 0) return str
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
 
 
 
@@ -289,30 +295,33 @@ export default function BrandDetailsPage() {
   }, [keywordTags])
 
   const addKeyword = () => {
-    const term = keywordInput.trim()
+    let term = keywordInput.trim()
     if (!term) return
-    
+
+    // Capitalize first letter
+    term = capitalizeFirstLetter(term)
+
     // Clear previous error
     setKeywordError("")
-    
+
     // Validate keyword
     const validation = validateKeyword(term)
     if (!validation.isValid) {
       setKeywordError(validation.error || "Invalid format")
       return
     }
-    
+
     if (keywordTags.includes(term)) {
       setKeywordError("Already added")
       setKeywordInput("")
       return
     }
-    
+
     if (keywordTags.length >= KEYWORD_LIMIT) {
       setKeywordError(`Max ${KEYWORD_LIMIT} keywords`)
       return
     }
-    
+
     setKeywordTags(prev => [...prev, term])
     setKeywordInput("")
   }
@@ -323,9 +332,9 @@ export default function BrandDetailsPage() {
 
   const addKeywordsBulk = (terms: string[]) => {
     setKeywordError("") // Clear previous error
-    
+
     const validTerms = terms
-      .map(t => t.trim())
+      .map(t => capitalizeFirstLetter(t.trim()))
       .filter(Boolean)
       .filter(t => !keywordTags.includes(t))
       .filter(t => {
@@ -793,7 +802,14 @@ export default function BrandDetailsPage() {
                     placeholder="e.g. Nike"
                     value={brandDetails.name || ""}
                     onChange={handleChange}
-                    onBlur={() => validateStep1Fields()}
+                    onBlur={() => {
+                      // Capitalize first letter
+                      const capitalized = capitalizeFirstLetter(brandDetails.name || "")
+                      if (capitalized !== brandDetails.name) {
+                        setBrandDetails(prev => ({ ...prev, name: capitalized }))
+                      }
+                      validateStep1Fields()
+                    }}
                     className="text-base p-4 font-medium placeholder:text-gray-400 placeholder:font-medium"
                     autoFocus={currentStep === 1}
                   />

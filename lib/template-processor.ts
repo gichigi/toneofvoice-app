@@ -560,7 +560,11 @@ export async function renderFullGuideFromPreview({
   let merged = previewContent;
   merged = replaceSectionInMarkdown(merged, "style-rules", `## Style Rules\n\n${styleRulesContent}`);
   merged = replaceSectionInMarkdown(merged, "examples", `## Before / After\n\n${beforeAfterContent}`);
-  merged = replaceSectionInMarkdown(merged, "word-list", `## Word List\n\n${wordListContent}\n\n---\n\n${contactFooter}`);
+  merged = replaceSectionInMarkdown(merged, "word-list", `## Word List\n\n${wordListContent}`);
+
+  // Update Questions section with user email if available
+  const questionsSection = `## Questions?\n\n${contactFooter}`;
+  merged = replaceSectionInMarkdown(merged, "questions", questionsSection);
 
   return merged;
 }

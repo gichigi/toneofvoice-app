@@ -29,7 +29,7 @@ export default function HowItWorksSection() {
       className="w-full py-12 md:py-20 lg:py-24 bg-background"
     >
       <div className="container px-4 md:px-6">
-        {/* Section header — match pricing / whats-included weight */}
+        {/* Section header - match pricing / whats-included weight */}
         <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12 md:mb-16">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
             Input to impact in 3 steps
@@ -40,7 +40,7 @@ export default function HowItWorksSection() {
           </p>
         </div>
 
-        {/* Step cards — minimal, clean design with subtle color */}
+        {/* Step cards - minimal, clean design with subtle color */}
         <div className="mx-auto max-w-5xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {HOW_IT_WORKS_STEPS.map(({ title, body }, i) => {

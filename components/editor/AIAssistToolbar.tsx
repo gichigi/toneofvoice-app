@@ -74,6 +74,17 @@ export function AIAssistToolbar({ editorContainerRef }: AIAssistToolbarProps) {
   const handleAction = useCallback(
     async (action: AIAssistAction) => {
       if (!selectedText || !editor?.tf) return;
+
+      // Validation
+      if (selectedText.length > 5000) {
+        toast({
+          title: "Text too long",
+          description: "Please select less than 5000 characters.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setLoading(action);
       try {
         const res = await fetch("/api/ai-assist", {
@@ -85,27 +96,129 @@ export function AIAssistToolbar({ editorContainerRef }: AIAssistToolbarProps) {
             context: undefined,
           }),
         });
-        if (!res.ok) throw new Error("AI assist failed");
-        const { suggestion } = await res.json();
-        if (!suggestion || typeof suggestion !== "string") throw new Error("Invalid response");
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+          const errorMessage = errorData.error || "Request failed";
+
+          // Handle specific error cases
+          if (res.status === 429) {
+            toast({
+              title: "Rate limit reached",
+              description: "Please wait a moment and try again.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (res.status === 504) {
+            toast({
+              title: "Request timeout",
+              description: "Try selecting shorter text.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (res.status === 503) {
+            toast({
+              title: "Service unavailable",
+              description: "AI service is temporarily down. Try again later.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          throw new Error(errorMessage);
+        }
+
+        const data = await res.json();
+        const { suggestion } = data;
+
+        if (!suggestion || typeof suggestion !== "string") {
+          throw new Error("Invalid response format");
+        }
+
+        // Check if suggestion is empty
+        if (suggestion.trim().length === 0) {
+          toast({
+            title: "No suggestion",
+            description: "AI couldn't generate a suggestion. Try again.",
+            variant: "destructive",
+          });
+          return;
+        }
 
         const tf = editor.tf as {
           deleteFragment?: (opts?: { at?: unknown }) => void;
           insertText?: (text: string, opts?: { at?: unknown }) => void;
         };
         const sel = editor.selection;
-        if (sel) {
+
+        if (!sel) {
+          toast({
+            title: "Selection lost",
+            description: "Please select text again and retry.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Attempt to replace text
+        try {
           tf.deleteFragment?.({ at: sel });
           tf.insertText?.(suggestion, { at: editor.selection ?? sel });
+
+          // Highlight the changed text temporarily (best-effort, won't fail if DOM not ready)
+          setTimeout(() => {
+            try {
+              const domSel = window.getSelection();
+              if (domSel && domSel.rangeCount > 0) {
+                const range = domSel.getRangeAt(0);
+                const container = range.commonAncestorContainer;
+                const element = container.nodeType === Node.TEXT_NODE
+                  ? container.parentElement
+                  : (container as HTMLElement);
+
+                if (element && element.classList) {
+                  // Add highlight class with animation
+                  element.classList.add('ai-changed-text');
+
+                  // Remove highlight after 3 seconds
+                  setTimeout(() => {
+                    element.classList.add('ai-changed-text-fade');
+                    setTimeout(() => {
+                      element.classList.remove('ai-changed-text', 'ai-changed-text-fade');
+                    }, 500); // Wait for fade animation
+                  }, 3000);
+                }
+              }
+            } catch (highlightError) {
+              // Silently fail - highlighting is non-critical
+              console.warn("[AIAssistToolbar] Highlight failed:", highlightError);
+            }
+          }, 100); // Small delay to ensure DOM is updated
+
+          setPosition(null);
+          setSelectedText("");
+          toast({
+            title: "Text updated",
+            description: `Applied ${action.replace('_', ' ')} suggestion.`
+          });
+        } catch (replaceError) {
+          console.error("[AIAssistToolbar] Text replacement failed:", replaceError);
+          toast({
+            title: "Failed to apply suggestion",
+            description: "Could not update text. Please try again.",
+            variant: "destructive",
+          });
         }
-        setPosition(null);
-        setSelectedText("");
-        toast({ title: "Text updated", description: "AI suggestion applied." });
       } catch (e) {
         console.error("[AIAssistToolbar] Error:", e);
+        const errorMessage = e instanceof Error ? e.message : "Unknown error";
         toast({
           title: "AI assist failed",
-          description: "Could not apply suggestion. Please try again.",
+          description: errorMessage || "Please try again.",
           variant: "destructive",
         });
       } finally {

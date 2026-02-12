@@ -136,10 +136,6 @@ export function StyleGuideSidebar({
                       </div>
                       
                       <span className="flex-1 truncate transition-all duration-300">{section.title}</span>
-                      
-                      {locked && (
-                        <Lock className="size-3 text-gray-400 ml-auto transition-all duration-300 group-hover:text-gray-500" />
-                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

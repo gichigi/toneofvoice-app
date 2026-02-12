@@ -147,7 +147,7 @@ export function getSectionEyebrow(headingText: string): string | null {
   const lower = text.toLowerCase();
   if (lower.includes("about")) return "BRAND OVERVIEW";
   if (lower.includes("how to use")) return "USAGE GUIDE";
-  if (/your\s+audience/i.test(text)) return "AUDIENCE";
+  if (/your\s+audience/i.test(text)) return "WHO YOU'RE WRITING FOR";
   if (/content\s+guidelines/i.test(text)) return "FOUNDATION";
   if (lower.includes("brand voice")) return "BRAND IDENTITY";
   if (/style\s+rules/i.test(text)) return "STYLE RULES";

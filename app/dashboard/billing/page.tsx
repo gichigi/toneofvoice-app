@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import { ArrowLeft } from "lucide-react";
 import { BillingPlansGrid } from "./BillingPlansGrid";
 import { UserMenu } from "@/components/UserMenu";
+import Footer from "@/components/Footer";
 
 export default async function BillingPage() {
   const supabase = await createClient();
@@ -57,6 +58,7 @@ export default async function BillingPage() {
           nextBilling={nextBilling}
         />
       </main>
+      <Footer />
     </div>
   );
 }

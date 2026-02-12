@@ -60,13 +60,25 @@ const ACTION_PROMPTS: Record<
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    // Validate request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("[ai-assist] Invalid JSON:", e);
+      return NextResponse.json(
+        { error: "Invalid request format" },
+        { status: 400 }
+      );
+    }
+
     const { text, action, context } = body as {
       text?: string;
       action?: AIAssistAction;
       context?: string;
     };
 
+    // Validate text input
     if (!text || typeof text !== "string") {
       return NextResponse.json(
         { error: "Missing or invalid 'text' field" },
@@ -74,6 +86,21 @@ export async function POST(req: Request) {
       );
     }
 
+    if (text.length === 0) {
+      return NextResponse.json(
+        { error: "Text cannot be empty" },
+        { status: 400 }
+      );
+    }
+
+    if (text.length > 5000) {
+      return NextResponse.json(
+        { error: "Text too long (max 5000 characters)" },
+        { status: 400 }
+      );
+    }
+
+    // Validate action
     const validActions: AIAssistAction[] = [
       "rewrite",
       "expand",
@@ -86,34 +113,95 @@ export async function POST(req: Request) {
       action && validActions.includes(action) ? action : "rewrite";
 
     const prompts = ACTION_PROMPTS[resolvedAction];
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // Check API key
     if (!process.env.OPENAI_API_KEY) {
       console.error("[ai-assist] OPENAI_API_KEY not set");
       return NextResponse.json(
-        { error: "AI service not configured" },
+        { error: "AI service not configured. Please contact support." },
+        { status: 503 }
+      );
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // Call OpenAI with timeout and error handling
+    let response;
+    try {
+      response = await Promise.race([
+        openai.chat.completions.create({
+          model: "gpt-5.2",
+          messages: [
+            { role: "system", content: prompts.system },
+            { role: "user", content: prompts.user(text, context) },
+          ],
+          max_completion_tokens: 500,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Request timeout")), 30000)
+        ),
+      ]);
+    } catch (apiError: any) {
+      console.error("[ai-assist] OpenAI API error:", apiError);
+
+      // Handle specific error types
+      if (apiError.message === "Request timeout") {
+        return NextResponse.json(
+          { error: "Request timed out. Please try again with shorter text." },
+          { status: 504 }
+        );
+      }
+
+      if (apiError.status === 429) {
+        return NextResponse.json(
+          { error: "Rate limit reached. Please wait a moment and try again." },
+          { status: 429 }
+        );
+      }
+
+      if (apiError.status === 401) {
+        return NextResponse.json(
+          { error: "AI service authentication failed. Please contact support." },
+          { status: 503 }
+        );
+      }
+
+      if (apiError.status >= 500) {
+        return NextResponse.json(
+          { error: "AI service temporarily unavailable. Please try again." },
+          { status: 503 }
+        );
+      }
+
+      // Generic API error
+      return NextResponse.json(
+        { error: "Failed to generate suggestion. Please try again." },
         { status: 500 }
       );
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      messages: [
-        { role: "system", content: prompts.system },
-        { role: "user", content: prompts.user(text, context) },
-      ],
-      reasoning_effort: "low",
-      max_completion_tokens: 500,
-    });
+    // Validate response
+    const suggestion = response.choices?.[0]?.message?.content?.trim();
 
-    const suggestion =
-      response.choices[0]?.message?.content?.trim() ?? text;
+    if (!suggestion) {
+      console.error("[ai-assist] Empty response from OpenAI");
+      return NextResponse.json(
+        { error: "No suggestion generated. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    // Return original text as fallback if suggestion is identical
+    if (suggestion === text) {
+      console.warn("[ai-assist] Suggestion identical to original");
+    }
 
     return NextResponse.json({ suggestion });
   } catch (error) {
-    console.error("[ai-assist] Error:", error);
+    // Catch-all for unexpected errors
+    console.error("[ai-assist] Unexpected error:", error);
     return NextResponse.json(
-      { error: "Failed to process request" },
+      { error: "An unexpected error occurred. Please try again." },
       { status: 500 }
     );
   }

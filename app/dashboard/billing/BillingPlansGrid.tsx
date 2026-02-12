@@ -66,13 +66,6 @@ export function BillingPlansGrid({
   return (
     <section className="w-full py-8 md:py-12">
       <div className="container px-4 md:px-6">
-        {/* Hero: one step away */}
-        <div className="mx-auto max-w-5xl text-center mb-6">
-          <p className="text-sm font-medium text-primary">
-            You&apos;re one step away from full access
-          </p>
-        </div>
-
         {/* Current plan summary: styled to match cards */}
         <div className="mx-auto max-w-5xl mb-10">
           <div className="rounded-xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6 shadow-sm dark:border-gray-700 dark:from-gray-900 dark:to-gray-950 dark:bg-gray-950">

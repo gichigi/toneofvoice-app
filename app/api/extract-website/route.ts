@@ -139,7 +139,7 @@ async function testOpenAIConnection() {
     
     // Simple test call with faster model
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5.2-mini",
       messages: [{ role: "user", content: "Test" }],
       max_tokens: 5,
     })
@@ -199,17 +199,20 @@ export async function POST(request: Request) {
   - Be creative and distinctive rather than descriptive
 
 - Guidelines
-  - Description: 3-6 paragraphs. Accurate, concise but full. Suitable for About section.
-  - Include what they do, their approach, and what makes them special
+  - Description: Write 2-3 cohesive, flowing paragraphs that read naturally. Each paragraph should be 3-5 sentences that connect smoothly. Avoid bullet-like or choppy sentences.
+  - First paragraph: What they do and who they serve
+  - Second paragraph: Their approach and what makes them unique
+  - Optional third paragraph: Their impact or value proposition
   - Use clear, professional language. First person plural (we/our)
-  - Focus on current offerings, not history. Not short one-liners.
+  - Focus on current offerings, not history. Create a narrative flow, not a list.
+  - IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-), commas, or rewrite sentences instead.
 
 - Output format
   - Return clean JSON: {"name": "memorable brand name", "industry": "category", "description": "full brand description", "targetAudience": "audience details", "productsServices": ["product/service 1", "product/service 2"]}
   - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.`
 
       try {
-        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context.", "json", 1500, "gpt-4o")
+        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. Never use em dashes in your output.", "json", 1500, "gpt-5.2", "medium")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -411,7 +414,8 @@ ${summary}`
       "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. You also write clear, readable brand summaries using simple language and short sentences.",
       "json",
       1500, // Allow longer descriptions for About section
-      "gpt-4o"
+      "gpt-5.2",
+      "medium"
     )
 
     if (!result.success || !result.content) {

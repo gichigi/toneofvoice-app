@@ -1034,26 +1034,10 @@ function GuideContent() {
       ) : (
         <Download className="h-3 w-3" />
       )}
-      Download Preview
+      Download
     </Button>
   ) : (
     <div className="flex items-center gap-3">
-      {subscriptionTier !== "starter" && (
-        <Button
-          onClick={() => (hasEdits ? setShowRegenerateConfirm(true) : handleRetry())}
-          disabled={isRetrying}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          {isRetrying ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3 w-3" />
-          )}
-          Regenerate
-        </Button>
-      )}
       
       <Button
         onClick={() => setShowDownloadOptions(true)}

@@ -1,14 +1,19 @@
-# Style Guide AI
+# AI Style Guide
 
-A powerful web application that generates professional style guides for brands using AI. Create, customize, and download comprehensive style guidelines with just a few clicks.
+Generate professional brand voice and style guides in under 5 minutes using AI. No prompt engineering required.
 
 ## Features
 
-- **AI-Powered Style Guide Generation**: Create complete brand style guides based on brand details
-- **Core and Complete Guides**: Choose between concise core guides or full comprehensive guides
-- **Multiple Export Formats**: Download your style guide as PDF, Word-compatible HTML, web-ready HTML, or markdown
-- **Brand Voice Traits**: Automatically generate distinctive voice characteristics that match your brand's tone and audience
-- **25 Core Writing Rules**: Get detailed writing guidance specific to your brand identity
+- **AI-Powered Style Guide Generation**: Complete brand style guides from a website URL or description
+- **Smart Website Extraction**: Firecrawl integration for intelligent brand analysis
+- **Subscription Tiers**: Free preview (1 guide), Starter (10/month), Agency (unlimited)
+- **Multiple Export Formats**: PDF (Puppeteer + fallback), Word-compatible HTML, and Markdown
+- **Comprehensive Content**:
+  - 3 Brand Voice Traits with detailed do's and don'ts
+  - 25 Writing Rules covering tone, grammar, and formatting
+  - 10 Brand Terms & Phrases for consistency
+  - 5 Before/After Examples showing voice in action
+- **Professional Design System**: Premium typography with Playfair Display serif headings
 
 ## Technologies
 
@@ -18,8 +23,11 @@ A powerful web application that generates professional style guides for brands u
 - Tailwind CSS
 - Radix UI Components
 - OpenAI API
-- jsPDF for PDF generation
-- Markdown processing with react-markdown + remark-gfm
+- Firecrawl for smart website scraping
+- Supabase (Auth + Database)
+- Stripe for payments
+- Puppeteer + html2pdf.js for PDF generation
+- Plate.js for rich text editing
 
 ## Getting Started
 
@@ -42,10 +50,19 @@ A powerful web application that generates professional style guides for brands u
    ```
 
 3. Set up environment variables
-   Create a `.env.local` file with:
+   Create a `.env` file with:
    ```
    OPENAI_API_KEY=your_openai_api_key
+   FIRECRAWL_API_KEY=your_firecrawl_api_key
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   STRIPE_SECRET_KEY=your_stripe_secret_key
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+   STRIPE_WEBHOOK_SECRET=your_webhook_secret
    ```
+
+   See `CLAUDE.md` for full environment variable documentation.
 
 4. Start the development server
    ```bash
@@ -56,10 +73,33 @@ A powerful web application that generates professional style guides for brands u
 
 ## Usage
 
-1. Enter your brand details (name, audience, tone, description)
-2. Choose between core or complete style guide
-3. View the generated style guide with brand voice traits and writing rules
-4. Download in your preferred format (PDF, Word HTML, web HTML, or Markdown)
+1. **Enter brand details**: Paste your website URL or write a short brand description
+2. **Generate preview**: Get a free preview with brand voice, audience, and guidelines
+3. **Upgrade for full guide**: Subscribe to unlock style rules, examples, and word lists
+4. **Edit & Export**: Customize your guide in the editor, then export as PDF, Word, or Markdown
+
+## Documentation
+
+- **`PROJECT_CONTEXT.md`**: Current project state, architecture, and recent changes (read this first!)
+- **`CLAUDE.md`**: Development workflow, token usage tracking, and best practices
+- **`DESIGN_SYSTEM.md`**: Typography, colors, spacing, and component patterns
+- **`/docs`**: Release notes, changelogs, and setup guides
+
+## Testing
+
+```bash
+# Run tests
+pnpm test
+
+# Test guide generation with a real website
+node scripts/test-real-website.mjs https://example.com
+
+# Generate preview PDF
+node scripts/generate-preview-pdf.mjs
+
+# Monitor Claude Code token usage
+npx ccusage@latest
+```
 
 ## License
 

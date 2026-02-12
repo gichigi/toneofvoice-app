@@ -257,10 +257,10 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "How do I cancel or get a refund?",
-    a: <span>Manage subscription and billing in your account. We offer a 30-day money-back guarantee—email <a href="mailto:support@aistyleguide.com?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20AIStyleGuide%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20style%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide:%20Style%20Guide%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a> within 30 days of purchase for a full refund.</span>,
+    a: <span>Manage subscription and billing in your account. We offer a 30-day money-back guarantee—email <a href="mailto:support@toneofvoice.app?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20Tone%20of%20Voice%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20tone%20of%20voice%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide:%20Tone%20of%20Voice%20Guide%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@toneofvoice.app</a> within 30 days of purchase for a full refund.</span>,
   },
   {
     q: "How do I contact support?",
-    a: <span>Email us at <a href="mailto:support@aistyleguide.com?subject=Support%20Request&body=Hello%20AIStyleGuide%20Support%20Team,%0A%0AI%20need%20help%20with:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@aistyleguide.com</a>, 24 hours on business days.</span>,
+    a: <span>Email us at <a href="mailto:support@toneofvoice.app?subject=Support%20Request&body=Hello%20Tone%20of%20Voice%20Support%20Team,%0A%0AI%20need%20help%20with:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@toneofvoice.app</a>, 24 hours on business days.</span>,
   },
 ]

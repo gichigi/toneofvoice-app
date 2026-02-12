@@ -48,7 +48,7 @@ async function processAbandonedEmails() {
       const emailResult = await emailService.sendAbandonedCartEmail({
         customerEmail: capture.email,
         sessionId: capture.session_token,
-        recoveryUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'}/brand-details?fromExtraction=true`,
+        recoveryUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://toneofvoice.app'}/brand-details?fromExtraction=true`,
         discountCode
       });
       

@@ -116,8 +116,13 @@ class EmailService {
         return { success: false, error: 'No API key configured' };
       }
 
+      // Use onboarding@resend.dev for testing until toneofvoice.app is verified
+      const fromAddress = process.env.NODE_ENV === 'production'
+        ? 'Tahi from Tone of Voice App <support@toneofvoice.app>'
+        : 'Tahi from Tone of Voice App <onboarding@resend.dev>';
+
       const result = await getResend().emails.send({
-        from: 'Tahi from AIStyleGuide <support@aistyleguide.com>',
+        from: fromAddress,
         to: data.to,
         subject: data.subject,
         html: data.html,
@@ -134,7 +139,7 @@ class EmailService {
   }
 
   async sendThankYouEmail(data: ThankYouEmailData) {
-    const subject = 'Thank you for downloading AI Style Guide!';
+    const subject = 'Thanks for your purchase!';
     const html = this.generateThankYouEmailHTML(data);
     const text = this.generateThankYouEmailText(data);
 
@@ -173,9 +178,9 @@ class EmailService {
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           
           <p style="margin-bottom: 20px;">Hey ${firstName},</p>
-          
-          <p style="margin-bottom: 15px;">I'm Tahi — I built AI Style Guide because I kept wasting hours piecing together brand-voice docs for clients.</p>
-          
+
+          <p style="margin-bottom: 15px;">I'm Tahi. I built Tone of Voice App because I kept wasting hours piecing together brand voice docs for clients.</p>
+
           <p style="margin-bottom: 15px;">Seeing your order come through today honestly made my week. 🙌</p>
           
           <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
@@ -187,7 +192,7 @@ class EmailService {
             </ol>
           </div>
           
-          <p style="margin-bottom: 15px;">And if you've got questions about AIStyleGuide, here's my direct Calendly link (15 min, no pitch):</p>
+          <p style="margin-bottom: 15px;">And if you've got questions about Tone of Voice App, here's my direct Calendly link (15 min, no pitch):</p>
           
           <div style="text-align: center; margin: 25px 0;">
             <a href="https://calendly.com/l-gichigi/customer-chat" 
@@ -207,7 +212,7 @@ class EmailService {
           
           <p style="margin-bottom: 5px;">Cheers,<br>
           Tahi<br>
-          Founder, AI Style Guide<br>
+          Founder, Tone of Voice App<br>
           <a href="https://x.com/tahigichigi" style="color: #2563eb;">x.com/tahigichigi</a></p>
           
         </body>
@@ -220,24 +225,24 @@ class EmailService {
     
     return `Hey ${firstName},
 
-I'm Tahi — I built AI Style Guide because I kept wasting hours piecing together brand-voice docs for clients.
+I'm Tahi. I built Tone of Voice App because I kept wasting hours piecing together brand voice docs for clients.
 
 Seeing your order come through today honestly made my week. 🙌
 
 If you have 2 minutes:
-1. What problem were you hoping AI Style Guide would solve?
+1. What problem were you hoping Tone of Voice App would solve?
 2. What nearly stopped you from buying?
 3. Anything else you wanna share :)
 
-And if you've got questions about AIStyleGuide, here's my direct Calendly link (15 min, no pitch): https://calendly.com/l-gichigi/customer-chat
+And if you've got questions about Tone of Voice App, here's my direct Calendly link (15 min, no pitch): https://calendly.com/l-gichigi/customer-chat
 
-Access your style guide: ${process.env.NEXT_PUBLIC_APP_URL}/guide?session_id=${data.sessionId}
+Access your tone of voice guide: ${process.env.NEXT_PUBLIC_APP_URL}/guide?session_id=${data.sessionId}
 
 Thanks again for being one of our very first customers. Anything you need, just hit reply — it's really me on the other end.
 
 Cheers,
 Tahi
-Founder, AI Style Guide
+Founder, Tone of Voice App
 x.com/tahigichigi`;
   }
 

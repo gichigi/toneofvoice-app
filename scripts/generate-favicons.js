@@ -6,19 +6,18 @@ import sharp from 'sharp'
 import toIco from 'to-ico'
 
 /**
- * Generate favicon files from the logo-icon.svg
+ * Generate favicon files from Group 22.svg (Tone of Voice logo)
  */
 async function generateFavicons() {
   try {
     const publicDir = path.join(process.cwd(), 'public')
-    const logoIconPath = path.join(publicDir, 'logo-icon.svg')
+    const logoIconPath = path.join(publicDir, 'Group 22.svg')
     
-    // Check if logo-icon.svg exists
     if (!fs.existsSync(logoIconPath)) {
-      throw new Error('logo-icon.svg not found. Run generate-logo-svgs.js first.')
+      throw new Error('Group 22.svg not found in public/')
     }
     
-    console.log('🎯 Generating favicon files from logo-icon.svg...')
+    console.log('🎯 Generating favicon files from Group 22.svg...')
     
     // Read the SVG file
     const svgBuffer = fs.readFileSync(logoIconPath)

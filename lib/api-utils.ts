@@ -132,7 +132,7 @@ Please help me resolve this issue.
 
 Thanks!`)
   
-  return `mailto:support@aistyleguide.com?subject=${subject}&body=${body}`
+  return `mailto:support@toneofvoice.app?subject=${subject}&body=${body}`
 }
 
 // Create detailed error response

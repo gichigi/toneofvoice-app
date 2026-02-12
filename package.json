@@ -20,6 +20,7 @@
     "test:style-guide-gen": "node scripts/test-style-guide-generation.mjs",
     "generate-logos": "node scripts/generate-logo-svgs.js",
     "generate-favicons": "node scripts/generate-favicons.js",
+    "generate-og-image": "node scripts/generate-og-image.js",
     "generate-icons": "pnpm generate-logos && pnpm generate-favicons",
     "generate-preview-pdf": "node scripts/generate-preview-pdf.mjs"
   },

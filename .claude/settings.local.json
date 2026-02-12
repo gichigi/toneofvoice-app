@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(supabase link --project-ref rnwdfepnhdmjphfcgqfr)",
+      "mcp__context7__query-docs",
+      "mcp__context7__resolve-library-id"
     ]
   }
 }

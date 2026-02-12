@@ -20,6 +20,12 @@ AI Style Guide is a SaaS platform that generates professional brand voice and st
 
 ## 📊 Recent Major Changes (Last 2 Weeks)
 
+### Rebrand Planning (Feb 2026)
+- **New Domain**: toneofvoice.app (from aistyleguide.com)
+- **New Positioning**: "Define your tone of voice" vs "Generate style guides"
+- **Rationale**: Higher search volume for "tone of voice", clearer value proposition
+- **Status**: Planning phase (see `docs/REBRAND-TONEOFVOICE.md` for complete implementation plan)
+
 ### Subscription & Pricing Overhaul
 - Renamed "Team" tier to "Agency" (unlimited guides)
 - Added guide limits based on subscription tier
@@ -69,9 +75,20 @@ AI Style Guide is a SaaS platform that generates professional brand voice and st
 - **Em Dash Removal**: Eliminated em dashes (—) from all generated content and UI copy
   - Added explicit restrictions to all AI generation prompts
   - Updated static templates to use hyphens, commas, or parentheses
+  - Verified with real-world testing: 0 em dashes found ✓
+- **Model Optimizations**: Strategic reasoning level adjustments for cost/speed
+  - Downgraded to "low": Before/After, Audience, Content Guidelines, Word List, Keywords, Trait Suggestions
+  - Kept "medium": Brand Voice Traits (complex), Style Rules (critical), Extraction (complex parsing)
+  - Migrated gpt-4o-mini → gpt-5.2 low, gpt-4o → gpt-5.2 medium (4o deprecation)
+  - Expected savings: 20-30% faster, ~40% cost reduction on downgraded tasks
+- **AI Assist Toolbar** (Edit Mode):
+  - Removed reasoning_effort parameter for fastest response
+  - Temporary visual highlight for AI-changed text (subtle blue, fades after 3s)
+  - Comprehensive error handling: timeouts, rate limits, service unavailability, input validation
+  - Specific error messages for each failure type
+  - Graceful degradation for non-critical features
 - **Cover Page**: Reduced whitespace (60vh from 80vh), larger title (text-7xl/9xl), better visual balance
 - **Audience Section**: Changed eyebrow from "AUDIENCE" to "WHO YOU'RE WRITING FOR", removed tone guidance from secondary audience
-- **Emoji Rule Fix**: Emoji style rule now includes actual emoji in bad example (not placeholder text)
 - **Brand Description**: Extraction prompts updated to generate 2-3 cohesive paragraphs with natural flow, not bullet-like sentences
 - **Favicon Fallback**: Cascading fallback (Google → DuckDuckGo → direct favicon.ico) for dashboard guide cards
 - **User Email in Questions**: Fixed bug where user email wasn't appearing in Questions section when upgrading from preview
@@ -90,6 +107,7 @@ AI Style Guide is a SaaS platform that generates professional brand voice and st
   - `export-pdf-fallback/route.ts` : Client-side html2pdf fallback
   - `user-guide-limit/route.ts` : Guide limit checking
   - `webhook/route.ts` : Stripe webhooks
+  - `ai-assist/route.ts` : AI editing suggestions (rewrite, expand, shorten, etc.) with comprehensive error handling
 - **`/brand-details`**: Initial input form (URL or description)
 - **`/guide`**: Unified guide view/edit route (preview + full-access merged)
 - **`/dashboard`**: User dashboard, guide list, billing
@@ -105,6 +123,8 @@ AI Style Guide is a SaaS platform that generates professional brand voice and st
 - **`UserMenu.tsx`**: Auth menu (sign out, billing)
 - **`UpgradeNudgeModal.tsx`**: Guide limit nudge modal
 - **`CreateGuideModal.tsx`**: New guide creation modal
+- **`Footer.tsx`**: Reusable footer component
+- **`editor/AIAssistToolbar.tsx`**: AI editing toolbar (rewrite, expand, shorten, etc.) with visual change highlighting
 - **`dashboard/*`**: Dashboard components
 
 ### `/lib`
@@ -122,6 +142,7 @@ AI Style Guide is a SaaS platform that generates professional brand voice and st
 - **`RELEASE-NOTES-2026-02.md`**: February 2026 release notes (Firecrawl, preview preservation, PDF export)
 - **`CHANGELOG-2025-02-09.md`**: Detailed changelog for 2025-02-09 (rules, keywords, DB save)
 - **`STRIPE-RESTRICTED-KEY-SETUP.md`**: Stripe restricted key setup guide
+- **`REBRAND-TONEOFVOICE.md`**: Complete rebrand plan for transitioning to toneofvoice.app domain
 
 ### Other Important Files
 - **`DESIGN_SYSTEM.md`**: Complete design system documentation (fonts, colors, spacing, components)

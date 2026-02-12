@@ -14,7 +14,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY!, {
 })
 
 // Use the app URL from environment
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://toneofvoice.app'
 
 export async function POST(request: Request) {
   try {

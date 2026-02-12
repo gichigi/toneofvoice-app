@@ -20,10 +20,10 @@ const BILLING_FAQS: { q: string; a: React.ReactNode }[] = [
       <span>
         Manage your subscription anytime in your account. We offer a 30-day money-back guarantee. Email{" "}
         <a
-          href="mailto:support@aistyleguide.com?subject=Refund%20Request"
+          href="mailto:support@toneofvoice.app?subject=Refund%20Request"
           className="text-primary hover:underline"
         >
-          support@aistyleguide.com
+          support@toneofvoice.app
         </a>{" "}
         within 30 days of purchase for a full refund.
       </span>
@@ -35,10 +35,10 @@ const BILLING_FAQS: { q: string; a: React.ReactNode }[] = [
       <span>
         Email{" "}
         <a
-          href="mailto:support@aistyleguide.com?subject=Support%20Request"
+          href="mailto:support@toneofvoice.app?subject=Support%20Request"
           className="text-primary hover:underline"
         >
-          support@aistyleguide.com
+          support@toneofvoice.app
         </a>
         . Agency subscribers get priority support; we reply to all plans on business days.
       </span>
@@ -125,10 +125,10 @@ export function BillingPlansGrid({
             30-day money-back guarantee
             {" "}
             <a
-              href="mailto:support@aistyleguide.com?subject=Support%20Request"
+              href="mailto:support@toneofvoice.app?subject=Support%20Request"
               className="text-primary hover:underline"
             >
-              Questions? support@aistyleguide.com
+              Questions? support@toneofvoice.app
             </a>
           </p>
         </div>

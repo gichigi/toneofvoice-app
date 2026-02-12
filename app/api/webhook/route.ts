@@ -185,7 +185,7 @@ async function handleSessionExpired(session: Stripe.Checkout.Session) {
     // Extract customer details and recovery info
     const customerEmail = session.customer_details?.email;
     const customerName = session.customer_details?.name;
-    const recoveryUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://aistyleguide.com'}/brand-details?fromExtraction=true`;
+    const recoveryUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://toneofvoice.app'}/brand-details?fromExtraction=true`;
     const expiresAt = session.after_expiration?.recovery?.expires_at;
     
     // Check if customer consented to promotional emails

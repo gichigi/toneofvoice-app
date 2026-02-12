@@ -16,7 +16,7 @@ function getStripe() {
   });
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://aistyleguide.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://toneofvoice.app";
 const PRO_PRICE_ID =
   mode === "test"
     ? process.env.STRIPE_TEST_PRO_PRICE_ID

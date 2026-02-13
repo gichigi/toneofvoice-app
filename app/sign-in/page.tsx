@@ -83,7 +83,7 @@ function SignInContent() {
         </div>
         <h2 className="mb-2 text-center text-2xl font-semibold">Sign in</h2>
         <p className="mb-6 text-center text-sm text-gray-500">
-          Access your account to manage style guides
+          Access your account to manage guidelines
         </p>
 
         <button
@@ -128,6 +128,14 @@ function SignInContent() {
               className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-3 text-sm text-black focus:outline-none focus:ring-2 focus:ring-blue-200"
               onChange={(e) => setPassword(e.target.value)}
             />
+          </div>
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Forgot password?
+            </Link>
           </div>
           <AuthError error={error} className="mb-0" />
           <Button type="submit" disabled={loading} className="w-full">

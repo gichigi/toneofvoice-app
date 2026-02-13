@@ -51,7 +51,7 @@ export interface ComparisonRow {
 }
 
 export const COMPARISON_ROWS: ComparisonRow[] = [
-  { feature: "Brand voice & style guidelines", templates: "check", chatgpt: "check", aisg: "check" },
+  { feature: "Tone of voice guidelines", templates: "check", chatgpt: "check", aisg: "check" },
   { feature: "Writing rules from Apple, BBC, Spotify", templates: "check", chatgpt: "check", aisg: "check" },
   { feature: "Analyse any brand website with a click", templates: "cross", chatgpt: "check", aisg: "check" },
   { feature: "No prompt engineering required", templates: "cross", chatgpt: "cross", aisg: "check" },
@@ -85,7 +85,7 @@ export interface FeatureCard {
 
 export const FEATURES_SOLUTIONS: FeatureCard[] = [
   { icon: CheckCircle, title: "Consistent messaging", desc: "Clear, unified voice across all content that resonates with your audience and builds trust" },
-  { icon: FileCheck, title: "Complete style guidelines", desc: "Detailed guidelines with brand voice, do's/don'ts, and examples to align your entire team" },
+  { icon: FileCheck, title: "Complete tone of voice guidelines", desc: "Detailed guidelines with tone of voice traits, do's/don'ts, and examples to align your entire team" },
   { icon: UserCheck, title: "Team alignment", desc: "Everyone writes in your brand's voice, creating consistent experiences at every touchpoint" },
   { icon: Shield, title: "Strong brand identity", desc: "Every message reinforces who you are, making your brand instantly recognizable and memorable" },
   { icon: Heart, title: "Customer trust", desc: "Clear, consistent voice builds credibility and makes customers feel confident choosing you" },
@@ -136,17 +136,18 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: "pro",
     name: "Pro",
-    price: 29,
-    priceLabel: "$29",
+    price: 12,
+    priceLabel: "$12",
     sublabel: "per month",
     features: [
       "Everything in Starter, plus:",
-      "25 supporting style rules", 
-      "Before & After examples", 
+      "25 supporting style rules",
+      "Before & After examples",
       "Key terminology",
-      "Generate up to 5 guidelines",
+      "Generate up to 2 full guides",
       "AI assist to refine guidelines",
       "Export as PDF/Markdown/Word",
+      "Subtle branding on exports",
     ],
     cta: "Get Pro",
     ctaSubtext: "Best for professionals",
@@ -156,14 +157,19 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: "agency",
     name: "Agency",
-    price: 79,
-    priceLabel: "$79",
+    price: 49,
+    priceLabel: "$49",
     sublabel: "per month",
     features: [
       "Everything in Pro, plus:",
       "Unlimited tone of voice guides",
+      "White-label exports (no branding)",
       "Manage multiple client brands",
       "Priority email support",
+      "Coming soon: Custom colors & branding",
+      "Coming soon: Client workspaces",
+      "Coming soon: Higher-quality AI models",
+      "Coming soon: Guidelines share link",
     ],
     cta: "Get Agency",
     ctaSubtext: "Best for agencies and freelancers",

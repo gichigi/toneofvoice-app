@@ -15,7 +15,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-primary-foreground/80">
-              Create professional brand voice and style guides in minutes, not months.
+              Create professional tone of voice guidelines in minutes, not months.
             </p>
           </div>
 

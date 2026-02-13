@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { renderStyleGuideTemplate, renderFullGuideFromPreview } from "@/lib/template-processor"
-import OpenAI from "openai"
 
 // Simplified validation function - only new format
 function validateBrandDetails(details: any) {
@@ -23,49 +22,12 @@ function validateBrandDetails(details: any) {
   return errors
 }
 
-// Test OpenAI connection inline
-async function testOpenAIConnection() {
-  try {
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      throw new Error("OpenAI API key not found")
-    }
-
-    const openai = new OpenAI({ apiKey })
-    
-    // Simple test call
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: "Test" }],
-      max_tokens: 5,
-    })
-
-    if (!response.choices?.[0]?.message) {
-      throw new Error("Invalid OpenAI response")
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error("OpenAI test failed:", error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "OpenAI connection failed" 
-    }
-  }
-}
-
 export async function POST(request: Request) {
   let brandDetails: any = {}
   let requestBody: any = {}
 
   try {
     console.log("Received request to generate-styleguide API")
-
-    // Test OpenAI connection inline
-    const testResult = await testOpenAIConnection()
-    if (!testResult.success) {
-      throw new Error(testResult.error || "API key validation failed")
-    }
 
     // Get the request body and handle potential parsing errors
     try {

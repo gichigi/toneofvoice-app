@@ -7,9 +7,11 @@ This file contains durable instructions for Claude Code when working on this cod
 ## 📋 Working Preferences
 
 ### Communication Style
-- **Low verbosity**: Short, casual sentences. Plain English only.
-- **Be honest**: Tell the truth. Admit when you don't know. Suggest solutions.
-- **Don't just agree**: Challenge ideas if needed.
+- **CRITICAL: Low verbosity always**: Keep responses short and concise. Never write long explanations.
+- **Detailed but brief**: Give complete info in minimal words. Cut fluff.
+- **Plain English**: Short, casual sentences. No jargon.
+- **Be direct**: Tell the truth. Admit when you don't know. Suggest solutions.
+- **Challenge when needed**: Don't just agree. Push back if something's wrong.
 
 ### Before You Start
 - **Check PROJECT_CONTEXT.md first** before searching files
@@ -156,6 +158,7 @@ Required for full functionality:
 - `SUPABASE_SERVICE_ROLE_KEY`: Supabase admin
 - `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Stripe
 - `STRIPE_WEBHOOK_SECRET`: Stripe webhooks
+- `LANGSMITH_API_KEY`, `LANGSMITH_TRACING`, `LANGSMITH_PROJECT`: LangSmith observability (optional, see `/docs/LANGSMITH-SETUP.md`)
 
 ### Deployment
 - **Platform**: Vercel
@@ -252,6 +255,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - **Release Notes**: `/docs/RELEASE-NOTES-2026-02.md`
 - **Changelog**: `/docs/CHANGELOG-2025-02-09.md`
 - **Stripe Setup**: `/docs/STRIPE-RESTRICTED-KEY-SETUP.md`
+- **LangSmith Setup**: `/docs/LANGSMITH-SETUP.md` (AI observability)
 
 ---
 

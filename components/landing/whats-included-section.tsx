@@ -9,10 +9,10 @@ export default function WhatsIncludedSection() {
         <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              What&apos;s included in your style guide
+              What&apos;s included in your guidelines
             </h2>
             <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl">
-              Everything you need to create compelling content that always sounds like you
+              Professional tone of voice documentation that works with any AI tool or team member
             </p>
           </div>
         </div>

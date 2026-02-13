@@ -1,6 +1,7 @@
 import { OpenAI } from "openai"
 import Logger from "./logger"
 import { TRAITS, type MixedTrait, type TraitName, isPredefinedTrait, isCustomTrait } from "./traits"
+import { createTracedOpenAI } from "./langsmith-openai"
 
 interface GenerationResult {
   success: boolean
@@ -116,8 +117,8 @@ export async function generateWithOpenAI(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       Logger.debug(`OpenAI attempt ${attempt}/${maxAttempts}`)
-      
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+      const openai = createTracedOpenAI()
       const requestParams: any = {
         model: model,
         messages: [
@@ -283,7 +284,7 @@ Repeat this block for each trait (### 2. [TraitName], ### 3. [TraitName], etc.).
   const result = await generateWithOpenAI(
     prompt,
     "You are a brand voice expert creating specific, actionable communication style guidelines.",
-    "markdown", 2500, "gpt-5.2", "medium"
+    "markdown", 2500, "gpt-5.2", "low"
   );
 
   if (result.success && result.content) {
@@ -527,7 +528,7 @@ Requirements:
         "json",
         5500,
         "gpt-5.2",
-        "medium"
+        "low"
       );
 
       if (!result.success || !result.content) {
@@ -757,9 +758,9 @@ export async function generateKeywords(params: { name: string; brandDetailsDescr
     prompt,
     "You are a keyword expert focused on content marketing terms.",
     "json",
-    400,
+    800,
     "gpt-5.2",
-    "low"
+    "none"
   )
 }
 
@@ -812,6 +813,6 @@ Return ONLY a JSON array with exactly 3 trait names, like this:
     "json",
     100,
     "gpt-5.2",
-    "low"
+    "none"
   )
 }

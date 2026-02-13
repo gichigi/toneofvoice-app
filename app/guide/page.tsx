@@ -101,7 +101,7 @@ function GuideContent() {
 
   // Progress state for loading UI
   const [loadingProgress, setLoadingProgress] = useState(10)
-  const [loadingStep, setLoadingStep] = useState("Loading your brand details...")
+  const [loadingStep, setLoadingStep] = useState("Analysing your brand details...")
   const [contentReady, setContentReady] = useState(false)
   const [isQuickLoad, setIsQuickLoad] = useState(false)
   
@@ -906,13 +906,13 @@ function GuideContent() {
 
             {/* Title & Description */}
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
-              {loadingProgress === 100 ? "Almost Ready" : "Creating Your Style Guide"}
+              {loadingProgress === 100 ? "Almost Ready" : "Building Your Tone of Voice Guidelines"}
             </h1>
 
             <p className="text-sm text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
               {loadingProgress === 100
                 ? "Your guide is ready to view"
-                : "Preparing your personalized guidelines"}
+                : "Personalized guidelines, ready in seconds."}
             </p>
 
             {/* Progress Section */}
@@ -937,48 +937,48 @@ function GuideContent() {
                 </div>
               )}
 
-              {/* Feature Preview Card */}
+              {/* What to do next */}
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 sm:p-5 text-left space-y-3">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  What you&apos;ll get:
+                  Your next steps
                 </p>
                 <div className="space-y-2.5">
                   <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
-                      <Megaphone className="h-3.5 w-3.5 text-gray-600" />
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center">
+                      <span className="text-xs font-semibold text-gray-700">1</span>
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-0.5">
                       <p className="text-xs sm:text-sm font-medium text-gray-900">
-                        Brand voice guidelines
+                        Review and edit
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Personalized to your brand
+                        Refine your guide with AI or by hand
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
-                      <FileText className="h-3.5 w-3.5 text-gray-600" />
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center">
+                      <span className="text-xs font-semibold text-gray-700">2</span>
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-0.5">
                       <p className="text-xs sm:text-sm font-medium text-gray-900">
-                        Export options
+                        Export
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        PDF, Word, and Markdown formats
+                        Download as PDF, Word, or Markdown
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
-                      <PenLine className="h-3.5 w-3.5 text-gray-600" />
+                    <div className="shrink-0 w-6 h-6 rounded-full bg-white border border-gray-300 flex items-center justify-center">
+                      <span className="text-xs font-semibold text-gray-700">3</span>
                     </div>
-                    <div className="pt-1">
+                    <div className="pt-0.5">
                       <p className="text-xs sm:text-sm font-medium text-gray-900">
-                        Edit and refine
+                        Put it to work
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Customize to match your needs
+                        Use in any AI tool like ChatGPT/Claude, share with your team or your client
                       </p>
                     </div>
                   </div>
@@ -1139,6 +1139,7 @@ function GuideContent() {
           editorId={isPreviewFlow ? "preview-single-editor" : "full-access-single-editor"}
           showEditTools={true}
           websiteUrl={brandDetails?.websiteUrl}
+          subscriptionTier={subscriptionTier as "starter" | "pro" | "agency"}
           pdfFooter={
             isPreviewFlow && subscriptionTier === "starter" ? (
               <div className="pdf-only mt-12 pt-8 border-t border-gray-200 px-8 pb-8">
@@ -1230,8 +1231,8 @@ function GuideContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border border-blue-300 bg-blue-50/50 p-4 dark:bg-blue-950/20">
                   <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900">RECOMMENDED</span>
-                  <h4 className="mt-1 font-semibold">Pro — $29/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">5 guides, full editing & export</p>
+                  <h4 className="mt-1 font-semibold">Pro — $12/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">2 guides, full editing & export</p>
                   <Button
                     onClick={() => {
                       track("Payment Started", { plan: "pro", type: "subscription" })
@@ -1245,8 +1246,8 @@ function GuideContent() {
                   </Button>
                 </div>
                 <div className="rounded-lg border p-4">
-                  <h4 className="font-semibold">Agency — $79/mo</h4>
-                  <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, multiple brands, priority support</p>
+                  <h4 className="font-semibold">Agency — $49/mo</h4>
+                  <p className="mt-1 text-xs text-muted-foreground">Unlimited guides, white-label exports, priority support</p>
                   <Button
                     onClick={() => {
                       track("Payment Started", { plan: "agency", type: "subscription" })

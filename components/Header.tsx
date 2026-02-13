@@ -24,11 +24,11 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className={containerClass || "container grid h-16 grid-cols-3 items-center"}>
-        <div className="flex items-center">
+      <div className={containerClass || "container flex h-16 items-center justify-between gap-4 md:gap-6"}>
+        <div className="flex items-center min-w-0">
           <Logo size="md" linkToHome={true} />
         </div>
-        
+
         {showNavigation && (
           <nav className="hidden md:flex justify-center gap-6">
             <Link href="#how-it-works" className="text-sm font-medium hover:text-primary">
@@ -45,8 +45,8 @@ export default function Header({
             </Link>
           </nav>
         )}
-        
-        <div className="flex items-center justify-end gap-4">
+
+        <div className="flex items-center justify-end gap-2 md:gap-4 ml-auto">
           {showGetStarted && <HeaderAuth />}
           {rightContent}
         </div>

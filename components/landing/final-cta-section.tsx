@@ -26,7 +26,7 @@ export default function FinalCtaSection() {
                   document.getElementById("hero")?.scrollIntoView({ behavior: "smooth" })
                 }}
               >
-                Create your style guide <ArrowRight className="h-4 w-4" />
+                Create your tone of voice <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
           </div>

@@ -7,6 +7,7 @@ import path from 'path'
 import { BLOG_SYSTEM_PROMPT, getBlogOutlinePrompt, getBlogArticlePromptFromOutline } from '@/lib/blog-prompts'
 import { searchBrief } from '@/lib/firecrawl'
 import OpenAI from 'openai'
+import { createTracedOpenAI } from '@/lib/langsmith-openai'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -302,10 +303,8 @@ export async function POST(req: NextRequest) {
     // Step 2: Generate article from outline using gpt-4o-mini with temperature 0.8
     // Outline now contains research_excerpts, so we don't need to pass researchNotes separately
     const articlePrompt = getBlogArticlePromptFromOutline(outline, keywords, linkInstructions || undefined)
-    
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
+
+    const openai = createTracedOpenAI()
     
     const articleResponse = await openai.chat.completions.create({
       model: 'gpt-4.1',

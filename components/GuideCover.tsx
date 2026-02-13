@@ -8,6 +8,7 @@ interface GuideCoverProps {
   showPreviewBadge?: boolean
   className?: string
   websiteUrl?: string
+  subscriptionTier?: 'starter' | 'pro' | 'agency'
 }
 
 // Eyebrow: short label above title (avoid "Brand Identity" – redundant/wrong for voice docs)
@@ -19,7 +20,8 @@ export function GuideCover({
   date,
   showPreviewBadge,
   className,
-  websiteUrl
+  websiteUrl,
+  subscriptionTier = 'starter'
 }: GuideCoverProps) {
   const formattedDate = date || new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -69,6 +71,31 @@ export function GuideCover({
             <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
               {subtitle}
             </p>
+          )}
+
+          {/* Branding - tier-based visibility */}
+          {subscriptionTier === 'starter' && (
+            <div className="pt-8 border-t border-gray-200 mt-6 animate-in fade-in duration-700 delay-700">
+              <p className="text-base font-semibold text-gray-900">
+                Generated with Tone of Voice App
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Create your own at{' '}
+                <a href="https://toneofvoice.app" className="text-gray-900 hover:underline font-medium">
+                  toneofvoice.app
+                </a>
+              </p>
+            </div>
+          )}
+          {subscriptionTier === 'pro' && (
+            <div className="pt-6 mt-6 animate-in fade-in duration-700 delay-700">
+              <p className="text-xs text-gray-400">
+                Generated with{' '}
+                <a href="https://toneofvoice.app" className="text-gray-500 hover:underline">
+                  Tone of Voice App
+                </a>
+              </p>
+            </div>
           )}
         </div>
       </div>

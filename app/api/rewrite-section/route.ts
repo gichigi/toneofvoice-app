@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { OpenAI } from "openai"
 import { createClient } from "@/lib/supabase-server"
+import { createTracedOpenAI } from "@/lib/langsmith-openai"
 
 export async function POST(req: Request) {
   try {
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const openai = createTracedOpenAI()
 
     const systemPrompt = `You are an expert editor specializing in brand voice and style guides. 
 Your task is to rewrite a section of a style guide based on user instructions while:

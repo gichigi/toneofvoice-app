@@ -644,7 +644,7 @@ export default function BrandDetailsPage() {
     }
   }
 
-  // Redirect to guide page immediately; guide page handles API call and shows loading
+  // Generate preview on brand-details page before redirecting
   const handleSubmit = async (e: React.FormEvent) => {
     // Authed user at guide limit: show upgrade nudge instead of generating
     if (user && atLimit) {
@@ -654,9 +654,10 @@ export default function BrandDetailsPage() {
 
     setLoading(true)
     setProcessingStep('processing')
+    setGenerationStartTime(Date.now())
 
     try {
-      // Clear cached preview so guide page triggers fresh generation
+      // Clear cached preview before generating fresh content
       localStorage.removeItem("previewContent")
       localStorage.removeItem("generatedPreviewTraits")
       localStorage.removeItem("previewTraitsTimestamp")
@@ -673,23 +674,70 @@ export default function BrandDetailsPage() {
         readingLevel: brandDetails.readingLevel,
       }
 
+      // Save brand details for reference
       localStorage.setItem("brandDetails", JSON.stringify(detailsWithName))
       localStorage.setItem("selectedTraits", JSON.stringify(selectedTraits))
 
+      // Call API to generate preview
+      const response = await fetch('/api/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandDetails: detailsWithName,
+          selectedTraits
+        })
+      })
+
+      let errorMessage = 'Failed to generate style guide'
+      if (!response.ok) {
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.details || errorMessage
+        } catch {
+          errorMessage = `Server error (${response.status}). Please try again.`
+        }
+        throw new Error(errorMessage)
+      }
+
+      let data: { preview?: string; success?: boolean }
+      try {
+        data = await response.json()
+      } catch {
+        throw new Error('Invalid response from server. Please try again.')
+      }
+
+      if (!data?.preview) {
+        throw new Error('Style guide generation failed. Please try again.')
+      }
+
+      // Save generated preview to localStorage
+      localStorage.setItem("previewContent", data.preview)
+
+      // Extract and save brand voice traits
+      const brandVoiceMatch = data.preview.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
+      if (brandVoiceMatch) {
+        const brandVoiceContent = brandVoiceMatch[1].trim()
+        localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
+        localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
+      }
+
       setProcessingStep('complete')
       setLoadingMessage("")
+      setGenerationStartTime(null)
 
-      // Forward to guide page; it will call /api/preview and show loading
+      // Redirect to guide page with generated content
       router.push("/guide")
     } catch (error) {
       setLoading(false)
       setProcessingStep('idle')
       setLoadingMessage("")
       setGenerationStartTime(null)
-      console.error("[Brand Details] Error preparing redirect:", error)
+      console.error("[Brand Details] Generation failed:", error)
+
+      const message = error instanceof Error ? error.message : "Generation failed"
       toast({
-        title: "Error",
-        description: "Could not proceed. Please try again.",
+        title: "Generation failed",
+        description: message,
         variant: "destructive",
       })
     }

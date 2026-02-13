@@ -37,7 +37,7 @@ const logGenerationMetrics = (operationName: string, success: boolean, attemptCo
 
 const withRetry = async <T>(
   operation: () => Promise<T>,
-  maxAttempts: number = 3,
+  maxAttempts: number = 2,
   operationName: string
 ): Promise<T | null> => {
   let lastError: any = null;

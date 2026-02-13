@@ -8,11 +8,11 @@ import { BillingActions } from "./BillingActions"
 const BILLING_FAQS: { q: string; a: React.ReactNode }[] = [
   {
     q: "What do I get with Pro?",
-    a: "Full access: unlock all sections (25 style rules, Before & After examples, key terminology), AI assist to refine your guidelines, and up to 5 saved guides. Update every section with AI assistand export as PDF, Word, or Markdown.",
+    a: "Full access: unlock all sections (25 style rules, Before & After examples, key terminology), AI assist to refine your guidelines, and up to 2 saved guides. Update every section with AI assist and export as PDF, Word, or Markdown with subtle branding.",
   },
   {
     q: "What do I get with Agency?",
-    a: "Everything in Pro, plus unlimited style guides, the ability to manage multiple client brands from one account, and priority email support. Built for agencies and freelancers who need to scale.",
+    a: "Everything in Pro, plus unlimited style guides, white-label exports (no branding), the ability to manage multiple client brands from one account, and priority email support. Built for agencies and freelancers who need to scale.",
   },
   {
     q: "How do I cancel or get a refund?",
@@ -82,7 +82,7 @@ export function BillingPlansGrid({
                 </p>
                 {tier === "starter" && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    <i>Upgrade to generate all sections, create up to 5 guidelines, and export in multiple formats.</i>
+                    <i>Upgrade to generate all sections, create up to 2 guidelines (Pro) or unlimited (Agency), and export in multiple formats.</i>
                   </p>
                 )}
               </div>

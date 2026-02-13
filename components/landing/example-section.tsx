@@ -46,10 +46,10 @@ export default function ExampleSection() {
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Brand voice traits in action
+              Tone of voice traits in action
             </h2>
             <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl mb-4">
-              See how each trait shapes your guide. Click a trait for definitions,
+              See how each trait shapes your guidelines. Click a trait for definitions,
               do&apos;s, don&apos;ts, and a before/after example.
             </p>
           </div>

@@ -44,15 +44,14 @@ export default function HeroSection() {
                 d="M13 10V3L4 14h7v7l9-11h-7z"
               />
             </svg>
-            AI-Powered Brand Voice Guidelines
+            AI-Powered Tone of Voice Guidelines
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4">
             Get ChatGPT to <em>finally</em> sound like you
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
-            Create a professional <strong>brand tone of voice</strong> and{" "}
-            <strong>content style guide</strong> to use with AI so you always
-            sound like you.
+            Stop asking AI to &quot;make it sound good.&quot; Create high-quality, professional{" "}
+            <strong>tone of voice guidelines</strong> to make sure you always sound like you.
           </p>
 
           <form onSubmit={handleExtraction} className="w-full max-w-2xl">

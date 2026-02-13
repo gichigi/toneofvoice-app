@@ -48,6 +48,8 @@ export interface GuideViewProps {
   contentClassName?: string
   /** Website URL to show on cover page (if available) */
   websiteUrl?: string
+  /** Subscription tier for branding visibility */
+  subscriptionTier?: Tier
 }
 
 /**
@@ -80,14 +82,18 @@ export function GuideView({
   pdfFooter = null,
   contentClassName,
   websiteUrl,
+  subscriptionTier = 'starter',
 }: GuideViewProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
   const nonCover = sections.filter((s) => s.id !== "cover")
   const hasContent = (s: StyleGuideSection) => (s.content || "").trim().length > 0
-  const unlockedSections = nonCover.filter((s) => isUnlocked(s.minTier) && hasContent(s))
-  const lockedSections = nonCover.filter((s) => !isUnlocked(s.minTier) && hasContent(s))
+  // Separate Questions section to render at bottom
+  const questionsSection = nonCover.find((s) => s.id === "contact" && hasContent(s))
+  const sectionsWithoutQuestions = nonCover.filter((s) => s.id !== "contact")
+  const unlockedSections = sectionsWithoutQuestions.filter((s) => isUnlocked(s.minTier) && hasContent(s))
+  const lockedSections = sectionsWithoutQuestions.filter((s) => !isUnlocked(s.minTier) && hasContent(s))
   const lockedMarkdown = lockedSections
     .map((s) => `## ${s.title}\n\n${s.content}`.trim())
     .join("\n\n")
@@ -123,6 +129,7 @@ export function GuideView({
                   guideType={guideType}
                   showPreviewBadge={showPreviewBadge}
                   websiteUrl={websiteUrl}
+                  subscriptionTier={subscriptionTier}
                 />
               </div>
               {unlockedSections.map((section, index) => (
@@ -166,6 +173,54 @@ export function GuideView({
                   </div>
                 </div>
               ))}
+              {/* Questions section always at bottom */}
+              {questionsSection && (
+                <div
+                  key={questionsSection.id}
+                  id={questionsSection.id}
+                  className={cn(
+                    "pdf-section scroll-mt-4 px-12 md:px-20 py-20 md:py-24 border-t border-gray-100",
+                    (unlockedSections.length + lockedSections.length) % 2 === 0 ? "bg-white" : "bg-gray-50/30"
+                  )}
+                >
+                  <div className="max-w-3xl mx-auto">
+                    <MarkdownRenderer
+                      content={`## ${questionsSection.title}\n\n${questionsSection.content}`}
+                      selectedTraits={selectedTraits}
+                      sectionId={questionsSection.id}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Branded footer - after all content, tier-based visibility */}
+              {(subscriptionTier === 'starter' || subscriptionTier === 'pro') && (
+                <div className="pdf-only px-12 md:px-20 py-12 border-t border-gray-200">
+                  <div className="max-w-3xl mx-auto text-center">
+                    {subscriptionTier === 'starter' && (
+                      <div className="space-y-4">
+                        <p className="text-base font-semibold text-gray-900">
+                          Powered by Tone of Voice App
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Create your own professional tone of voice guidelines in minutes at{' '}
+                          <a href="https://toneofvoice.app" className="text-gray-900 hover:underline font-medium">
+                            toneofvoice.app
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                    {subscriptionTier === 'pro' && (
+                      <p className="text-xs text-gray-400">
+                        Powered by{' '}
+                        <a href="https://toneofvoice.app" className="text-gray-500 hover:underline">
+                          Tone of Voice App
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -216,6 +271,51 @@ export function GuideView({
                   </div>
                 </div>
               ))}
+              {/* Questions section always at bottom */}
+              {questionsSection && (
+                <div
+                  key={questionsSection.id}
+                  id={questionsSection.id}
+                  className="pdf-section scroll-mt-4 px-12 md:px-20 py-16 md:py-20 border-t border-gray-100"
+                >
+                  <div className="max-w-3xl mx-auto">
+                    <MarkdownRenderer
+                      content={`## ${questionsSection.title}\n\n${questionsSection.content}`}
+                      selectedTraits={selectedTraits}
+                      sectionId={questionsSection.id}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Branded footer - after all content, tier-based visibility */}
+              {(subscriptionTier === 'starter' || subscriptionTier === 'pro') && (
+                <div className="pdf-only px-12 md:px-20 py-12 border-t border-gray-200">
+                  <div className="max-w-3xl mx-auto text-center">
+                    {subscriptionTier === 'starter' && (
+                      <div className="space-y-4">
+                        <p className="text-base font-semibold text-gray-900">
+                          Powered by Tone of Voice App
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Create your own professional tone of voice guidelines in minutes at{' '}
+                          <a href="https://toneofvoice.app" className="text-gray-900 hover:underline font-medium">
+                            toneofvoice.app
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                    {subscriptionTier === 'pro' && (
+                      <p className="text-xs text-gray-400">
+                        Powered by{' '}
+                        <a href="https://toneofvoice.app" className="text-gray-500 hover:underline">
+                          Tone of Voice App
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

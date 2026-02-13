@@ -278,7 +278,7 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
         <DialogHeader>
           <DialogTitle>Create new guide</DialogTitle>
           <DialogDescription>
-            Enter a website URL or short description to get started, or continue manually.
+            Enter a website URL or short description to get started.
           </DialogDescription>
         </DialogHeader>
 

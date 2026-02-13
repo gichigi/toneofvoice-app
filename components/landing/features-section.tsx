@@ -47,7 +47,7 @@ export default function FeaturesSection() {
                 color: showSolutions ? "#3b82f6" : "#ef4444",
               }}
             >
-              {showSolutions ? "have a brand voice" : "don't have a brand voice"}
+              {showSolutions ? "have a strong tone of voice" : "don't have a strong tone of voice"}
             </h2>
           </div>
         </div>

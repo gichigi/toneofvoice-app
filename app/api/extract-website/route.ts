@@ -173,7 +173,7 @@ export async function POST(request: Request) {
   - Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions"
   - Every sentence must carry real information. If you can delete a sentence and lose nothing, delete it
   - Use plain, specific language. Say what they actually do
-  - Avoid single-sentence paragraphs. They make it feel like a list, not a description
+  - Write in proper paragraph format - multiple sentences per paragraph, not one sentence per line
   - Don't start multiple sentences the same way
   - Make them sound good without overselling. Reader should think "yeah, that's us" not "this sounds like a press release"
   - No em dashes
@@ -357,7 +357,7 @@ export async function POST(request: Request) {
   - Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions"
   - Every sentence must carry real information. If you can delete a sentence and lose nothing, delete it
   - Use plain, specific language. Say what they actually do
-  - Avoid single-sentence paragraphs. They make it feel like a list, not a description
+  - Write in proper paragraph format - multiple sentences per paragraph, not one sentence per line
   - Don't start multiple sentences the same way
   - Make them sound good without overselling. Reader should think "yeah, that's us" not "this sounds like a press release"
   - No em dashes

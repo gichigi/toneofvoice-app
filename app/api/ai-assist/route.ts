@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
+import { createTracedOpenAI } from "@/lib/langsmith-openai";
 
 /** Supported AI assist actions */
 export type AIAssistAction =
@@ -123,7 +124,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = createTracedOpenAI();
 
     // Call OpenAI with timeout and error handling
     let response;

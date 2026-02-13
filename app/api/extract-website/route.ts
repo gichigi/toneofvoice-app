@@ -155,15 +155,17 @@ export async function POST(request: Request) {
 
 - Brand Name: Memorable, phonetic, easy to pronounce. 1-2 words ideally. No generic words like "Solutions" or "Services".
 
-- Description: 2-3 paragraphs, 80-150 words. First person (we/our).
+- Description: 3 short paragraphs, 80-150 words total. First person (we/our). Compelling and inspiring, not flat.
+  - This goes at the top of a tone of voice document that marketers and content people will proudly share with their team.
   - What they do and why it matters.
   - Who they do it for.
   - Write like employees would be proud of it, not a product spec or press release.
+  - Do not use em dashes (—); rewrite the sentence instead.
 
 - Output: JSON with {"name", "industry", "description", "targetAudience", "productsServices": [...]}`
 
       try {
-        const result = await generateWithOpenAI(prompt, `You write compelling brand descriptions that open tone of voice guidelines. For well-known brands, use your knowledge to capture what they're actually known for. For less-known brands, use what you're given and frame it with confidence. Write from the brand's perspective (we/our) in a way employees would be proud of.`, "json", 1500, "gpt-5.2", "none")
+        const result = await generateWithOpenAI(prompt, `You write compelling brand descriptions that open tone of voice guidelines. For well-known brands, use your knowledge to capture what they're actually known for. For less-known brands, use what you're given and frame it with confidence. Write from the brand's perspective (we/our) in a way employees would be proud of. The description goes at the top of a tone of voice doc that marketers and content people will share proudly with their team. Never use em dashes (—); rewrite the sentence instead.`, "json", 1500, "gpt-5.2", "none")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -326,16 +328,18 @@ Use your knowledge of this brand to write an authentic, compelling description t
 
 - Brand Name: 1-3 words
 
-- Description: 2-3 paragraphs, 80-150 words. First person (we/our).
+- Description: 3 short paragraphs, 80-150 words total. First person (we/our). Slightly inspiring, not flat.
+  - This goes at the top of a tone of voice document that marketers and content people will proudly share with their team.
   - What they do and why it matters.
   - Who they do it for.
   - Write like employees would be proud of it, not a product spec or press release.
+  - Do not use em dashes (—); rewrite the sentence instead.
 
 - Output: JSON with {"name", "industry", "description", "targetAudience", "productsServices": [...]}`
 
     const result = await generateWithOpenAI(
       prompt,
-      `You write compelling brand descriptions that open tone of voice guidelines. For well-known brands, use your knowledge to capture what they're actually known for. For less-known brands, use what you're given and frame it with confidence. Write from the brand's perspective (we/our) in a way employees would be proud of.`,
+      `You write compelling brand descriptions that open tone of voice guidelines. For well-known brands, use your knowledge to capture what they're actually known for. For less-known brands, use what you're given and frame it with confidence. Write from the brand's perspective (we/our) in a way employees would be proud of. The description goes at the top of a tone of voice doc that marketers and content people will share proudly with their team. Never use em dashes (—); rewrite the sentence instead.`,
       "json",
       1500,
       "gpt-5.2",

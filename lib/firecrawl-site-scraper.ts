@@ -22,7 +22,7 @@ const BRAND_EXTRACTION_SCHEMA = {
     description: {
       type: "string",
       description:
-        "Full brand description for About section. Write 2-3 cohesive, flowing paragraphs that read naturally. Each paragraph should be 3-5 sentences that connect smoothly. Avoid bullet-like or choppy sentences. First person plural (we/our). Create a narrative flow covering what they do, their approach, and what makes them unique.",
+        "Brand description: 2-3 short paragraphs (3-4 sentences each, 80-120 words total). First person plural (we/our). Paragraph 1: What they do and the space they operate in. Paragraph 2: Who they serve and why that matters. Paragraph 3: What makes them unique or interesting. Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling), NO buzzwords. Every sentence carries real information. Use plain, specific language. Avoid single-sentence paragraphs. Don't start multiple sentences the same way. Make them sound good without overselling. No em dashes.",
     },
     audience: { type: "string", description: "Target audience summary" },
     keywords: {
@@ -50,7 +50,7 @@ const BRAND_EXTRACTION_SCHEMA = {
 
 const BRAND_EXTRACTION_PROMPT = `Extract brand identity from this website.
 - name: Brand/company name (1-3 words)
-- description: Write 2-3 cohesive, flowing paragraphs that read naturally. Each paragraph should be 3-5 sentences that connect smoothly. Avoid bullet-like or choppy sentences. First paragraph: what they do and who they serve. Second paragraph: their approach and what makes them unique. Optional third paragraph: their impact or value proposition. First person plural (we/our). Create a narrative flow, not a list.
+- description: Write 2-3 short paragraphs (3-4 sentences each, 80-120 words total). First person plural (we/our). Cover: (1) What they do and the space they operate in. (2) Who they serve and why that matters. (3) What makes them unique or interesting. Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions". Every sentence must carry real information. Use plain, specific language. Say what they actually do. Avoid single-sentence paragraphs. Don't start multiple sentences the same way. Make them sound good without overselling. The reader should think "yeah, that's us" not "this sounds like a press release". No em dashes.
 - audience: Who they serve (demographics, context)
 - keywords: Up to 25 high-value keywords for content (products, services, values, industry terms)
 - suggestedTraits: Exactly 3 brand voice traits (e.g. warm, professional, bold)

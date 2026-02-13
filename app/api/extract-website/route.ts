@@ -166,14 +166,17 @@ export async function POST(request: Request) {
   - Consider phonetics, alliteration, rhythm or distinctive sounds
   - Be creative and distinctive rather than descriptive
 
-- Guidelines
-  - Description: Write 2-3 cohesive, flowing paragraphs that read naturally. Each paragraph should be 3-5 sentences that connect smoothly. Avoid bullet-like or choppy sentences.
-  - First paragraph: What they do and who they serve
-  - Second paragraph: Their approach and what makes them unique
-  - Optional third paragraph: Their impact or value proposition
-  - Use clear, professional language. First person plural (we/our)
-  - Focus on current offerings, not history. Create a narrative flow, not a list.
-  - IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-), commas, or rewrite sentences instead.
+- Description Guidelines
+  - Write 2-3 short paragraphs (3-4 sentences each, 80-120 words total)
+  - First person plural (we/our)
+  - Cover: (1) What they do and the space they operate in. (2) Who they serve and why that matters. (3) What makes them unique or interesting
+  - Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions"
+  - Every sentence must carry real information. If you can delete a sentence and lose nothing, delete it
+  - Use plain, specific language. Say what they actually do
+  - Avoid single-sentence paragraphs. They make it feel like a list, not a description
+  - Don't start multiple sentences the same way
+  - Make them sound good without overselling. Reader should think "yeah, that's us" not "this sounds like a press release"
+  - No em dashes
 
 - Output format
   - Return clean JSON: {"name": "memorable brand name", "industry": "category", "description": "full brand description", "targetAudience": "audience details", "productsServices": ["product/service 1", "product/service 2"]}
@@ -313,41 +316,28 @@ export async function POST(request: Request) {
 
     let summary: string
 
-    // Prefer Firecrawl JSON extraction when API key is set (single call, richer description, up to 25 keywords)
+    // Use Firecrawl markdown extraction + OpenAI (same model/params as description route for consistency)
     if (process.env.FIRECRAWL_API_KEY) {
-      Logger.info("Using Firecrawl JSON extraction for site")
-      const fcResult = await scrapeSiteWithJsonExtraction(urlValidation.url)
-      if (fcResult.success && fcResult.description) {
-        Logger.debug("Firecrawl JSON extraction completed", {
-          pagesScraped: fcResult.pagesScraped,
-          keywordsCount: fcResult.keywords.length,
-        })
-        return NextResponse.json({
-          success: true,
-          brandDetailsDescription: fcResult.description,
-          brandName: fcResult.name,
-          audience: fcResult.audience,
-          keywords: fcResult.keywords,
-          suggestedTraits: fcResult.suggestedTraits,
-          productsServices: fcResult.productsServices,
-          ...(urlValidation?.url && { url: urlValidation.url }),
-        })
-      }
-      Logger.warn("Firecrawl JSON extraction failed, falling back to markdown + OpenAI", {
-        error: fcResult.error,
-      })
-      // Fall through to markdown + OpenAI flow
+      Logger.info("Using Firecrawl markdown extraction + OpenAI for site")
       const fcMdResult = await scrapeSiteForExtraction(urlValidation.url)
       if (fcMdResult.success && fcMdResult.markdown) {
         summary = fcMdResult.markdown.slice(0, 7000)
+        Logger.debug("Firecrawl markdown extraction completed", {
+          pagesScraped: fcMdResult.pagesScraped,
+          markdownLength: summary.length,
+        })
       } else {
+        Logger.warn("Firecrawl markdown extraction failed, falling back to Cheerio", {
+          error: fcMdResult.error,
+        })
         summary = await fetchAndExtractWithCheerio(urlValidation.url)
       }
     } else {
+      Logger.info("No Firecrawl API key, using Cheerio extraction")
       summary = await fetchAndExtractWithCheerio(urlValidation.url)
     }
 
-    // Fallback: Generate prompt for website extraction (markdown + OpenAI)
+    // Generate prompt for website extraction (markdown + OpenAI, same format as description route)
     const prompt = `Analyze this website content and extract the brand's core identity.
 
 - Brand
@@ -360,15 +350,20 @@ export async function POST(request: Request) {
   - 1-3 words maximum
   - Be creative and descriptive
 
-- Guidelines
-  - Description: 3-6 paragraphs. Accurate, concise but full. Suitable for About section.
-  - Start with brand name followed by what they are/do
-  - Include main products/services, target audience, what makes them unique
-  - Use professional, clear language. First person plural (we/our)
-  - Focus on current offerings, not history. Not short one-liners.
+- Description Guidelines
+  - Write 2-3 short paragraphs (3-4 sentences each, 80-120 words total)
+  - First person plural (we/our)
+  - Cover: (1) What they do and the space they operate in. (2) Who they serve and why that matters. (3) What makes them unique or interesting
+  - Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions"
+  - Every sentence must carry real information. If you can delete a sentence and lose nothing, delete it
+  - Use plain, specific language. Say what they actually do
+  - Avoid single-sentence paragraphs. They make it feel like a list, not a description
+  - Don't start multiple sentences the same way
+  - Make them sound good without overselling. Reader should think "yeah, that's us" not "this sounds like a press release"
+  - No em dashes
 
 - Output format
-  - Return clean JSON: {"name": "memorable brand name", "description": "full brand description", "productsServices": ["product/service 1", "product/service 2"]}
+  - Return clean JSON: {"name": "brand name", "industry": "category", "description": "full brand description", "targetAudience": "audience details", "productsServices": ["product/service 1", "product/service 2"]}
   - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.
 
 Website Content:

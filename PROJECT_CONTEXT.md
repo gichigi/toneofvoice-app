@@ -20,6 +20,13 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 
 ## 📊 Recent Major Changes (Last 2 Weeks)
 
+### Performance Optimizations (Feb 13, 2026)
+- **Reasoning effort reductions**: Eliminated reasoning tokens from Brand Expansion, Keywords, Trait Suggestions, Word List
+- **Style Rules optimization**: Medium → Low reasoning (67s → 30s, -55% time, -57% cost)
+- **Retry logic**: 3 → 2 attempts after fixing token limits
+- **Results**: ~50% faster extraction, ~47% cheaper full guide generation
+- **LangSmith integration**: Added MCP server for trace monitoring and optimization
+
 ### Rebrand Planning (Feb 2026)
 - **New Domain**: toneofvoice.app (from aistyleguide.com)
 - **New Positioning**: "Define your tone of voice" vs "Generate style guides"
@@ -33,13 +40,20 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 - Enhanced billing UI with `BillingPlansGrid` component
 - Hide dashboard link when unauthenticated
 
-### Enhanced Website Extraction
-- **Firecrawl Integration**: Smart site scraping via Firecrawl API
-  - Scrapes homepage first; if thin content (<2500 chars), maps and scrapes 2-3 subpages
-  - Falls back to Cheerio when `FIRECRAWL_API_KEY` not set
-  - Returns richer JSON with `productsServices` field
-- **Keywords**: Increased to 25 keywords per guide
-- **Description**: Richer, more detailed brand descriptions
+### Enhanced Website Extraction (Updated Feb 13, 2026)
+- **Unified Extraction Approach**: Firecrawl markdown → OpenAI for both website and description inputs
+  - Website route: Firecrawl scrapes markdown, feeds to OpenAI with same prompt/model as description route
+  - Description route: Direct OpenAI extraction with detailed brand prompt
+  - Both use gpt-5.2 with reasoning_effort: "none" for consistency and speed
+  - Removed Firecrawl JSON extraction (inconsistent quality, didn't follow detailed prompts)
+- **Brand Description Quality**: 80-120 words, 2-3 paragraphs
+  - Outcome-focused: what they enable, who they serve, what makes them unique
+  - No corporate fluff, filler adjectives, or buzzwords
+  - Every sentence carries real information
+  - Tone: confident but not corporate, sounds like "yeah, that's us" not a press release
+- **Keywords**: 25 keywords per guide
+- **Smart Scraping**: If homepage thin (<2500 chars), maps and scrapes 2-3 key subpages
+- **Fallback**: Cheerio when `FIRECRAWL_API_KEY` not set
 
 ### PDF Export System
 - **Primary Method**: Server-side Puppeteer with Chromium (`/api/export-pdf`)
@@ -76,11 +90,20 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
   - Added explicit restrictions to all AI generation prompts
   - Updated static templates to use hyphens, commas, or parentheses
   - Verified with real-world testing: 0 em dashes found ✓
-- **Model Optimizations**: Strategic reasoning level adjustments for cost/speed
-  - Downgraded to "low": Before/After, Audience, Content Guidelines, Word List, Keywords, Trait Suggestions
-  - Kept "medium": Brand Voice Traits (complex), Style Rules (critical), Extraction (complex parsing)
+- **Model Optimizations**: Strategic reasoning level adjustments for cost/speed (Feb 2026)
+  - **No reasoning ("none")**: Brand Expansion, Keywords, Trait Suggestions, Word List
+  - **Low reasoning**: Style Rules, Before/After, Audience Section, Content Guidelines
+  - **Medium reasoning**: Brand Voice Traits (complex trait generation)
+  - **Retry logic**: Reduced from 3 to 2 attempts (after token limit fixes)
+  - **Token limits**: Increased Keywords from 400→800 tokens (eliminates truncation)
+  - **Parallelization**: Audience + Keywords run in parallel (saves ~3s)
   - Migrated gpt-4o-mini → gpt-5.2 low, gpt-4o → gpt-5.2 medium (4o deprecation)
-  - Expected savings: 20-30% faster, ~40% cost reduction on downgraded tasks
+  - **Measured improvements (Feb 13, 2026)**:
+    - Extraction time: 25s → 13s (-48%)
+    - Extraction cost: $0.025 → $0.012 (-52%)
+    - Full guide time: 80s → 50s (-38%)
+    - Full guide cost: $0.095 → $0.050 (-47%)
+    - Total reasoning tokens eliminated: 3,390 per generation
 - **AI Assist Toolbar** (Edit Mode):
   - Removed reasoning_effort parameter for fastest response
   - Temporary visual highlight for AI-changed text (subtle blue, fades after 3s)
@@ -165,10 +188,10 @@ Required for full functionality:
 
 ## 🧪 Testing & Scripts
 
+- `pnpm dev` : Start dev server (runs on port 3002)
 - `pnpm test` : Run Vitest tests
 - `pnpm test:watch` : Watch mode
-- `node scripts/test-real-website.mjs <url>` : Test full guide generation (timeout: 4 min)
-- `node scripts/generate-preview-pdf.mjs` : Generate preview PDF
+- `curl -X POST http://localhost:3002/api/extract-website -H "Content-Type: application/json" -d '{"url":"https://example.com"}'` : Test extraction API
 - `npx ccusage@latest` : Monitor Claude Code token usage
 
 ---

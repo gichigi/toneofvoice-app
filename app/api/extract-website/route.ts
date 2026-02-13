@@ -4,7 +4,6 @@ import Logger from "@/lib/logger"
 import { validateUrl } from "@/lib/url-validation"
 import { scrapeSiteForExtraction, scrapeSiteWithJsonExtraction } from "@/lib/firecrawl-site-scraper"
 import * as cheerio from "cheerio"
-import OpenAI from "openai"
 
 // Define interfaces for brand details
 interface TargetAudienceDetail {
@@ -127,37 +126,6 @@ function flattenTargetAudience(audience: TargetAudienceDetail): string {
   return parts.join(" who are ")
 }
 
-// Test OpenAI connection inline
-async function testOpenAIConnection() {
-  try {
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      throw new Error("OpenAI API key not found")
-    }
-
-    const openai = new OpenAI({ apiKey })
-    
-    // Simple test call with faster model
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2-mini",
-      messages: [{ role: "user", content: "Test" }],
-      max_tokens: 5,
-    })
-
-    if (!response.choices?.[0]?.message) {
-      throw new Error("Invalid OpenAI response")
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error("OpenAI test failed:", error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : "OpenAI connection failed" 
-    }
-  }
-}
-
 export async function POST(request: Request) {
   Logger.info("Received extract website request")
 
@@ -212,7 +180,7 @@ export async function POST(request: Request) {
   - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.`
 
       try {
-        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. Never use em dashes in your output.", "json", 1500, "gpt-5.2", "medium")
+        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. Never use em dashes in your output.", "json", 1500, "gpt-5.2", "none")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -235,34 +203,37 @@ export async function POST(request: Request) {
           //     audience: audienceStr 
           //   }).catch(err => ({ success: false, error: err.message }))
           // ])
-          
-          // Generate audience first for keyword context
-          const audienceResult = await generateAudienceSummary({ 
-            name: brandDetails.name, 
-            brandDetailsDescription: brandDetails.description 
-          }).catch(err => ({ success: false, error: err.message }))
-          
+
+          // Get fallback audience from brand details
+          let fallbackAudience = 'general audience'
+          try {
+            if (typeof brandDetails.targetAudience === 'string') {
+              fallbackAudience = brandDetails.targetAudience
+            } else if (brandDetails.targetAudience) {
+              fallbackAudience = flattenTargetAudience(brandDetails.targetAudience)
+            }
+          } catch {}
+
+          // Generate audience and keywords in parallel
+          const [audienceResult, keywordsResult] = await Promise.all([
+            generateAudienceSummary({
+              name: brandDetails.name,
+              brandDetailsDescription: brandDetails.description
+            }).catch(err => ({ success: false, error: err.message })),
+            generateKeywords({
+              name: brandDetails.name,
+              brandDetailsDescription: brandDetails.description,
+              audience: fallbackAudience
+            }).catch(err => ({ success: false, error: err.message }))
+          ])
+
           // Process audience with error handling
           let audienceStr = ''
           if (audienceResult?.success && audienceResult?.content) {
             audienceStr = audienceResult.content.trim()
           } else {
-            // Fallback to original targetAudience from brand details
-            try {
-              if (typeof brandDetails.targetAudience === 'string') {
-                audienceStr = brandDetails.targetAudience
-              } else if (brandDetails.targetAudience) {
-                audienceStr = flattenTargetAudience(brandDetails.targetAudience)
-              }
-            } catch {}
+            audienceStr = fallbackAudience
           }
-
-          // Generate keywords with audience context
-          const keywordsResult = await generateKeywords({ 
-            name: brandDetails.name, 
-            brandDetailsDescription: brandDetails.description,
-            audience: audienceStr || 'general audience'
-          }).catch(err => ({ success: false, error: err.message }))
           
           // Process keywords with error handling (return array for consistency)
           let keywords: string[] = []
@@ -340,12 +311,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Test OpenAI connection inline
-    const testResult = await testOpenAIConnection()
-    if (!testResult.success) {
-      throw new Error(testResult.error || "API key validation failed")
-    }
-
     let summary: string
 
     // Prefer Firecrawl JSON extraction when API key is set (single call, richer description, up to 25 keywords)
@@ -415,7 +380,7 @@ ${summary}`
       "json",
       1500, // Allow longer descriptions for About section
       "gpt-5.2",
-      "medium"
+      "none"
     )
 
     if (!result.success || !result.content) {
@@ -444,25 +409,25 @@ ${summary}`
     //   }).catch(err => ({ success: false, error: err.message })),
     //   
     //   generateKeywords({
-    
-    // Generate audience first, then keywords with audience context
-    const audienceResult = await generateAudienceSummary({ 
-      name: brandName || 'Brand', 
-      brandDetailsDescription: brandDetailsDescription 
-    }).catch(err => ({ success: false, error: err.message }))
+
+    // Generate audience and keywords in parallel
+    const [audienceResult, keywordsResult] = await Promise.all([
+      generateAudienceSummary({
+        name: brandName || 'Brand',
+        brandDetailsDescription: brandDetailsDescription
+      }).catch(err => ({ success: false, error: err.message })),
+      generateKeywords({
+        name: brandName || 'Brand',
+        brandDetailsDescription: brandDetailsDescription,
+        audience: 'general audience'
+      }).catch(err => ({ success: false, error: err.message }))
+    ])
 
     // Process audience with error handling
     let audience = ''
     if (audienceResult?.success && audienceResult?.content) {
       audience = audienceResult.content.trim()
     }
-
-    // Generate keywords with audience context
-    const keywordsResult = await generateKeywords({ 
-      name: brandName || 'Brand', 
-      brandDetailsDescription: brandDetailsDescription,
-      audience: audience || 'general audience'
-    }).catch(err => ({ success: false, error: err.message }))
 
     // Process keywords with error handling (return array for consistency)
     let keywords: string[] = []

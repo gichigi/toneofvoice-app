@@ -1124,7 +1124,6 @@ function GuideContent() {
           onRewrite={handleRewrite}
           isRewriting={isRewriting}
           isSectionLocked={isSectionLocked}
-          canUseRewrite={!!user}
           onUpgrade={() => {
             if (isPreviewFlow) {
               track("Paywall Clicked", { location: "guide-page", action: "unlock-section" })
@@ -1138,6 +1137,8 @@ function GuideContent() {
           storageKey={isPreviewFlow ? "preview-full" : "full-access-full"}
           editorId={isPreviewFlow ? "preview-single-editor" : "full-access-single-editor"}
           showEditTools={true}
+          rewriteBarDisabled={!user || (subscriptionTier !== "pro" && subscriptionTier !== "agency")}
+          rewriteBarDisabledMessage="Upgrade to Pro to use AI assist"
           websiteUrl={brandDetails?.websiteUrl}
           subscriptionTier={subscriptionTier as "starter" | "pro" | "agency"}
           pdfFooter={

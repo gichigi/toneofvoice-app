@@ -79,6 +79,13 @@ export function GuideSidebar({
   const unlockedCount = sections.filter(s => isUnlocked(s.minTier)).length
   const progress = Math.round((unlockedCount / Math.max(totalSections, 1)) * 100)
 
+  // Questions (contact) always last in sidebar to match guide content order
+  const sectionsForMenu = (() => {
+    const rest = sections.filter((s) => s.id !== "contact")
+    const contact = sections.find((s) => s.id === "contact")
+    return contact ? [...rest, contact] : rest
+  })()
+
   return (
     <Sidebar collapsible="icon" className="border-r border-gray-100 bg-white/50 backdrop-blur-xl supports-[backdrop-filter]:bg-white/50">
       <SidebarHeader className="p-4 pt-6 border-b border-gray-50/50">
@@ -103,7 +110,7 @@ export function GuideSidebar({
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {sections.map((section) => {
+              {sectionsForMenu.map((section) => {
                 const isActive = activeSectionId === section.id
                 const locked = !isUnlocked(section.minTier)
                 const Icon = section.icon || Sparkles

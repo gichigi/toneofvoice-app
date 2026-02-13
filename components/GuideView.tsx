@@ -1,7 +1,6 @@
 "use client"
 
 import { RefObject, useEffect, useState } from "react"
-import Link from "next/link"
 import { playfairDisplay } from "@/lib/fonts"
 import { createPortal } from "react-dom"
 import { Eye, PenLine } from "lucide-react"
@@ -39,8 +38,10 @@ export interface GuideViewProps {
   editorId: string
   /** Show RewriteBar and floating toggle (true for preview always, true for full-access when paid) */
   showEditTools: boolean
-  /** If false, show disabled rewrite bar with "Sign in to use AI rewrite" (signed-out users) */
-  canUseRewrite?: boolean
+  /** When true, RewriteBar is shown muted with tooltip message on hover/tap */
+  rewriteBarDisabled?: boolean
+  /** Message shown in tooltip when rewrite bar is disabled */
+  rewriteBarDisabledMessage?: string
   /** Optional banner above editor (e.g. "Style Guide Updated") */
   editorBanner?: React.ReactNode
   pdfFooter?: React.ReactNode
@@ -77,7 +78,8 @@ export function GuideView({
   storageKey,
   editorId,
   showEditTools,
-  canUseRewrite = true,
+  rewriteBarDisabled = false,
+  rewriteBarDisabledMessage,
   editorBanner,
   pdfFooter = null,
   contentClassName,
@@ -330,27 +332,14 @@ export function GuideView({
         createPortal(
           <>
             {showEditTools && viewMode === "edit" && !isSectionLocked && (
-              canUseRewrite ? (
-                <RewriteBar 
-                  onRewrite={onRewrite} 
-                  isLoading={isRewriting}
-                  editorRef={editorRef}
-                  activeSectionId={activeSectionId}
-                />
-              ) : (
-                <div className="pdf-exclude fixed bottom-4 left-0 right-0 ml-[var(--sidebar-width,18rem)] p-4 z-30">
-                  <div className="max-w-3xl mx-auto rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm text-gray-600">
-                    Sign in to use AI rewrite.{" "}
-                    <Link href="/sign-in?redirectTo=%2Fguide" className="font-medium text-blue-600 hover:underline">
-                      Log in
-                    </Link>
-                    {" or "}
-                    <Link href="/sign-up?redirectTo=%2Fguide" className="font-medium text-blue-600 hover:underline">
-                      Sign up
-                    </Link>
-                  </div>
-                </div>
-              )
+              <RewriteBar
+                onRewrite={onRewrite}
+                isLoading={isRewriting}
+                editorRef={editorRef}
+                activeSectionId={activeSectionId}
+                disabled={rewriteBarDisabled}
+                disabledMessage={rewriteBarDisabledMessage}
+              />
             )}
           </>,
           document.body

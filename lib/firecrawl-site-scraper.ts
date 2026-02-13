@@ -9,10 +9,28 @@ import Firecrawl from "@mendable/firecrawl-js"
 
 const MIN_HOMEPAGE_CHARS = 2500
 const MAX_COMBINED_CHARS = 7500
-const MAX_SUBPAGES = 3
+const MAX_SUBPAGES = 5
 
-// Keywords to prefer when picking subpages
-const SUBPAGE_KEYWORDS = /about|company|team|product|features|who-we-are|our-story/i
+// Target about/company pages for rich brand information
+const ABOUT_PAGE_PATHS = [
+  '/about',
+  '/about-us',
+  '/our-story',
+  '/who-we-are',
+  '/company',
+  '/mission',
+  '/values',
+  '/about/',
+  '/about-us/',
+  '/our-story/',
+  '/who-we-are/',
+  '/company/',
+  '/mission/',
+  '/values/'
+]
+
+// Keywords to match in URLs for about/company pages
+const SUBPAGE_KEYWORDS = /\/?(about|about-us|our-story|who-we-are|company|mission|values)($|\/|\?)/i
 
 // JSON extraction schema for brand details (Firecrawl LLM extraction)
 const BRAND_EXTRACTION_SCHEMA = {
@@ -22,7 +40,7 @@ const BRAND_EXTRACTION_SCHEMA = {
     description: {
       type: "string",
       description:
-        "Brand description: 2-3 short paragraphs (3-4 sentences each, 80-120 words total). First person plural (we/our). Paragraph 1: What they do and the space they operate in. Paragraph 2: Who they serve and why that matters. Paragraph 3: What makes them unique or interesting. Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling), NO buzzwords. Every sentence carries real information. Use plain, specific language. Write in proper paragraph format - multiple sentences per paragraph, not one sentence per line. Don't start multiple sentences the same way. Make them sound good without overselling. No em dashes.",
+        "Brand description for tone of voice guidelines. First person (we/our). 2-3 paragraphs, 80-150 words. Open with 'At [Brand], we [core thing].' Be specific about how they do it. Name the problem they solve. Say who they serve specifically. Include proof points. End with earned positioning. Plain language, no filler, no buzzwords, no em dashes. 3-4 sentences per paragraph.",
     },
     audience: { type: "string", description: "Target audience summary" },
     keywords: {
@@ -50,11 +68,11 @@ const BRAND_EXTRACTION_SCHEMA = {
 
 const BRAND_EXTRACTION_PROMPT = `Extract brand identity from this website.
 - name: Brand/company name (1-3 words)
-- description: Write 2-3 short paragraphs (3-4 sentences each, 80-120 words total). First person plural (we/our). Cover: (1) What they do and the space they operate in. (2) Who they serve and why that matters. (3) What makes them unique or interesting. Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions". Every sentence must carry real information. Use plain, specific language. Say what they actually do. Write in proper paragraph format - multiple sentences per paragraph, not one sentence per line. Don't start multiple sentences the same way. Make them sound good without overselling. The reader should think "yeah, that's us" not "this sounds like a press release". No em dashes.
-- audience: Who they serve (demographics, context)
-- keywords: Up to 25 high-value keywords for content (products, services, values, industry terms)
+- description: This opens the brand's tone of voice guidelines. First person (we/our). 2-3 paragraphs, 80-150 words. Open with "At [Brand], we [core thing]." Be specific about HOW, not just the category. Name the problem they solve. Say exactly who they serve. Include proof (numbers, scale, or distinct method). End with positioning that feels earned. Plain language, no filler, no buzzwords, no em dashes. 3-4 sentences per paragraph.
+- audience: Who they serve (specific demographics and context)
+- keywords: Up to 25 keywords (products, services, values, industry terms)
 - suggestedTraits: Exactly 3 brand voice traits (e.g. warm, professional, bold)
-- productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, events, memberships. For charities/nonprofits: programs, initiatives, impact areas.`
+- productsServices: What they offer (products, services, programs, campaigns, etc.)`
 
 export interface ScrapeResult {
   success: boolean
@@ -248,7 +266,37 @@ export async function scrapeSiteForExtraction(url: string): Promise<ScrapeResult
   const firecrawl = new Firecrawl({ apiKey })
 
   try {
-    // 1. Scrape homepage (v2 scrape returns Document with .markdown)
+    const base = new URL(url).origin
+    let combined = ""
+    let pagesScraped = 0
+
+    // 1. Try to scrape known about/company pages directly (for rich brand info)
+    const aboutUrls = ABOUT_PAGE_PATHS.map(path => `${base}${path}`)
+
+    for (const aboutUrl of aboutUrls) {
+      if (combined.length >= MAX_COMBINED_CHARS) break
+      try {
+        const doc = await firecrawl.scrape(aboutUrl, {
+          formats: ["markdown"],
+          onlyMainContent: true,
+        })
+        const md = (doc as { markdown?: string }).markdown ?? ""
+        if (md && typeof md === "string" && md.length > 100) {
+          combined += `\n\n---\n[Page: ${aboutUrl}]\n${md.trim()}`
+          pagesScraped++
+        }
+      } catch {
+        // About page doesn't exist or failed - try next
+      }
+    }
+
+    // 2. If we got good content from about pages, use that
+    if (combined.length >= MIN_HOMEPAGE_CHARS) {
+      combined = combined.slice(0, MAX_COMBINED_CHARS)
+      return { success: true, markdown: combined, pagesScraped }
+    }
+
+    // 3. Otherwise, scrape homepage and discover additional pages
     const doc = await firecrawl.scrape(url, {
       formats: ["markdown"],
       onlyMainContent: true,
@@ -256,23 +304,23 @@ export async function scrapeSiteForExtraction(url: string): Promise<ScrapeResult
 
     const homepageMd = (doc as { markdown?: string }).markdown ?? ""
     if (!homepageMd || typeof homepageMd !== "string") {
-      return { success: false, markdown: "", pagesScraped: 0, error: "No markdown from homepage" }
+      return { success: false, markdown: "", pagesScraped: 0, error: "No markdown from homepage or about pages" }
     }
 
-    let combined = homepageMd.trim()
-    let pagesScraped = 1
+    combined = homepageMd.trim() + combined
+    pagesScraped++
 
-    // 2. If homepage is thin, discover and scrape key subpages
-    if (combined.length < MIN_HOMEPAGE_CHARS) {
+    // 4. If still thin, discover more subpages via map
+    if (combined.length < MIN_HOMEPAGE_CHARS * 2) {
       try {
-        const mapRes = await firecrawl.map(url, { limit: 25 })
+        const mapRes = await firecrawl.map(url, { limit: 30 })
         const links = mapRes?.links ?? []
-        const base = new URL(url).origin
         const subpages = links
           .map((l) => (typeof l === "string" ? l : (l as { url?: string }).url))
           .filter((u): u is string => !!u && SUBPAGE_KEYWORDS.test(u))
           .slice(0, MAX_SUBPAGES)
           .map((u) => (u.startsWith("http") ? u : new URL(u, base).href))
+          .filter(u => !aboutUrls.includes(u)) // Avoid duplicates
 
         for (const subUrl of subpages) {
           if (combined.length >= MAX_COMBINED_CHARS) break
@@ -291,7 +339,7 @@ export async function scrapeSiteForExtraction(url: string): Promise<ScrapeResult
           }
         }
       } catch {
-        // Map failed - proceed with homepage only
+        // Map failed - proceed with what we have
       }
     }
 

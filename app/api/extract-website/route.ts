@@ -151,39 +151,19 @@ export async function POST(request: Request) {
     if (body.description && !body.url) {
       Logger.info("Processing description input", { descriptionLength: body.description.length })
       
-      const prompt = `Extract and expand brand details from this business description: "${body.description}"
+      const prompt = `Create a brand profile from this description: "${body.description}"
 
-- Brand
-  - Input: ${body.description}
-  - Task: Create comprehensive brand profile
+- Brand Name: Memorable, phonetic, easy to pronounce. 1-2 words ideally. No generic words like "Solutions" or "Services".
 
-- Brand Name Requirements (CRITICAL)
-  - Create a memorable name that fits the business
-  - Must be phonetic and easy to pronounce
-  - 1-3 words maximum, ideally 2 words
-  - Avoid generic words like "Solutions", "Services", "Group"
-  - Avoid overly obvious or literal names
-  - Consider phonetics, alliteration, rhythm or distinctive sounds
-  - Be creative and distinctive rather than descriptive
+- Description: 2-3 paragraphs, 80-150 words. First person (we/our).
+  - What they do and why it matters.
+  - Who they do it for.
+  - Write like employees would be proud of it, not a product spec or press release.
 
-- Description Guidelines
-  - Write 2-3 short paragraphs (3-4 sentences each, 80-120 words total)
-  - First person plural (we/our)
-  - Cover: (1) What they do and the space they operate in. (2) Who they serve and why that matters. (3) What makes them unique or interesting
-  - Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions"
-  - Every sentence must carry real information. If you can delete a sentence and lose nothing, delete it
-  - Use plain, specific language. Say what they actually do
-  - Write in proper paragraph format - multiple sentences per paragraph, not one sentence per line
-  - Don't start multiple sentences the same way
-  - Make them sound good without overselling. Reader should think "yeah, that's us" not "this sounds like a press release"
-  - No em dashes
-
-- Output format
-  - Return clean JSON: {"name": "memorable brand name", "industry": "category", "description": "full brand description", "targetAudience": "audience details", "productsServices": ["product/service 1", "product/service 2"]}
-  - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.`
+- Output: JSON with {"name", "industry", "description", "targetAudience", "productsServices": [...]}`
 
       try {
-        const result = await generateWithOpenAI(prompt, "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. Never use em dashes in your output.", "json", 1500, "gpt-5.2", "none")
+        const result = await generateWithOpenAI(prompt, `You write compelling brand descriptions that open tone of voice guidelines. For well-known brands, use your knowledge to capture what they're actually known for. For less-known brands, use what you're given and frame it with confidence. Write from the brand's perspective (we/our) in a way employees would be proud of.`, "json", 1500, "gpt-5.2", "none")
         
         if (result.success && result.content) {
           const brandDetails = JSON.parse(result.content)
@@ -314,66 +294,50 @@ export async function POST(request: Request) {
       )
     }
 
-    let summary: string
-
-    // Use Firecrawl markdown extraction + OpenAI (same model/params as description route for consistency)
-    if (process.env.FIRECRAWL_API_KEY) {
-      Logger.info("Using Firecrawl markdown extraction + OpenAI for site")
-      const fcMdResult = await scrapeSiteForExtraction(urlValidation.url)
-      if (fcMdResult.success && fcMdResult.markdown) {
-        summary = fcMdResult.markdown.slice(0, 7000)
-        Logger.debug("Firecrawl markdown extraction completed", {
-          pagesScraped: fcMdResult.pagesScraped,
-          markdownLength: summary.length,
-        })
-      } else {
-        Logger.warn("Firecrawl markdown extraction failed, falling back to Cheerio", {
-          error: fcMdResult.error,
-        })
-        summary = await fetchAndExtractWithCheerio(urlValidation.url)
-      }
-    } else {
-      Logger.info("No Firecrawl API key, using Cheerio extraction")
-      summary = await fetchAndExtractWithCheerio(urlValidation.url)
+    // Extract domain/brand name from URL
+    let domain = ""
+    try {
+      const urlObj = new URL(urlValidation.url)
+      domain = urlObj.hostname.replace('www.', '').split('.')[0]
+    } catch {
+      domain = urlValidation.url
     }
 
-    // Generate prompt for website extraction (markdown + OpenAI, same format as description route)
-    const prompt = `Analyze this website content and extract the brand's core identity.
+    Logger.info("Extracting brand information", { domain })
 
-- Brand
-  - Website content provided below
-  - Task: Create comprehensive brand profile
+    // Try to scrape homepage for context
+    let homepageContext = ""
+    try {
+      const homepage = await fetchAndExtractWithCheerio(urlValidation.url)
+      if (homepage && homepage.length > 100) {
+        homepageContext = `\n\nWebsite homepage:\n${homepage.slice(0, 1500)}`
+        Logger.debug("Homepage context retrieved", { length: homepageContext.length })
+      }
+    } catch (e) {
+      Logger.warn("Could not scrape homepage, will rely on model knowledge", {
+        error: e instanceof Error ? e.message : String(e)
+      })
+    }
 
-- Brand Name Requirements
-  - Extract the existing brand name if clearly mentioned
-  - If no clear name exists, create a compelling name that fits the business
-  - 1-3 words maximum
-  - Be creative and descriptive
+    // Simple prompt that leverages the model's knowledge of the brand + optional homepage context
+    const prompt = `Write a brand description for ${domain} (${urlValidation.url})${homepageContext}
 
-- Description Guidelines
-  - Write 2-3 short paragraphs (3-4 sentences each, 80-120 words total)
-  - First person plural (we/our)
-  - Cover: (1) What they do and the space they operate in. (2) Who they serve and why that matters. (3) What makes them unique or interesting
-  - Sound confident but not corporate. NO marketing fluff, NO filler adjectives (unparalleled, diverse, array, ensuring, empowering, facilitating, leveraging, enabling, fast-paced, cutting-edge), NO buzzwords, NO vague "solutions"
-  - Every sentence must carry real information. If you can delete a sentence and lose nothing, delete it
-  - Use plain, specific language. Say what they actually do
-  - Write in proper paragraph format - multiple sentences per paragraph, not one sentence per line
-  - Don't start multiple sentences the same way
-  - Make them sound good without overselling. Reader should think "yeah, that's us" not "this sounds like a press release"
-  - No em dashes
+Use your knowledge of this brand to write an authentic, compelling description that opens their tone of voice guidelines. If homepage content is provided, use it to ground your answer.
 
-- Output format
-  - Return clean JSON: {"name": "brand name", "industry": "category", "description": "full brand description", "targetAudience": "audience details", "productsServices": ["product/service 1", "product/service 2"]}
-  - productsServices: What they offer. Flexible by business model: products, services, programs, campaigns, etc. For charities: programs, initiatives.
+- Brand Name: 1-3 words
 
-Website Content:
-${summary}`
+- Description: 2-3 paragraphs, 80-150 words. First person (we/our).
+  - What they do and why it matters.
+  - Who they do it for.
+  - Write like employees would be proud of it, not a product spec or press release.
+
+- Output: JSON with {"name", "industry", "description", "targetAudience", "productsServices": [...]}`
 
     const result = await generateWithOpenAI(
       prompt,
-      "You are a brand naming expert who specializes in crafting memorable names that fit businesses. You excel at creating phonetic, distinctive names that match each brand's unique personality and industry context. You also write clear, readable brand summaries using simple language and short sentences.",
+      `You write compelling brand descriptions that open tone of voice guidelines. For well-known brands, use your knowledge to capture what they're actually known for. For less-known brands, use what you're given and frame it with confidence. Write from the brand's perspective (we/our) in a way employees would be proud of.`,
       "json",
-      1500, // Allow longer descriptions for About section
+      1500,
       "gpt-5.2",
       "none"
     )

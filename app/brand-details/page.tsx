@@ -51,26 +51,6 @@ const capitalizeFirstLetter = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-
-
-
-
-// Format auto-populated descriptions with paragraph breaks between sentences
-function formatAutoPopulatedDescription(description: string): string {
-  if (!description || description.length < 20) {
-    return description
-  }
-  
-  // Split by sentence endings (., !, ?) but keep the punctuation
-  const sentences = description.split(/(?<=[.!?])\s+/)
-  
-  // Join with double line breaks to create paragraphs
-  return sentences
-    .map(sentence => sentence.trim())
-    .filter(sentence => sentence.length > 0)
-    .join('\n\n')
-}
-
 export default function BrandDetailsPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -203,18 +183,11 @@ export default function BrandDetailsPage() {
           const formalityLabels = ["Very Casual", "Casual", "Neutral", "Formal", "Very Formal"]
           formalityLevelValue = formalityLabels[formalityLevelValue] || "Neutral"
         }
-        
-        // Format auto-populated descriptions with paragraph breaks (only for extracted content)
-        let formattedBrandDetailsDescription = parsedDetails.brandDetailsDescription
-        if (fromExtraction && formattedBrandDetailsDescription && formattedBrandDetailsDescription.length > 20) {
-          formattedBrandDetailsDescription = formatAutoPopulatedDescription(formattedBrandDetailsDescription)
-        }
-        
+
         // Ensure all required fields have values by merging with defaults
         const updatedDetails = {
           ...defaultBrandDetails,
           ...parsedDetails,
-          brandDetailsDescription: formattedBrandDetailsDescription || parsedDetails.brandDetailsDescription,
           englishVariant: parsedDetails.englishVariant || "american",
           formalityLevel: formalityLevelValue || "Neutral",
           readingLevel: parsedDetails.readingLevel || "6-8",

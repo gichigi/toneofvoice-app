@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Loader2, PenLine, Send, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { GuideEditorRef } from "@/components/editor/GuideEditor"
+import { useSidebar } from "@/components/ui/sidebar"
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ interface RewriteBarProps {
 }
 
 export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeSectionId, disabled, disabledMessage, onSelectionForHighlight }: RewriteBarProps) {
+  const { state, isMobile } = useSidebar()
   const [instruction, setInstruction] = useState("")
   const [isSuccess, setIsSuccess] = useState(false)
   const [scope, setScope] = useState<RewriteScope>(() => {
@@ -147,7 +149,17 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
       ? "Ask AI to rewrite entire document..."
       : "Ask AI to rewrite this section..."
 
-  const wrapperClass = "pdf-exclude fixed bottom-0 left-0 right-0 md:bottom-4 md:ml-[var(--sidebar-width,18rem)] p-4 bg-gradient-to-t from-white via-white/95 to-transparent pt-8 z-30 backdrop-blur-sm"
+  // Responsive left positioning: mobile (no sidebar) | desktop expanded | desktop collapsed
+  const leftPosition = isMobile
+    ? "left-0"
+    : state === "collapsed"
+      ? "md:left-[var(--sidebar-width-icon,3rem)]"
+      : "md:left-[var(--sidebar-width,18rem)]"
+
+  const wrapperClass = cn(
+    "pdf-exclude fixed bottom-0 right-0 md:bottom-4 p-4 bg-gradient-to-t from-white via-white/95 to-transparent pt-8 z-30 backdrop-blur-sm transition-[left] duration-200 ease-linear",
+    leftPosition
+  )
   const innerClass = "w-full max-w-3xl mx-auto relative transition-all duration-500 ease-out"
   const barBaseClass = "relative flex items-center rounded-xl border border-gray-200 bg-white shadow-lg shadow-black/5 transition-all duration-500 ease-out"
 

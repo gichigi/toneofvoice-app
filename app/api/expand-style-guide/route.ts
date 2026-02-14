@@ -73,6 +73,20 @@ export async function POST(req: Request) {
       userEmail,
     })
 
+    // Verify placeholders were actually removed
+    const stillHasPlaceholders =
+      expandedContent.includes("_Unlock to see Style Rules._") ||
+      expandedContent.includes("_Unlock to see Before/After examples._") ||
+      expandedContent.includes("_Unlock to see Word List._")
+
+    if (stillHasPlaceholders) {
+      console.error("[expand-style-guide] Placeholders still present after generation")
+      return NextResponse.json(
+        { error: "Failed to generate complete sections. Please try again." },
+        { status: 500 }
+      )
+    }
+
     const { error: updateError } = await supabase
       .from("style_guides")
       .update({

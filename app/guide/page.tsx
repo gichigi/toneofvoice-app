@@ -583,6 +583,18 @@ function GuideContent() {
     (subscriptionTier === "pro" || subscriptionTier === "agency") &&
     hasPlaceholders
 
+  // Debug logging for banner visibility
+  if (currentGuideId && (subscriptionTier === "pro" || subscriptionTier === "agency")) {
+    console.log("[Guide] Expand banner state:", {
+      showExpandBanner,
+      hasPlaceholders,
+      isPreviewFlow,
+      currentGuideId,
+      subscriptionTier,
+      contentLength: content?.length,
+    })
+  }
+
   const handleExpandGuide = async () => {
     if (!currentGuideId || isExpanding) return
     setIsExpanding(true)
@@ -596,12 +608,28 @@ function GuideContent() {
       if (!res.ok) {
         throw new Error(data.error || "Failed to generate full guide")
       }
-      if (data.content) {
-        setContent(data.content)
-        setEditorKey((k) => k + 1)
-        setExpandedContentKey(Date.now())
-        toast({ title: "Full guide generated", description: "Style Rules, Before/After, and Word List are now complete." })
+      if (!data.content) {
+        throw new Error("No content returned from server")
       }
+
+      // Verify placeholders were removed before updating state
+      const stillHasPlaceholders =
+        data.content.includes("_Unlock to see Style Rules._") ||
+        data.content.includes("_Unlock to see Before/After examples._") ||
+        data.content.includes("_Unlock to see Word List._")
+
+      if (stillHasPlaceholders) {
+        console.error("[Guide] Received content still has placeholders")
+        throw new Error("Generation incomplete. Please try again.")
+      }
+
+      setContent(data.content)
+      setEditorKey((k) => k + 1)
+      setExpandedContentKey(Date.now())
+      toast({
+        title: "Full guide generated",
+        description: "Style Rules, Before/After, and Word List are now complete."
+      })
     } catch (e) {
       console.error("[Guide] Expand error:", e)
       toast({

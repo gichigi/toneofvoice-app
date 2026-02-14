@@ -558,9 +558,40 @@ export async function renderFullGuideFromPreview({
       : "_Could not generate word list._";
 
   let merged = previewContent;
+
+  // Log before replacement for debugging
+  console.log("[renderFullGuideFromPreview] Replacing sections...");
+
+  const beforeRules = merged;
   merged = replaceSectionInMarkdown(merged, "style-rules", `## Style Rules\n\n${styleRulesContent}`);
+  if (merged === beforeRules) {
+    console.warn("[renderFullGuideFromPreview] Section replacement failed for style-rules, using fallback");
+    // Fallback: direct string replacement for placeholder
+    merged = merged.replace(
+      /## Style Rules\s*\n+_Unlock to see Style Rules\._/g,
+      `## Style Rules\n\n${styleRulesContent}`
+    );
+  }
+
+  const beforeExamples = merged;
   merged = replaceSectionInMarkdown(merged, "examples", `## Before / After\n\n${beforeAfterContent}`);
+  if (merged === beforeExamples) {
+    console.warn("[renderFullGuideFromPreview] Section replacement failed for examples, using fallback");
+    merged = merged.replace(
+      /## Before \/ After\s*\n+_Unlock to see Before\/After examples\._/g,
+      `## Before / After\n\n${beforeAfterContent}`
+    );
+  }
+
+  const beforeWordList = merged;
   merged = replaceSectionInMarkdown(merged, "word-list", `## Word List\n\n${wordListContent}`);
+  if (merged === beforeWordList) {
+    console.warn("[renderFullGuideFromPreview] Section replacement failed for word-list, using fallback");
+    merged = merged.replace(
+      /## Word List\s*\n+_Unlock to see Word List\._/g,
+      `## Word List\n\n${wordListContent}`
+    );
+  }
 
   // Update Questions section with user email if available
   const questionsSection = `## Questions?\n\n${contactFooter}`;

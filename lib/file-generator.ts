@@ -3,16 +3,27 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Bord
 
 export type FileFormat = "pdf" | "md" | "docx"
 
+export interface FileGenerationOptions {
+  websiteUrl?: string
+  subscriptionTier?: "starter" | "pro" | "agency"
+  generationDate?: string
+}
+
 /**
  * Generate a file in the specified format with the given content
  */
-export async function generateFile(format: FileFormat, content: string, brandName: string): Promise<Blob> {
+export async function generateFile(
+  format: FileFormat,
+  content: string,
+  brandName: string,
+  options: FileGenerationOptions = {}
+): Promise<Blob> {
   try {
   switch (format) {
     case "md":
-      return generateMarkdown(content)
+      return generateMarkdown(content, brandName, options)
     case "docx":
-      return generateDOCX(content, brandName)
+      return generateDOCX(content, brandName, options)
     default:
       throw new Error(`Unsupported format: ${format}`)
   }
@@ -30,13 +41,37 @@ export async function generateFile(format: FileFormat, content: string, brandNam
 }
 
 /**
- * Generate a properly formatted Markdown document
+ * Generate a properly formatted Markdown document with cover section
  */
-function generateMarkdown(content: string): Promise<Blob> {
+function generateMarkdown(content: string, brandName: string, options: FileGenerationOptions): Promise<Blob> {
   try {
-    // Content is already markdown - no conversion needed
-    // Just pass it through directly to preserve formatting
-    return Promise.resolve(new Blob([content], { type: "text/markdown" }))
+    const { websiteUrl, subscriptionTier = 'starter', generationDate } = options
+    const formattedDate = generationDate || new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+
+    // Build cover section in markdown format
+    let cover = `# ${brandName}\n\n`
+    cover += `*Brand Voice & Content Guidelines*\n\n`
+    cover += `---\n\n`
+    cover += `**Generated on** ${formattedDate}\n\n`
+
+    if (websiteUrl) {
+      const displayUrl = websiteUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
+      cover += `**Website** ${displayUrl}\n\n`
+    }
+
+    // Add branding footer based on tier
+    if (subscriptionTier === 'starter' || subscriptionTier === 'pro') {
+      cover += `**Generated with** [Tone of Voice App](https://toneofvoice.app)\n\n`
+    }
+
+    cover += `---\n\n`
+
+    const fullContent = cover + content
+    return Promise.resolve(new Blob([fullContent], { type: "text/markdown" }))
   } catch (error) {
     console.error('[File Generator] Markdown generation error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -50,10 +85,10 @@ function generateMarkdown(content: string): Promise<Blob> {
 /**
  * Generate a properly formatted DOCX document using the docx library
  */
-async function generateDOCX(content: string, brandName: string): Promise<Blob> {
+async function generateDOCX(content: string, brandName: string, options: FileGenerationOptions): Promise<Blob> {
   try {
-    const paragraphs = parseMarkdownToDocxParagraphs(content, brandName)
-    
+    const paragraphs = parseMarkdownToDocxParagraphs(content, brandName, options)
+
     const doc = new Document({
       sections: [{
         properties: {},
@@ -62,8 +97,8 @@ async function generateDOCX(content: string, brandName: string): Promise<Blob> {
     })
 
     const buffer = await Packer.toBuffer(doc)
-    return new Blob([new Uint8Array(buffer)], { 
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+    return new Blob([new Uint8Array(buffer)], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     })
   } catch (error) {
     console.error('[File Generator] DOCX generation error:', {
@@ -81,27 +116,96 @@ async function generateDOCX(content: string, brandName: string): Promise<Blob> {
 /**
  * Parse markdown content into DOCX paragraphs
  */
-function parseMarkdownToDocxParagraphs(content: string, brandName: string): Paragraph[] {
+function parseMarkdownToDocxParagraphs(content: string, brandName: string, options: FileGenerationOptions): Paragraph[] {
   const paragraphs: Paragraph[] = []
-  
+
+  const { websiteUrl, subscriptionTier = 'starter', generationDate } = options
+  const formattedDate = generationDate || new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+
+  // Add eyebrow
+  paragraphs.push(
+    new Paragraph({
+      children: [new TextRun({
+        text: 'BRAND VOICE & CONTENT GUIDELINES',
+        size: 18,
+        color: '666666',
+        allCaps: true
+      })],
+      alignment: AlignmentType.LEFT,
+      spacing: { after: 120 }
+    })
+  )
+
   // Add title
   paragraphs.push(
     new Paragraph({
-      children: [new TextRun({ text: `${brandName} Style Guide`, bold: true, size: 32 })],
+      children: [new TextRun({ text: brandName, bold: true, size: 56 })],
       heading: HeadingLevel.TITLE,
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 400 }
+      alignment: AlignmentType.LEFT,
+      spacing: { after: 240 }
     })
   )
-  
-  // Add creation date
+
+  // Add separator line
   paragraphs.push(
     new Paragraph({
-      children: [new TextRun({ text: `Created on ${new Date().toLocaleDateString()}`, italics: true })],
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 600 }
+      children: [new TextRun({ text: '', size: 20 })],
+      spacing: { after: 240 },
+      border: {
+        bottom: {
+          color: '000000',
+          space: 1,
+          style: BorderStyle.SINGLE,
+          size: 12
+        }
+      }
     })
   )
+
+  // Add generation date
+  paragraphs.push(
+    new Paragraph({
+      children: [new TextRun({ text: `Generated on ${formattedDate}`, size: 20 })],
+      spacing: { after: 120 }
+    })
+  )
+
+  // Add website URL if available
+  if (websiteUrl) {
+    const displayUrl = websiteUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: displayUrl, size: 20, bold: true })],
+        spacing: { after: 240 }
+      })
+    )
+  }
+
+  // Add branding based on tier
+  if (subscriptionTier === 'starter' || subscriptionTier === 'pro') {
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({
+          text: 'Generated with Tone of Voice App (toneofvoice.app)',
+          size: 18,
+          color: '999999',
+          italics: true
+        })],
+        spacing: { before: websiteUrl ? 120 : 240, after: 600 }
+      })
+    )
+  } else {
+    paragraphs.push(
+      new Paragraph({
+        children: [new TextRun({ text: '' })],
+        spacing: { after: 600 }
+      })
+    )
+  }
   
   const lines = content.split('\n')
   let i = 0

@@ -813,7 +813,10 @@ function GuideContent() {
         // Filter locked sections for non-PDF formats
         const filteredContent = filterLockedSections(content)
         const processedContent = processFullAccessContent(filteredContent, brandDetails.name)
-        const file = await generateFile(format as FileFormat, processedContent, brandDetails.name)
+        const file = await generateFile(format as FileFormat, processedContent, brandDetails.name, {
+          websiteUrl: brandDetails.websiteUrl,
+          subscriptionTier,
+        })
         const url = window.URL.createObjectURL(file)
         const a = document.createElement("a")
         a.href = url
@@ -848,7 +851,10 @@ function GuideContent() {
     
     try {
       const processedContent = processFullAccessContent(content, brandDetails.name)
-      const file = await generateFile(format as FileFormat, processedContent, brandDetails.name)
+      const file = await generateFile(format as FileFormat, processedContent, brandDetails.name, {
+        websiteUrl: brandDetails.websiteUrl,
+        subscriptionTier,
+      })
       const url = window.URL.createObjectURL(file)
       const a = document.createElement("a")
       a.href = url

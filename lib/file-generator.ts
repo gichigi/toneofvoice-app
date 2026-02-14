@@ -56,16 +56,16 @@ function generateMarkdown(content: string, brandName: string, options: FileGener
     let cover = `# ${brandName}\n\n`
     cover += `*Brand Voice & Content Guidelines*\n\n`
     cover += `---\n\n`
-    cover += `**Generated on** ${formattedDate}\n\n`
+    cover += `${formattedDate}\n\n`
 
     if (websiteUrl) {
       const displayUrl = websiteUrl.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')
-      cover += `**Website** ${displayUrl}\n\n`
+      cover += `${displayUrl}\n\n`
     }
 
     // Add branding footer based on tier
     if (subscriptionTier === 'starter' || subscriptionTier === 'pro') {
-      cover += `**Generated with** [Tone of Voice App](https://toneofvoice.app)\n\n`
+      cover += `[Tone of Voice App](https://toneofvoice.app)\n\n`
     }
 
     cover += `---\n\n`
@@ -169,7 +169,7 @@ function parseMarkdownToDocxParagraphs(content: string, brandName: string, optio
   // Add generation date
   paragraphs.push(
     new Paragraph({
-      children: [new TextRun({ text: `Generated on ${formattedDate}`, size: 20 })],
+      children: [new TextRun({ text: formattedDate, size: 20 })],
       spacing: { after: 120 }
     })
   )
@@ -190,7 +190,7 @@ function parseMarkdownToDocxParagraphs(content: string, brandName: string, optio
     paragraphs.push(
       new Paragraph({
         children: [new TextRun({
-          text: 'Generated with Tone of Voice App (toneofvoice.app)',
+          text: 'Tone of Voice App (toneofvoice.app)',
           size: 18,
           color: '999999',
           italics: true

@@ -113,7 +113,7 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
   // Scroll to section on sidebar click (center in viewport)
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSectionId(id)
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" })
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })
   }, [])
   
   // IntersectionObserver: update activeSectionId as user scrolls

@@ -92,7 +92,7 @@ export function GuideSidebar({
         <div className="flex items-center gap-2 px-2 overflow-hidden transition-all duration-300 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
           <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
             <h2 className="text-sm font-semibold text-gray-900 truncate tracking-tight">{brandName}</h2>
-            <p className="text-xs text-gray-500 truncate">Style Guide</p>
+            <p className="text-xs text-gray-500 truncate">Tone of Voice Guidelines</p>
           </div>
           {/* Brand initial in icon mode */}
           <div className="hidden group-data-[collapsible=icon]:flex w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-semibold text-sm items-center justify-center shrink-0">

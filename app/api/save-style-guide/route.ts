@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       .single();
 
     const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
-    const limit = tier === "starter" ? 0 : tier === "pro" ? 5 : 99;
+    const limit = tier === "starter" ? 1 : tier === "pro" ? 5 : 99;
 
     const { count } = await supabase
       .from("style_guides")

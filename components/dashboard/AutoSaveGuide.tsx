@@ -10,7 +10,8 @@ let _saving = false
 /**
  * Auto-saves preview content as a free-tier guide after sign-up
  * if localStorage contains brandDetails and previewContent.
- * Runs once on dashboard load.
+ * Runs on /guide and /dashboard. On success, removes previewContent
+ * and redirects to guideId when on /guide so the guide appears on dashboard.
  */
 export function AutoSaveGuide() {
   const { user, loading: authLoading } = useAuth()
@@ -21,25 +22,20 @@ export function AutoSaveGuide() {
     if (authLoading || !user) return
     if (hasRun.current || _saving) return
 
-    // Check localStorage for brand data
     const brandDetails = localStorage.getItem("brandDetails")
     const previewContent = localStorage.getItem("previewContent")
-    
     if (!brandDetails || !previewContent) {
       hasRun.current = true
       return
     }
 
-    // Claim the save immediately to prevent duplicates
     hasRun.current = true
     _saving = true
-    // Remove previewContent right away so parallel renders can't re-trigger
-    localStorage.removeItem("previewContent")
 
     const saveGuide = async () => {
       try {
         const parsedBrandDetails = JSON.parse(brandDetails)
-        await fetch("/api/save-style-guide", {
+        const res = await fetch("/api/save-style-guide", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -50,7 +46,18 @@ export function AutoSaveGuide() {
             brand_details: parsedBrandDetails,
           }),
         })
-        router.refresh()
+        const data = res.ok ? await res.json().catch(() => null) : null
+        if (res.ok && data?.guide?.id) {
+          localStorage.removeItem("previewContent")
+          localStorage.setItem("savedGuideId", data.guide.id)
+          const isOnGuide = typeof window !== "undefined" && window.location.pathname === "/guide"
+          const hasGuideId = typeof window !== "undefined" && window.location.search.includes("guideId=")
+          if (isOnGuide && !hasGuideId) {
+            router.replace(`/guide?guideId=${data.guide.id}`)
+          } else {
+            router.refresh()
+          }
+        }
       } catch (error) {
         console.error("[AutoSaveGuide] Failed to save guide:", error)
       } finally {

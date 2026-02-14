@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
 import type { GuideEditorRef } from "@/components/editor/GuideEditor"
 import { GuideLayout } from "@/components/GuideLayout"
+import { AutoSaveGuide } from "@/components/dashboard/AutoSaveGuide"
 import { GuideView } from "@/components/GuideView"
 import {
   parseStyleGuideContent,
@@ -1059,6 +1060,7 @@ function GuideContent() {
       "transition-opacity duration-700 ease-out",
       contentReady ? "opacity-100" : "opacity-0"
     )}>
+      <AutoSaveGuide />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://toneofvoice.app" },
         { name: "Brand Details", url: "https://toneofvoice.app/brand-details" },

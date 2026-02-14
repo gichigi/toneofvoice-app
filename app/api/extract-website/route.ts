@@ -156,6 +156,7 @@ export async function POST(request: Request) {
 - Brand Name: Memorable, phonetic, easy to pronounce. 1-2 words ideally. No generic words like "Solutions" or "Services".
 
 - Description: 3 short paragraphs, 80-150 words total. First person (we/our). Compelling and inspiring, not flat.
+  - Start with the brand name (e.g. At Stripe..., Spotify is..., Notion started out...).
   - This goes at the top of a tone of voice document that marketers and content people will proudly share with their team.
   - What they do and why it matters.
   - Who they do it for.
@@ -329,6 +330,7 @@ Use your knowledge of this brand to write an authentic, compelling description t
 - Brand Name: 1-3 words
 
 - Description: 3 short paragraphs, 80-150 words total. First person (we/our). Slightly inspiring, not flat.
+  - Start with the brand name (e.g. At Stripe..., Spotify is..., Notion started out...).
   - This goes at the top of a tone of voice document that marketers and content people will proudly share with their team.
   - What they do and why it matters.
   - Who they do it for.

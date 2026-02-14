@@ -45,7 +45,8 @@ function GuideContent() {
   const guideId = searchParams.get("guideId")
   const alreadyGenerated = searchParams.get("generated") === "true"
   const subscriptionSuccess = searchParams.get("subscription") === "success"
-  
+  const generatePreview = searchParams.get("generate") === "preview"
+
   // Determine flow type
   const isPreviewFlow = !guideId && !alreadyGenerated
   
@@ -135,7 +136,10 @@ function GuideContent() {
   
   // Detect if we're loading cached content for better messaging
   useEffect(() => {
-    if (guideId) {
+    if (generatePreview) {
+      // Fresh generation from /brand-details: always show full interstitial
+      setIsQuickLoad(false)
+    } else if (guideId) {
       setIsQuickLoad(true)
     } else if (isPreviewFlow) {
       const cached = localStorage.getItem("previewContent")
@@ -144,7 +148,7 @@ function GuideContent() {
       const cached = localStorage.getItem("generatedStyleGuide")
       setIsQuickLoad(!!cached || alreadyGenerated)
     }
-  }, [guideId, isPreviewFlow, alreadyGenerated])
+  }, [guideId, isPreviewFlow, alreadyGenerated, generatePreview])
 
   // Load content based on flow type
   useEffect(() => {
@@ -273,46 +277,63 @@ function GuideContent() {
     }
   }, [shouldRedirect, router])
   
+  // Simulated progressive loading for better UX during API calls
+  const simulateProgress = (
+    startProgress: number,
+    endProgress: number,
+    durationMs: number,
+    onUpdate: (progress: number) => void
+  ) => {
+    const startTime = Date.now()
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(startProgress + ((endProgress - startProgress) * elapsed) / durationMs, endProgress)
+      onUpdate(Math.floor(progress))
+
+      if (progress >= endProgress) {
+        clearInterval(interval)
+      }
+    }, 200)
+
+    return () => clearInterval(interval)
+  }
+
   // Load preview content when brand details are available
   useEffect(() => {
     if (!isPreviewFlow || !brandDetails) return
 
     let isMounted = true
+    let cancelProgress: (() => void) | null = null
 
     const loadPreview = async () => {
       try {
-        setLoadingStep("Loading your style guide...")
-        setLoadingProgress(30)
-
+        // If we have cached content and this isn't a fresh generation request, load from cache
         const savedPreviewContent = localStorage.getItem("previewContent")
-        if (savedPreviewContent) {
-          if (isMounted) {
-            setLoadingStep("Finalizing...")
-            setLoadingProgress(90)
+        if (savedPreviewContent && !generatePreview) {
+          setLoadingStep("Loading your style guide...")
+          setLoadingProgress(90)
 
-            setContent(savedPreviewContent)
+          setContent(savedPreviewContent)
 
-            const brandVoiceMatch = savedPreviewContent.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
-            if (brandVoiceMatch) {
-              const brandVoiceContent = brandVoiceMatch[1].trim()
-              localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
-              localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
-            }
-
-            setLoadingProgress(100)
-            // Small delay to show 100% before content appears
-            setTimeout(() => {
-              if (isMounted) setIsLoading(false)
-            }, 300)
+          const brandVoiceMatch = savedPreviewContent.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
+          if (brandVoiceMatch) {
+            const brandVoiceContent = brandVoiceMatch[1].trim()
+            localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
+            localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
           }
+
+          setLoadingProgress(100)
+          setTimeout(() => {
+            if (isMounted) setIsLoading(false)
+          }, 300)
           return
         }
 
-        // Need to generate preview
-        setLoadingStep("Analyzing your brand voice...")
-        setLoadingProgress(25)
+        // Fresh generation: show full interstitial
+        setLoadingStep("Analyzing your brand details...")
+        setLoadingProgress(15)
 
-        let selectedTraits = []
+        let selectedTraits: string[] = []
         try {
           const savedSelectedTraits = localStorage.getItem("selectedTraits")
           selectedTraits = savedSelectedTraits ? JSON.parse(savedSelectedTraits) : []
@@ -320,14 +341,24 @@ function GuideContent() {
           console.warn('[Guide] Failed to parse selectedTraits:', parseError)
         }
 
-        setLoadingStep("Creating your style guide...")
-        setLoadingProgress(50)
+        await new Promise(resolve => setTimeout(resolve, 600))
+        if (!isMounted) return
+
+        setLoadingStep("Creating your brand voice and guidelines...")
+        setLoadingProgress(30)
+
+        // Simulate progressive updates during API call (30% → 85%)
+        cancelProgress = simulateProgress(30, 85, 20000, (p) => {
+          if (isMounted) setLoadingProgress(p)
+        })
 
         const response = await fetch('/api/preview', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ brandDetails, selectedTraits })
         })
+
+        if (cancelProgress) cancelProgress()
 
         let errorMessage = 'Failed to generate style guide'
         if (!response.ok) {
@@ -340,8 +371,9 @@ function GuideContent() {
           throw new Error(errorMessage)
         }
 
-        setLoadingStep("Finalizing...")
-        setLoadingProgress(75)
+        if (!isMounted) return
+        setLoadingStep("Finalizing your guide...")
+        setLoadingProgress(90)
 
         let data: { preview?: string; success?: boolean }
         try {
@@ -364,6 +396,9 @@ function GuideContent() {
             localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
           }
 
+          // Clean up generate param from URL
+          router.replace("/guide", { scroll: false })
+
           setLoadingProgress(100)
           setTimeout(() => {
             if (isMounted) setIsLoading(false)
@@ -371,6 +406,7 @@ function GuideContent() {
         }
       } catch (error) {
         console.error("[Guide] Preview generation failed:", error)
+        if (cancelProgress) cancelProgress()
         if (isMounted) {
           const message = error instanceof Error ? error.message : "Generation failed"
           toast({
@@ -388,11 +424,14 @@ function GuideContent() {
 
     return () => {
       isMounted = false
+      if (cancelProgress) cancelProgress()
     }
-  }, [brandDetails, toast, isPreviewFlow, setIsLoading])
+  }, [brandDetails, toast, isPreviewFlow, generatePreview, setIsLoading, router])
   
   // Generate style guide function (for full-access flow)
   const generateStyleGuide = async () => {
+    let cancelProgress: (() => void) | null = null
+
     try {
       setApiError(null)
       setLoadingStep("Preparing your brand details...")
@@ -407,6 +446,8 @@ function GuideContent() {
       if (!savedBrandDetails) {
         throw new Error("No brand details found. Please fill them in again.")
       }
+
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       const parsedBrandDetails = JSON.parse(savedBrandDetails)
       const selectedTraits = savedSelectedTraits ? JSON.parse(savedSelectedTraits) : []
@@ -423,6 +464,7 @@ function GuideContent() {
 
       setLoadingStep("Analyzing your brand voice...")
       setLoadingProgress(25)
+      await new Promise(resolve => setTimeout(resolve, 600))
 
       // Pass user email and preview content when available (preserve preview user liked)
       let userEmail = user?.email ?? null
@@ -437,8 +479,11 @@ function GuideContent() {
         previewContent = localStorage.getItem("previewContent")
       } catch {}
 
-      setLoadingStep("Creating writing rules and examples...")
-      setLoadingProgress(50)
+      setLoadingStep("Generating style rules and examples...")
+      setLoadingProgress(35)
+
+      // Simulate progressive updates during long API call (35% → 85%)
+      cancelProgress = simulateProgress(35, 85, 30000, (p) => setLoadingProgress(p))
 
       const response = await fetch('/api/generate-styleguide', {
         method: 'POST',
@@ -450,25 +495,30 @@ function GuideContent() {
         }),
       })
 
+      if (cancelProgress) {
+        cancelProgress()
+        cancelProgress = null
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: response.statusText }))
         throw new Error(errorData.error || `Server returned ${response.status}`)
       }
 
-      setLoadingStep("Building your complete style guide...")
-      setLoadingProgress(75)
+      setLoadingStep("Assembling your complete guide...")
+      setLoadingProgress(90)
 
       const data = await response.json()
       if (!data.success) {
         throw new Error(data.error || 'Failed to generate style guide')
       }
 
-      setLoadingStep("Finalizing...")
-      setLoadingProgress(90)
+      setLoadingStep("Saving to your account...")
+      setLoadingProgress(95)
 
       setContent(data.styleGuide)
       localStorage.setItem("generatedStyleGuide", data.styleGuide)
-      
+
       if (user) {
         try {
           const res = await fetch("/api/save-style-guide", {
@@ -507,9 +557,10 @@ function GuideContent() {
         title: "Style guide updated!",
         description: "Your guide has been regenerated.",
       })
-      
+
     } catch (error) {
       console.error("Error generating style guide:", error)
+      if (cancelProgress) cancelProgress()
       const errorDetails = createErrorDetails(error)
       setApiError(errorDetails)
     }
@@ -980,33 +1031,26 @@ function GuideContent() {
 
             {/* Title & Description */}
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
-              {loadingProgress === 100 ? "Almost Ready" : "Building Your Tone of Voice Guidelines"}
+              Creating Your Tone of Voice Guidelines
             </h1>
 
             <p className="text-sm text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
-              {loadingProgress === 100
-                ? "Your guide is ready to view"
-                : "Personalized guidelines, ready in seconds."}
+              {loadingStep}
             </p>
 
             {/* Progress Section */}
             <div className="space-y-4 sm:space-y-5 w-full">
-              <div className="space-y-2">
-                <p className="text-xs sm:text-sm text-gray-600 min-h-[1.25rem]">
-                  {loadingStep}
-                </p>
-                <Progress
-                  value={loadingProgress}
-                  className="h-1.5 sm:h-2"
-                  aria-label={`Loading progress: ${loadingProgress}%`}
-                />
-              </div>
+              <Progress
+                value={loadingProgress}
+                className="h-1.5 sm:h-2"
+                aria-label={`Loading progress: ${loadingProgress}%`}
+              />
 
               {/* Info Banner */}
               {loadingProgress < 100 && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
-                  <p className="text-gray-700 text-xs sm:text-sm">
-                    This usually takes just a few seconds
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <p className="text-blue-900 text-xs sm:text-sm font-medium">
+                    Typically takes 30-60 seconds
                   </p>
                 </div>
               )}
@@ -1023,10 +1067,7 @@ function GuideContent() {
                     </div>
                     <div className="pt-0.5">
                       <p className="text-xs sm:text-sm font-medium text-gray-900">
-                        Review and edit
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Refine your guide with AI or by hand
+                        Refine your guidelines with AI or manually
                       </p>
                     </div>
                   </div>
@@ -1036,10 +1077,7 @@ function GuideContent() {
                     </div>
                     <div className="pt-0.5">
                       <p className="text-xs sm:text-sm font-medium text-gray-900">
-                        Export
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Download as PDF, Word, or Markdown
+                        Export as PDF, Word, or Markdown
                       </p>
                     </div>
                   </div>
@@ -1049,10 +1087,7 @@ function GuideContent() {
                     </div>
                     <div className="pt-0.5">
                       <p className="text-xs sm:text-sm font-medium text-gray-900">
-                        Put it to work
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Use in any AI tool like ChatGPT/Claude, share with your team or your client
+                        Share with your team or use in AI tools
                       </p>
                     </div>
                   </div>

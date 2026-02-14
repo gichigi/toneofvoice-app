@@ -59,8 +59,6 @@ export default function BrandDetailsPage() {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [processingStep, setProcessingStep] = useState<'idle' | 'processing' | 'complete'>('idle')
-  const [loadingMessage, setLoadingMessage] = useState("")
-  const [generationStartTime, setGenerationStartTime] = useState<number | null>(null)
   const searchParams = useSearchParams()
   const fromExtraction = searchParams.get("fromExtraction") === "true"
   const urlAudience = searchParams.get("audience") || ""
@@ -87,8 +85,6 @@ export default function BrandDetailsPage() {
   const [keywordTags, setKeywordTags] = useState<string[]>([])
   const KEYWORD_LIMIT = 15
 
-  // Progressive loading words for brand details generation
-  const loadingWords = ["Defining...", "Drafting...", "Crafting...", "Editing...", "Refining..."]
 
   // When authed, check if user is at guide limit (for upgrade nudge on Generate)
   useEffect(() => {
@@ -128,25 +124,6 @@ export default function BrandDetailsPage() {
       localStorage.setItem("emailCaptureToken", token)
     }
   }, [])
-
-  // Progressive loading message cycling with isMounted check
-  useEffect(() => {
-    if (!loading || !generationStartTime) return
-    
-    let isMounted = true
-    const interval = setInterval(() => {
-      if (!isMounted) return
-      const elapsed = Date.now() - generationStartTime
-      const wordIndex = Math.floor(elapsed / 2000) % loadingWords.length // Change word every 2 seconds
-      setLoadingMessage(loadingWords[wordIndex])
-    }, 200) // Update every 200ms for smooth transitions
-    
-    return () => {
-      isMounted = false
-      clearInterval(interval)
-    }
-  }, [loading, generationStartTime, loadingWords])
-
 
   // Show toast if brand details were filled from extraction
   useEffect(() => {
@@ -617,7 +594,7 @@ export default function BrandDetailsPage() {
     }
   }
 
-  // Generate preview on brand-details page before redirecting
+  // Validate, save to localStorage, and redirect to /guide for generation
   const handleSubmit = async (e: React.FormEvent) => {
     // Authed user at guide limit: show upgrade nudge instead of generating
     if (user && atLimit) {
@@ -627,9 +604,16 @@ export default function BrandDetailsPage() {
 
     setLoading(true)
     setProcessingStep('processing')
-    setGenerationStartTime(Date.now())
 
     try {
+      // Client-side validation
+      if (!validateStep1Fields()) {
+        throw new Error("Please fix the errors above.")
+      }
+      if (!isStep2Valid()) {
+        throw new Error("Please select exactly 3 voice traits.")
+      }
+
       // Clear cached preview before generating fresh content
       localStorage.removeItem("previewContent")
       localStorage.removeItem("generatedPreviewTraits")
@@ -647,69 +631,23 @@ export default function BrandDetailsPage() {
         readingLevel: brandDetails.readingLevel,
       }
 
-      // Save brand details for reference
+      // Save brand details for generation on /guide
       localStorage.setItem("brandDetails", JSON.stringify(detailsWithName))
       localStorage.setItem("selectedTraits", JSON.stringify(selectedTraits))
 
-      // Call API to generate preview
-      const response = await fetch('/api/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandDetails: detailsWithName,
-          selectedTraits
-        })
-      })
+      // Brief delay so user sees button feedback
+      await new Promise(resolve => setTimeout(resolve, 300))
 
-      let errorMessage = 'Failed to generate style guide'
-      if (!response.ok) {
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorData.details || errorMessage
-        } catch {
-          errorMessage = `Server error (${response.status}). Please try again.`
-        }
-        throw new Error(errorMessage)
-      }
-
-      let data: { preview?: string; success?: boolean }
-      try {
-        data = await response.json()
-      } catch {
-        throw new Error('Invalid response from server. Please try again.')
-      }
-
-      if (!data?.preview) {
-        throw new Error('Style guide generation failed. Please try again.')
-      }
-
-      // Save generated preview to localStorage
-      localStorage.setItem("previewContent", data.preview)
-
-      // Extract and save brand voice traits
-      const brandVoiceMatch = data.preview.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
-      if (brandVoiceMatch) {
-        const brandVoiceContent = brandVoiceMatch[1].trim()
-        localStorage.setItem("generatedPreviewTraits", brandVoiceContent)
-        localStorage.setItem("previewTraitsTimestamp", Date.now().toString())
-      }
-
-      setProcessingStep('complete')
-      setLoadingMessage("")
-      setGenerationStartTime(null)
-
-      // Redirect to guide page with generated content
-      router.push("/guide")
+      // Redirect to /guide - generation happens there with full interstitial
+      router.push("/guide?generate=preview")
     } catch (error) {
       setLoading(false)
       setProcessingStep('idle')
-      setLoadingMessage("")
-      setGenerationStartTime(null)
-      console.error("[Brand Details] Generation failed:", error)
+      console.error("[Brand Details] Validation failed:", error)
 
-      const message = error instanceof Error ? error.message : "Generation failed"
+      const message = error instanceof Error ? error.message : "Validation failed"
       toast({
-        title: "Generation failed",
+        title: "Can't generate yet",
         description: message,
         variant: "destructive",
       })
@@ -1096,14 +1034,7 @@ export default function BrandDetailsPage() {
                     {processingStep === 'processing' ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {loadingMessage || "Processing..."}
-                      </>
-                    ) : processingStep === 'complete' ? (
-                      <>
-                        <svg className="mr-2 h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Done
+                        Preparing...
                       </>
                     ) : !isStep2Valid() ? (
                       `Pick ${3 - selectedTraits.length} trait${3 - selectedTraits.length !== 1 ? 's' : ''}`

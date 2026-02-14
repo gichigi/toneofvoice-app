@@ -43,6 +43,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { Editor, EditorContainer } from "@/components/ui/editor";
+import type { RenderLeafProps, TText } from "platejs";
 import { FixedToolbar } from "@/components/ui/fixed-toolbar";
 import { ToolbarButton, ToolbarGroup } from "@/components/ui/toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
@@ -84,11 +85,15 @@ interface GuideEditorProps {
   editorId?: string;
   /** Use H2SectionElement for section ids (sidebar jump, IntersectionObserver) */
   useSectionIds?: boolean;
+  /** When set, show a persistent subtle highlight on this text in the editor (e.g. for AI "selected text") */
+  selectionHighlightText?: string;
 }
 
 /** Ref handle exposed to parent components */
 export interface GuideEditorRef {
   getMarkdown: () => string;
+  /** Update editor content from new markdown without remounting */
+  setMarkdown: (markdown: string) => void;
 }
 
 export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function GuideEditor({
@@ -101,6 +106,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   onFocusChange,
   editorId = "style-guide-editor",
   useSectionIds = false,
+  selectionHighlightText,
 }, ref) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -172,13 +178,27 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
     },
   });
 
-  // Expose getMarkdown to parent via ref
+  // Expose getMarkdown and setMarkdown to parent via ref
   useImperativeHandle(ref, () => ({
     getMarkdown: () => {
       try {
         return editor.api.markdown?.serialize?.() ?? "";
       } catch {
         return "";
+      }
+    },
+    setMarkdown: (newMarkdown: string) => {
+      try {
+        const api = editor.getApi(MarkdownPlugin);
+        const newValue = api?.markdown?.deserialize?.(
+          newMarkdown || "# Style Guide\n\nEdit your content here.",
+          { remarkPlugins: [remarkGfm] }
+        ) ?? [{ type: "p", children: [{ text: newMarkdown || "Empty" }] }];
+        editor.tf.setValue(newValue);
+        // Focus at end after update
+        editor.tf.focus({ edge: "endEditor" });
+      } catch (e) {
+        console.warn("[GuideEditor] setMarkdown error:", e);
       }
     },
   }), [editor]);
@@ -220,6 +240,66 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   const handleFocus = useCallback(() => onFocusChange?.(true), [onFocusChange]);
   const handleBlur = useCallback(() => onFocusChange?.(false), [onFocusChange]);
 
+  // Custom leaf renderer for selection highlight decoration
+  const renderLeaf = useCallback((props: RenderLeafProps<{ selectionHighlight?: boolean } & TText>) => {
+    const { attributes, children, leaf } = props;
+    // Apply highlight background when selectionHighlight decoration is present
+    if (leaf.selectionHighlight) {
+      return (
+        <span
+          {...attributes}
+          className="bg-blue-100/90 dark:bg-blue-500/30 rounded-sm px-0.5 -mx-0.5 ring-1 ring-blue-300/40 dark:ring-blue-400/30"
+        >
+          {children}
+        </span>
+      );
+    }
+    return <span {...attributes}>{children}</span>;
+  }, []);
+
+  // Decorate callback that re-runs when selectionHighlightText changes.
+  // Highlights any text node whose content appears within the captured selection text.
+  // This handles multi-node selections (e.g. text spanning bold/italic formatting).
+  const decorate = useCallback(
+    (opts: { editor?: unknown; entry?: [unknown, number[]] } | [unknown, number[]]) => {
+      const highlightText = selectionHighlightText?.trim();
+      if (!highlightText) return [];
+      const entry = Array.isArray(opts) && opts.length === 2 ? opts : (opts as { entry?: [unknown, number[]] }).entry;
+      if (!entry) return [];
+      const [node, path] = entry;
+      const n = node as { text?: string };
+      if (typeof n?.text !== "string" || !n.text.trim()) return [];
+
+      const nodeText = n.text;
+      const ranges: { anchor: { path: number[]; offset: number }; focus: { path: number[]; offset: number }; selectionHighlight: boolean }[] = [];
+
+      // Strategy 1: Check if this node's text is contained within the highlight text
+      // (handles multi-node selections where each node is part of the whole)
+      if (highlightText.includes(nodeText.trim()) && nodeText.trim().length > 3) {
+        ranges.push({
+          anchor: { path: [...path], offset: 0 },
+          focus: { path: [...path], offset: nodeText.length },
+          selectionHighlight: true,
+        });
+      }
+      // Strategy 2: Check if the highlight text is contained within this node
+      // (handles single-node exact or partial matches)
+      else {
+        const idx = nodeText.indexOf(highlightText);
+        if (idx !== -1) {
+          ranges.push({
+            anchor: { path: [...path], offset: idx },
+            focus: { path: [...path], offset: idx + highlightText.length },
+            selectionHighlight: true,
+          });
+        }
+      }
+
+      return ranges;
+    },
+    [selectionHighlightText]
+  );
+
   return (
     <div className={cn("space-y-4", className)} onFocus={handleFocus} onBlur={handleBlur}>
       {/* Editable tip banner (shown once in unified doc) */}
@@ -240,8 +320,11 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
         </div>
       )}
 
-      <div className="rounded-lg border bg-white dark:bg-gray-950">
-        <Plate editor={editor} onChange={handleValueChange}>
+      <div
+        className="rounded-lg border bg-white dark:bg-gray-950"
+        data-selection-highlight={selectionHighlightText ? "true" : undefined}
+      >
+        <Plate editor={editor} onChange={handleValueChange} decorate={decorate}>
           {/* Toolbar — only visible when editing */}
           {!readOnly && (
             <TooltipProvider delayDuration={200}>
@@ -342,6 +425,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
               placeholder="Type your style guide content..."
               readOnly={readOnly}
               className="prose prose-slate dark:prose-invert max-w-none style-guide-content style-guide-document px-8 py-6"
+              renderLeaf={renderLeaf}
             />
           </EditorContainer>
         </Plate>

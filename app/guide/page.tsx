@@ -90,6 +90,7 @@ function GuideContent() {
   
   // Full-access flow specific state
   const [showDownloadOptions, setShowDownloadOptions] = useState(false)
+  const [selectionHighlightText, setSelectionHighlightText] = useState<string | null>(null)
   const [downloadFormat, setDownloadFormat] = useState<string | null>(null)
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
@@ -1211,6 +1212,8 @@ function GuideContent() {
           rewriteBarDisabledMessage="Upgrade to Pro to use AI assist"
           websiteUrl={brandDetails?.websiteUrl}
           subscriptionTier={subscriptionTier as "starter" | "pro" | "agency"}
+          selectionHighlightText={selectionHighlightText}
+          onSelectionForHighlight={setSelectionHighlightText}
           pdfFooter={
             isPreviewFlow && subscriptionTier === "starter" ? (
               <div className="pdf-only mt-12 pt-8 border-t border-gray-200 px-8 pb-8">

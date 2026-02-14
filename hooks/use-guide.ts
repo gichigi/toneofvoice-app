@@ -180,7 +180,7 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
     selectedText?: string
   ) => {
     if (!content || !brandDetails) return
-    
+
     setIsRewriting(true)
     try {
       let currentContent = ""
@@ -191,11 +191,23 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
       } else {
         // section scope
         if (!activeSectionId || activeSectionId === "cover") {
-          throw new Error("No section selected")
+          toast({
+            title: "Please select a section",
+            description: "Navigate to a section or use 'Whole Document' to rewrite all content.",
+            variant: "destructive",
+          })
+          setIsRewriting(false)
+          return
         }
         currentContent = getSectionContentFromMarkdown(content, activeSectionId)
         if (!currentContent) {
-          throw new Error("Section content not found")
+          toast({
+            title: "Section not found",
+            description: "Could not find the content for this section.",
+            variant: "destructive",
+          })
+          setIsRewriting(false)
+          return
         }
       }
       
@@ -229,10 +241,8 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
       
       if (data.success && data.content) {
         let newContent = content
-        if (scope === "selection" && selectedText && editorRef.current) {
-          if (activeSectionId && activeSectionId !== "cover") {
-            newContent = replaceSectionInMarkdown(content, activeSectionId, data.content)
-          }
+        if (scope === "selection" && selectedText && selectedText.length > 0) {
+          newContent = content.replace(selectedText, data.content)
         } else if (scope === "document") {
           newContent = data.content
         } else {
@@ -243,8 +253,26 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
           newContent = replaceSectionInMarkdown(content, activeSectionId, data.content)
         }
         
+        // Update React state
         setContent(newContent)
-        setEditorKey((k) => k + 1)
+        
+        // Update editor directly via ref (if available) for immediate UI feedback.
+        // This avoids remount timing issues where editor gets stale markdown.
+        // We compute editorMarkdown inline: parse content into sections, filter unlocked, build markdown.
+        if (editorRef.current?.setMarkdown) {
+          const brandName = brandDetails?.name || "Your Brand"
+          // Re-parse newContent to get updated sections
+          const parsed = parseStyleGuideContent(newContent)
+          // Filter to unlocked sections (not cover)
+          const editable = parsed.filter((s) => s.id !== "cover" && isUnlocked(s.minTier))
+          const editableMarkdown = editable.map((s) => `## ${s.title}\n\n${s.content}`.trim()).join("\n\n")
+          const fullEditorMarkdown = `# ${brandName}\n\n${editableMarkdown}`
+          editorRef.current.setMarkdown(fullEditorMarkdown)
+        } else {
+          // Fallback: force remount if ref not available
+          setEditorKey((k) => k + 1)
+        }
+        
         toast({
           title: scope === "document" ? "Document rewritten" : scope === "selection" ? "Selection rewritten" : "Section rewritten",
           description: "Your changes have been applied.",

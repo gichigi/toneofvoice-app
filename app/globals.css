@@ -343,6 +343,17 @@ html, body {
   font-family: var(--font-display), Georgia, serif;
 }
 
+/* Persistent muted highlight for "selected text" when focus is on AI assist bar (Notion-style) */
+[data-selection-highlight="true"]:not(:focus-within) .slate-selection-area {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  border-radius: 2px;
+}
+.dark [data-selection-highlight="true"]:not(:focus-within) .slate-selection-area {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
 /* Note: Typography styles are now defined in lib/style-guide-styles.ts and applied via Tailwind classes */
 /* This prevents CSS specificity conflicts and ensures a single source of truth */
 

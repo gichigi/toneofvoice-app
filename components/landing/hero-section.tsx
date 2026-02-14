@@ -139,7 +139,7 @@ export default function HeroSection() {
 
                     return (
                       <>
-                        <span>Generate</span>
+                        <span>Get Started</span>
                         <ArrowRight className="ml-2 h-5 w-5" />
                       </>
                     )

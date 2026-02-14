@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, RefObject, useEffect } from "react"
+import React, { useState, RefObject, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, PenLine, Send, Check } from "lucide-react"
@@ -31,13 +31,21 @@ interface RewriteBarProps {
   /** When true, same bar with muted styling and no submit; message shown on hover/tap */
   disabled?: boolean
   disabledMessage?: string
+  /** Called when scope is "selection" and we have captured text, so parent can show persistent highlight */
+  onSelectionForHighlight?: (text: string | null) => void
 }
 
-export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeSectionId, disabled, disabledMessage }: RewriteBarProps) {
+export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeSectionId, disabled, disabledMessage, onSelectionForHighlight }: RewriteBarProps) {
   const [instruction, setInstruction] = useState("")
   const [isSuccess, setIsSuccess] = useState(false)
-  const [scope, setScope] = useState<RewriteScope>("section")
+  const [scope, setScope] = useState<RewriteScope>(() => {
+    // Initialize scope based on whether we're on the cover page
+    return activeSectionId === "cover" ? "document" : "section"
+  })
   const [hasSelection, setHasSelection] = useState(false)
+  // Persist selected text when focus moves to dropdown/input so "Selected Text" still works
+  const [capturedSelectionText, setCapturedSelectionText] = useState<string | null>(null)
+  const capturedSelectionRef = useRef<string | null>(null)
 
   const getSelectedText = (): string | undefined => {
     if (typeof window === "undefined") return undefined
@@ -47,20 +55,62 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
     return text || undefined
   }
 
-  // Check for selection periodically
-  useEffect(() => {
-    const checkSelection = () => {
-      const selected = !!getSelectedText()
-      setHasSelection(selected)
+  const checkSelection = React.useCallback(() => {
+    const text = getSelectedText()
+    if (text) {
+      setHasSelection(true)
+      setCapturedSelectionText(text)
+      capturedSelectionRef.current = text
+    } else {
+      setHasSelection(false)
     }
+  }, [])
 
-    // Check on mount and when scope changes
+  useEffect(() => {
     checkSelection()
-
-    // Listen for selection changes
     document.addEventListener("selectionchange", checkSelection)
     return () => document.removeEventListener("selectionchange", checkSelection)
-  }, [scope])
+  }, [checkSelection])
+
+  // When scope is "selection", poll so we capture even if user clicks input before selectionchange
+  useEffect(() => {
+    if (scope !== "selection") return
+    const id = setInterval(checkSelection, 150)
+    return () => clearInterval(id)
+  }, [scope, checkSelection])
+
+  const handleScopeChange = (value: string) => {
+    const newScope = value as RewriteScope
+    setScope(newScope)
+    if (newScope !== "selection") {
+      setCapturedSelectionText(null)
+      capturedSelectionRef.current = null
+      onSelectionForHighlight?.(null)
+    }
+  }
+
+  // Auto-switch from "section" to "document" when on cover page
+  useEffect(() => {
+    if (scope === "section" && activeSectionId === "cover") {
+      setScope("document")
+    }
+  }, [scope, activeSectionId])
+
+  // Sync captured selection to parent for persistent highlight when scope is "selection".
+  // Defer so we don't update parent (and Plate's decorate prop) during render - avoids
+  // "Cannot update PlateContent while rendering HydrateAtoms" from Jotai/Plate.
+  useEffect(() => {
+    if (!onSelectionForHighlight) return
+    if (scope !== "selection") {
+      onSelectionForHighlight(null)
+      return
+    }
+    const text = capturedSelectionRef.current ?? capturedSelectionText
+    const id = requestAnimationFrame(() => {
+      onSelectionForHighlight(text ?? null)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [scope, capturedSelectionText, onSelectionForHighlight])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,9 +118,8 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
 
     let selectedText: string | undefined
     if (scope === "selection") {
-      selectedText = getSelectedText()
+      selectedText = capturedSelectionRef.current ?? capturedSelectionText ?? getSelectedText()
       if (!selectedText) {
-        // No selection, fall back to section
         setScope("section")
         selectedText = undefined
       }
@@ -78,8 +127,11 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
 
     try {
       await onRewrite(instruction, scope, selectedText)
-      
-      // Show success state briefly
+      if (scope === "selection" && selectedText) {
+        setCapturedSelectionText(null)
+        capturedSelectionRef.current = null
+        onSelectionForHighlight?.(null)
+      }
       setIsSuccess(true)
       setInstruction("")
       setTimeout(() => setIsSuccess(false), 2000)
@@ -90,13 +142,13 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
   }
 
   const placeholderText = scope === "selection"
-    ? "Ask AI to rewrite selected text (e.g. 'Make it more professional')"
+    ? "Ask AI to rewrite selected text..."
     : scope === "document"
-      ? "Ask AI to rewrite entire document (e.g. 'Make it more professional')"
-      : "Ask AI to rewrite this section (e.g. 'Make it more professional')"
+      ? "Ask AI to rewrite entire document..."
+      : "Ask AI to rewrite this section..."
 
-  const wrapperClass = "pdf-exclude fixed bottom-4 left-0 right-0 ml-[var(--sidebar-width,18rem)] p-4 bg-gradient-to-t from-white via-white/95 to-transparent pt-8 z-30 backdrop-blur-sm"
-  const innerClass = "max-w-3xl mx-auto relative transition-all duration-500 ease-out"
+  const wrapperClass = "pdf-exclude fixed bottom-0 left-0 right-0 md:bottom-4 md:ml-[var(--sidebar-width,18rem)] p-4 bg-gradient-to-t from-white via-white/95 to-transparent pt-8 z-30 backdrop-blur-sm"
+  const innerClass = "w-full max-w-3xl mx-auto relative transition-all duration-500 ease-out"
   const barBaseClass = "relative flex items-center rounded-xl border border-gray-200 bg-white shadow-lg shadow-black/5 transition-all duration-500 ease-out"
 
   if (disabled) {
@@ -117,8 +169,8 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
                     <PenLine className="size-5" />
                   </div>
                   <Select value="section" disabled>
-                    <SelectTrigger className="w-[140px] border-0 bg-transparent shadow-none focus:ring-0 h-auto py-0 mr-2 text-gray-500">
-                      <SelectValue />
+                    <SelectTrigger className="w-[160px] md:w-[165px] border-0 bg-transparent shadow-none focus:ring-0 h-auto py-0 mr-1 md:mr-2 text-sm md:text-base text-gray-500 shrink-0 [&>span]:line-clamp-none [&>span]:whitespace-nowrap">
+                      <SelectValue placeholder="This Section" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="section">This Section</SelectItem>
@@ -129,8 +181,8 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
                   <Input
                     readOnly
                     value=""
-                    placeholder="Ask AI to rewrite this section..."
-                    className="flex-1 border-0 bg-transparent py-6 text-base shadow-none placeholder:text-gray-400 text-gray-500 cursor-default"
+                    placeholder="Ask AI to rewrite..."
+                    className="flex-1 border-0 bg-transparent py-6 text-sm md:text-base shadow-none placeholder:text-gray-400 text-gray-500 cursor-default"
                   />
                   <div className="pr-2 z-10">
                     <Button type="button" size="sm" disabled className="rounded-lg h-9 w-9 p-0 shadow-md opacity-50 bg-gray-400 cursor-not-allowed">
@@ -159,8 +211,8 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
         <div className={cn(
           barBaseClass,
           isSuccess
-            ? "border-green-500 ring-4 ring-green-500/20 shadow-green-500/10"
-            : "focus-within:border-gray-400 focus-within:ring-4 focus-within:ring-gray-300 focus-within:shadow-gray-200",
+            ? "border-green-500 ring-2 ring-green-500/20 shadow-green-500/10"
+            : "focus-within:border-gray-300",
           isLoading && "opacity-90"
         )}>
           {isLoading && (
@@ -174,24 +226,34 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
             <PenLine className="size-5" />
           </div>
 
-          <Select value={scope} onValueChange={(value) => setScope(value as RewriteScope)}>
-            <SelectTrigger className="w-[140px] border-0 bg-transparent shadow-none focus:ring-0 h-auto py-0 mr-2">
-              <SelectValue />
+          <Select value={scope} onValueChange={handleScopeChange}>
+            <SelectTrigger className="w-[160px] md:w-[165px] border-0 bg-transparent shadow-none focus:ring-0 h-auto py-0 mr-1 md:mr-2 text-sm md:text-base shrink-0 [&>span]:line-clamp-none [&>span]:whitespace-nowrap">
+              <SelectValue placeholder="This Section" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="section">This Section</SelectItem>
-              <SelectItem value="selection" disabled={!hasSelection}>
-                Selected Text {!hasSelection && "(select text first)"}
+              <SelectItem value="selection">
+                Selected Text
               </SelectItem>
               <SelectItem value="document">Whole Document</SelectItem>
             </SelectContent>
           </Select>
 
+          {scope === "selection" && (capturedSelectionText ?? capturedSelectionRef.current) && (
+            <span
+              className="shrink-0 max-w-[100px] md:max-w-[200px] truncate rounded-md bg-gray-200/80 px-2 py-1 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+              title={capturedSelectionText ?? capturedSelectionRef.current ?? undefined}
+            >
+              {(capturedSelectionText ?? capturedSelectionRef.current ?? "").slice(0, 40)}
+              {(capturedSelectionText ?? capturedSelectionRef.current ?? "").length > 40 ? "…" : ""}
+            </span>
+          )}
+
           <Input
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             placeholder={placeholderText}
-            className="flex-1 border-0 bg-transparent py-6 text-base shadow-none focus-visible:ring-0 placeholder:text-gray-400 transition-all duration-300"
+            className="flex-1 border-0 bg-transparent py-6 text-sm md:text-base shadow-none focus-visible:ring-0 focus:outline-none placeholder:text-gray-400 transition-all duration-300"
             disabled={isLoading}
           />
 
@@ -199,13 +261,13 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
             <Button
               type="submit"
               size="sm"
-              disabled={!instruction.trim() || isLoading || (scope === "selection" && !hasSelection)}
+              disabled={!instruction.trim() || isLoading || (scope === "selection" && !hasSelection && !capturedSelectionText)}
               className={cn(
                 "rounded-lg transition-all duration-500 h-9 w-9 p-0 shadow-md focus-visible:ring-gray-300",
                 isSuccess
                   ? "bg-green-600 hover:bg-green-700 scale-110 shadow-green-500/30"
                   : "bg-gray-900 hover:bg-gray-800 hover:scale-105 active:scale-95",
-                (!instruction.trim() || (scope === "selection" && !hasSelection)) && "opacity-50 cursor-not-allowed"
+                (!instruction.trim() || (scope === "selection" && !hasSelection && !capturedSelectionText)) && "opacity-50 cursor-not-allowed"
               )}
             >
               {isLoading ? (

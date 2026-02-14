@@ -53,6 +53,10 @@ export interface GuideViewProps {
   websiteUrl?: string
   /** Subscription tier for branding visibility */
   subscriptionTier?: Tier
+  /** Text currently "selected" for AI (scope selection) - shown as persistent highlight in editor */
+  selectionHighlightText?: string | null
+  /** Called when RewriteBar has captured selection text for scope "selection" */
+  onSelectionForHighlight?: (text: string | null) => void
 }
 
 /**
@@ -88,6 +92,8 @@ export function GuideView({
   contentKey,
   websiteUrl,
   subscriptionTier = 'starter',
+  selectionHighlightText,
+  onSelectionForHighlight,
 }: GuideViewProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -245,6 +251,7 @@ export function GuideView({
                       showTip={true}
                       useSectionIds={true}
                       onFocusChange={undefined}
+                      selectionHighlightText={selectionHighlightText ?? undefined}
                       onChange={(md) => {
                         const withoutTitle = md.replace(/^#\s+.+\n*/, "").trim()
                         const full = lockedMarkdown
@@ -343,6 +350,7 @@ export function GuideView({
                 activeSectionId={activeSectionId}
                 disabled={rewriteBarDisabled}
                 disabledMessage={rewriteBarDisabledMessage}
+                onSelectionForHighlight={onSelectionForHighlight}
               />
             )}
           </>,

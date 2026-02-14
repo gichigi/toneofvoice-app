@@ -28,7 +28,7 @@ export default async function BillingPage() {
     .eq("user_id", user.id);
 
   const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
-  const limit = tier === "starter" ? 0 : tier === "pro" ? 5 : 99;
+  const limit = tier === "starter" ? 0 : tier === "pro" ? 2 : 99;
   const used = count ?? 0;
   const nextBilling = profile?.current_period_end
     ? new Date(profile.current_period_end).toLocaleDateString()

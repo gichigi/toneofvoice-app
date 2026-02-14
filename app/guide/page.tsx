@@ -101,6 +101,13 @@ function GuideContent() {
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(guideId)
   const [showPostExportPrompt, setShowPostExportPrompt] = useState(false)
+
+  // Sync currentGuideId when URL guideId param changes (e.g., after AutoSaveGuide redirect)
+  useEffect(() => {
+    if (guideId && guideId !== currentGuideId) {
+      setCurrentGuideId(guideId)
+    }
+  }, [guideId, currentGuideId])
   const [isExpanding, setIsExpanding] = useState(false)
   const [expandedContentKey, setExpandedContentKey] = useState<number | null>(null)
 
@@ -344,7 +351,7 @@ function GuideContent() {
         await new Promise(resolve => setTimeout(resolve, 600))
         if (!isMounted) return
 
-        setLoadingStep("Creating your brand voice and guidelines...")
+        setLoadingStep("Creating your tone of voice and guidelines...")
         setLoadingProgress(30)
 
         // Simulate progressive updates during API call (30% → 85%)

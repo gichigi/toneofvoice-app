@@ -19,7 +19,7 @@ export async function POST(req: Request) {
         title?: string;
         brand_name?: string;
         content_md?: string;
-        plan_type?: "core" | "complete" | "style_guide";
+        plan_type?: "style_guide";
         brand_details?: object;
       };
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
           title: title.slice(0, 255),
           brand_name: brand_name?.slice(0, 255) ?? null,
           content_md,
-          plan_type: (plan_type === "style_guide" || !plan_type) ? "style_guide" : plan_type,
+          plan_type: "style_guide",
           brand_details: brand_details ?? null,
           updated_at: new Date().toISOString(),
         })
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       .single();
 
     const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
-    const limit = tier === "starter" ? 1 : tier === "pro" ? 5 : 99;
+    const limit = tier === "starter" ? 1 : tier === "pro" ? 2 : 99;
 
     const { count } = await supabase
       .from("style_guides")
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         title: title.slice(0, 255),
         brand_name: brand_name?.slice(0, 255) ?? null,
         content_md,
-        plan_type: (plan_type === "style_guide" || !plan_type) ? "style_guide" : plan_type,
+        plan_type: "style_guide",
         brand_details: brand_details ?? null,
       })
       .select("id, title, created_at")

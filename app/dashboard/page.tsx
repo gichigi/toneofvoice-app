@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     .single();
 
   const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
-  const limit = tier === "starter" ? 1 : tier === "pro" ? 5 : 99;
+  const limit = tier === "starter" ? 1 : tier === "pro" ? 2 : 99;
   const used = guides?.length ?? 0;
 
   return (

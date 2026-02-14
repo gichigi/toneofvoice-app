@@ -47,6 +47,8 @@ export interface GuideViewProps {
   pdfFooter?: React.ReactNode
   /** Optional class for the content wrapper (e.g. opacity when retrying) */
   contentClassName?: string
+  /** Key to force remount and trigger entrance animation (e.g. after expand) */
+  contentKey?: string | number
   /** Website URL to show on cover page (if available) */
   websiteUrl?: string
   /** Subscription tier for branding visibility */
@@ -83,6 +85,7 @@ export function GuideView({
   editorBanner,
   pdfFooter = null,
   contentClassName,
+  contentKey,
   websiteUrl,
   subscriptionTier = 'starter',
 }: GuideViewProps) {
@@ -115,6 +118,7 @@ export function GuideView({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div
+          key={contentKey}
           id="pdf-export-content"
           className={cn(
             playfairDisplay.variable,

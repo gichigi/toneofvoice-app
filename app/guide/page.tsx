@@ -99,6 +99,8 @@ function GuideContent() {
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(guideId)
   const [showPostExportPrompt, setShowPostExportPrompt] = useState(false)
+  const [isExpanding, setIsExpanding] = useState(false)
+  const [expandedContentKey, setExpandedContentKey] = useState<number | null>(null)
 
   // Progress state for loading UI
   const [loadingProgress, setLoadingProgress] = useState(10)
@@ -568,7 +570,49 @@ function GuideContent() {
       setProcessingPlan(null)
     }
   }
-  
+
+  const hasPlaceholders =
+    (content?.includes("_Unlock to see Style Rules._") ||
+      content?.includes("_Unlock to see Before/After examples._") ||
+      content?.includes("_Unlock to see Word List._")) ??
+    false
+  const showExpandBanner =
+    !isPreviewFlow &&
+    currentGuideId &&
+    (subscriptionTier === "pro" || subscriptionTier === "agency") &&
+    hasPlaceholders
+
+  const handleExpandGuide = async () => {
+    if (!currentGuideId || isExpanding) return
+    setIsExpanding(true)
+    try {
+      const res = await fetch("/api/expand-style-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guideId: currentGuideId }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate full guide")
+      }
+      if (data.content) {
+        setContent(data.content)
+        setEditorKey((k) => k + 1)
+        setExpandedContentKey(Date.now())
+        toast({ title: "Full guide generated", description: "Style Rules, Before/After, and Word List are now complete." })
+      }
+    } catch (e) {
+      console.error("[Guide] Expand error:", e)
+      toast({
+        title: "Could not generate full guide",
+        description: e instanceof Error ? e.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExpanding(false)
+    }
+  }
+
   // PDF: try POST /api/export-pdf (Puppeteer), then improved html2pdf fallback.
   const PDF_EXPORT_TIMEOUT_MS = 25000
 
@@ -1090,6 +1134,30 @@ function GuideContent() {
         showEditTools={true}
         headerContent={headerContent}
       >
+        {showExpandBanner && (
+          <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium">Generate full sections</p>
+                <p className="mt-0.5 text-blue-700">
+                  Your guide has placeholder sections. Generate Style Rules, Before/After examples, and Word List for this guide.
+                </p>
+              </div>
+              <Button
+                onClick={handleExpandGuide}
+                disabled={isExpanding}
+                className="shrink-0 gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                {isExpanding ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {isExpanding ? "Generating..." : "Generate full guide"}
+              </Button>
+            </div>
+          </div>
+        )}
         {!isPreviewFlow && showPostExportPrompt && (
           <PostExportPrompt
             content={content ?? ""}
@@ -1168,7 +1236,8 @@ function GuideContent() {
               </div>
             ) : undefined
           }
-          contentClassName={`transition-all duration-500 ${isRetrying ? "opacity-50 blur-sm" : "opacity-100"}`}
+          contentClassName={`transition-all duration-500 ${isRetrying ? "opacity-50 blur-sm" : "opacity-100"} ${expandedContentKey ? "animate-in fade-in slide-in-from-bottom-2 duration-500" : ""}`}
+          contentKey={expandedContentKey ?? undefined}
         />
       </GuideLayout>
       

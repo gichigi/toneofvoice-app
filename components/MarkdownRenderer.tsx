@@ -207,13 +207,10 @@ export function MarkdownRenderer({ content, className, selectedTraits = [], sect
         ),
         
         // Custom table styles (from remark-gfm) - open, airy layout
+        // Single-col (Avoid) and two-col (Preferred Terms, Spelling) tables share same row styling
         table: ({ children }) => (
           <div className="overflow-x-auto" style={{ margin: '0' }}>
-            <table className="min-w-full border-separate" style={{ borderSpacing: '0 1rem', tableLayout: 'fixed', width: '100%', margin: '0' }}>
-              <colgroup>
-                <col style={{ width: '50%' }} />
-                <col style={{ width: '50%' }} />
-              </colgroup>
+            <table className="min-w-full border-separate" style={{ borderSpacing: '0 1rem', tableLayout: 'auto', width: '100%', margin: '0' }}>
               {children}
             </table>
           </div>

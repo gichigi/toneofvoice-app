@@ -704,11 +704,13 @@ Return strict JSON only.`;
       lines.push("");
     }
 
-    // Avoid Terms - simple list (no table needed for single column)
+    // Avoid Terms - single-column table (same structure/rhythm as other subsections)
     if (avoid.length) {
       lines.push("### Avoid Terms", "");
+      lines.push("| Avoid |");
+      lines.push("|-------|");
       avoid.forEach((term: string) => {
-        lines.push(`- ${term}`);
+        lines.push(`| ${String(term)} |`);
       });
       lines.push("");
     }

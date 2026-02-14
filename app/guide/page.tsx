@@ -641,17 +641,6 @@ function GuideContent() {
     (subscriptionTier === "pro" || subscriptionTier === "agency") &&
     hasPlaceholders
 
-  // Debug logging for banner visibility
-  if (currentGuideId && (subscriptionTier === "pro" || subscriptionTier === "agency")) {
-    console.log("[Guide] Expand banner state:", {
-      showExpandBanner,
-      hasPlaceholders,
-      isPreviewFlow,
-      currentGuideId,
-      subscriptionTier,
-      contentLength: content?.length,
-    })
-  }
 
   const handleExpandGuide = async () => {
     if (!currentGuideId || isExpanding) return

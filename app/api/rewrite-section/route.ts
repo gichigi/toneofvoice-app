@@ -56,11 +56,14 @@ export async function POST(req: Request) {
     const openai = createTracedOpenAI()
 
     const systemPrompt = `You are an expert editor specializing in brand voice and style guides.
-Your task is to rewrite a section of a style guide based on user instructions while:
-1. Preserving the exact markdown structure (headings, lists, formatting)
-2. Maintaining consistency with the brand's voice
-3. Keeping the same level of detail and depth
-4. Only changing what the user specifically requested
+Preserve the exact markdown structure (headings, lists, formatting).
+Maintain consistency with the brand's voice.
+
+For style rules with examples:
+- ✅ examples must demonstrate the rule CORRECTLY
+- ❌ examples must show the rule VIOLATED
+- Both examples should show the SAME sentence (correct vs incorrect)
+- Examples must logically demonstrate what the rule states
 
 Return ONLY the rewritten markdown content, no explanations or commentary.`
 
@@ -68,7 +71,7 @@ Return ONLY the rewritten markdown content, no explanations or commentary.`
 
     // For selected text, add explicit instruction context
     const selectionContext = scope === "selection"
-      ? `\n\nIMPORTANT: The user has selected a specific portion of text to rewrite. Apply the instruction to ONLY this selected text. If asked to shorten (e.g., "cut by 50%"), reduce the word count significantly. If asked to expand, add substantial detail. Make noticeable changes as requested.\n\n`
+      ? `\n\nIMPORTANT: The user has selected a specific portion of text to rewrite. Apply the instruction to ONLY this selected text. Follow the user's instruction exactly.\n\n`
       : ""
 
     const userPrompt = brandName
@@ -93,7 +96,6 @@ Rewritten ${scopeLabel} (preserve markdown structure):`
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      reasoning_effort: "low",
       max_completion_tokens: 2000,
     })
 

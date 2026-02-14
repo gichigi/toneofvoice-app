@@ -28,7 +28,7 @@ export interface GuideViewProps {
   guideType?: "core" | "complete" | "style_guide"
   showPreviewBadge?: boolean
   isUnlocked: (minTier?: Tier) => boolean
-  onRewrite: (instruction: string, scope: "section" | "selection" | "document", selectedText?: string) => Promise<void>
+  onRewrite: (instruction: string, scope: "section" | "selection" | "document", selectedText?: string, selectionRange?: unknown) => Promise<void>
   isRewriting: boolean
   isSectionLocked: boolean
   onUpgrade: () => void

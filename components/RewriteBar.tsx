@@ -24,7 +24,7 @@ import {
 type RewriteScope = "section" | "selection" | "document"
 
 interface RewriteBarProps {
-  onRewrite: (instruction: string, scope: RewriteScope, selectedText?: string) => Promise<void>
+  onRewrite: (instruction: string, scope: RewriteScope, selectedText?: string, selectionRange?: unknown) => Promise<void>
   isLoading: boolean
   className?: string
   editorRef?: RefObject<GuideEditorRef | null>
@@ -48,9 +48,24 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
   // Persist selected text when focus moves to dropdown/input so "Selected Text" still works
   const [capturedSelectionText, setCapturedSelectionText] = useState<string | null>(null)
   const capturedSelectionRef = useRef<string | null>(null)
+  // Save Plate.js selection range for direct editor replacement
+  const capturedSelectionRange = useRef<unknown | null>(null)
 
   const getSelectedText = (): string | undefined => {
     if (typeof window === "undefined") return undefined
+
+    // Get text and selection range from Plate.js editor
+    if (editorRef?.current?.getSelectedText && editorRef?.current?.getSelection) {
+      const editorText = editorRef.current.getSelectedText()
+      if (editorText?.trim()) {
+        // Save the Plate.js selection range for later replacement
+        capturedSelectionRange.current = editorRef.current.getSelection()
+        return editorText.trim()
+      }
+    }
+
+    // Fallback to DOM selection
+    capturedSelectionRange.current = null
     const selection = window.getSelection()
     if (!selection || selection.isCollapsed) return undefined
     const text = selection.toString().trim()
@@ -68,18 +83,17 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
     }
   }, [])
 
+  // Capture selection on mouseup (when user finishes selecting)
+  // Browser handles visual feedback natively - no React interference
   useEffect(() => {
-    checkSelection()
-    document.addEventListener("selectionchange", checkSelection)
-    return () => document.removeEventListener("selectionchange", checkSelection)
-  }, [checkSelection])
+    const handleMouseUp = () => {
+      // Small delay to ensure selection is finalized
+      setTimeout(checkSelection, 10)
+    }
 
-  // When scope is "selection", poll so we capture even if user clicks input before selectionchange
-  useEffect(() => {
-    if (scope !== "selection") return
-    const id = setInterval(checkSelection, 150)
-    return () => clearInterval(id)
-  }, [scope, checkSelection])
+    document.addEventListener("mouseup", handleMouseUp)
+    return () => document.removeEventListener("mouseup", handleMouseUp)
+  }, [checkSelection])
 
   const handleScopeChange = (value: string) => {
     const newScope = value as RewriteScope
@@ -128,10 +142,11 @@ export function RewriteBar({ onRewrite, isLoading, className, editorRef, activeS
     }
 
     try {
-      await onRewrite(instruction, scope, selectedText)
+      await onRewrite(instruction, scope, selectedText, capturedSelectionRange.current ?? undefined)
       if (scope === "selection" && selectedText) {
         setCapturedSelectionText(null)
         capturedSelectionRef.current = null
+        capturedSelectionRange.current = null
         onSelectionForHighlight?.(null)
       }
       setIsSuccess(true)

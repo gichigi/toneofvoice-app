@@ -94,6 +94,12 @@ export interface GuideEditorRef {
   getMarkdown: () => string;
   /** Update editor content from new markdown without remounting */
   setMarkdown: (markdown: string) => void;
+  /** Get current selection range (Plate.js internal format) */
+  getSelection: () => unknown | null;
+  /** Get plain text of current selection */
+  getSelectedText: () => string;
+  /** Replace content at a saved selection range with new text */
+  replaceAtSelection: (savedSelection: unknown, newText: string) => void;
 }
 
 export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function GuideEditor({
@@ -178,7 +184,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
     },
   });
 
-  // Expose getMarkdown and setMarkdown to parent via ref
+  // Expose getMarkdown, setMarkdown, and selection methods to parent via ref
   useImperativeHandle(ref, () => ({
     getMarkdown: () => {
       try {
@@ -199,6 +205,65 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
         editor.tf.focus({ edge: "endEditor" });
       } catch (e) {
         console.warn("[GuideEditor] setMarkdown error:", e);
+      }
+    },
+    getSelection: () => {
+      return editor.selection ? JSON.parse(JSON.stringify(editor.selection)) : null;
+    },
+    getSelectedText: () => {
+      if (!editor.selection) return "";
+      try {
+        const api = editor.api as { string?: (at?: unknown) => string };
+        return api.string?.(editor.selection) ?? "";
+      } catch {
+        return "";
+      }
+    },
+    replaceAtSelection: (savedSelection: unknown, newText: string) => {
+      try {
+        editor.tf.select(savedSelection as any);
+        editor.tf.deleteFragment();
+
+        // Clean up unwanted HTML tags (AI sometimes returns HTML instead of markdown)
+        let cleanText = newText
+          .replace(/<u>/g, '_')
+          .replace(/<\/u>/g, '_')
+          .replace(/<b>/g, '**')
+          .replace(/<\/b>/g, '**')
+          .replace(/<strong>/g, '**')
+          .replace(/<\/strong>/g, '**')
+          .replace(/<em>/g, '_')
+          .replace(/<\/em>/g, '_')
+          .replace(/<i>/g, '_')
+          .replace(/<\/i>/g, '_');
+
+        // Parse markdown to Slate nodes before inserting
+        const api = editor.getApi(MarkdownPlugin);
+        const nodes = api?.markdown?.deserialize?.(cleanText, { remarkPlugins: [remarkGfm] });
+
+        if (nodes && nodes.length > 0) {
+          // Extract inline content from paragraph nodes to avoid adding new lines
+          const inlineContent: any[] = [];
+          for (const node of nodes) {
+            if ((node as any).type === 'p' && (node as any).children) {
+              inlineContent.push(...(node as any).children);
+            } else {
+              inlineContent.push(node);
+            }
+          }
+
+          // Insert as fragment (inline, no new paragraphs)
+          if (inlineContent.length > 0) {
+            editor.tf.insertFragment(inlineContent);
+          } else {
+            editor.tf.insertText(cleanText);
+          }
+        } else {
+          // Fallback: plain text
+          editor.tf.insertText(cleanText);
+        }
+      } catch (e) {
+        console.warn("[GuideEditor] replaceAtSelection error:", e);
       }
     },
   }), [editor]);

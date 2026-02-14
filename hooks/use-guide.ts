@@ -51,7 +51,7 @@ export interface UseGuideReturn {
   // Actions
   handleSectionSelect: (id: string) => void
   handleModeSwitch: (mode: "preview" | "edit") => void
-  handleRewrite: (instruction: string, scope: "section" | "selection" | "document", selectedText?: string) => Promise<void>
+  handleRewrite: (instruction: string, scope: "section" | "selection" | "document", selectedText?: string, selectionRange?: unknown) => Promise<void>
   isRewriting: boolean
   
   // Utilities
@@ -177,7 +177,8 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
   const handleRewrite = useCallback(async (
     instruction: string,
     scope: "section" | "selection" | "document",
-    selectedText?: string
+    selectedText?: string,
+    selectionRange?: unknown
   ) => {
     if (!content || !brandDetails) return
 
@@ -240,35 +241,49 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
       const data = await response.json()
       
       if (data.success && data.content) {
-        let newContent = content
         if (scope === "selection" && selectedText && selectedText.length > 0) {
-          newContent = content.replace(selectedText, data.content)
+          // Use Plate.js editor API to replace at the saved selection range
+          if (selectionRange && editorRef.current?.replaceAtSelection) {
+            editorRef.current.replaceAtSelection(selectionRange, data.content)
+
+            // Serialize editor to get updated full markdown
+            const updatedEditorMarkdown = editorRef.current.getMarkdown?.() ?? ""
+            const withoutTitle = updatedEditorMarkdown.replace(/^#\s+.+\n*/, "").trim()
+
+            // Merge with locked sections
+            const parsed = parseStyleGuideContent(content)
+            const locked = parsed.filter((s) => !isUnlocked(s.minTier))
+            const lockedMarkdown = locked.map((s) => `## ${s.title}\n\n${s.content}`.trim()).join("\n\n")
+            const newContent = lockedMarkdown ? withoutTitle + "\n\n" + lockedMarkdown : withoutTitle
+
+            setContent(newContent)
+          } else {
+            console.warn("[handleRewrite] No selection range saved, falling back to string replacement")
+            const newContent = content.replace(selectedText, data.content)
+            setContent(newContent)
+          }
         } else if (scope === "document") {
-          newContent = data.content
+          setContent(data.content)
         } else {
           // section scope
           if (!activeSectionId || activeSectionId === "cover") {
             throw new Error("No section selected")
           }
-          newContent = replaceSectionInMarkdown(content, activeSectionId, data.content)
+          const newContent = replaceSectionInMarkdown(content, activeSectionId, data.content)
+          setContent(newContent)
+
+          // Update editor directly via ref
+          if (editorRef.current?.setMarkdown) {
+            const brandName = brandDetails?.name || "Your Brand"
+            const parsed = parseStyleGuideContent(newContent)
+            const editable = parsed.filter((s) => s.id !== "cover" && isUnlocked(s.minTier))
+            const editableMarkdown = editable.map((s) => `## ${s.title}\n\n${s.content}`.trim()).join("\n\n")
+            const fullEditorMarkdown = `# ${brandName}\n\n${editableMarkdown}`
+            editorRef.current.setMarkdown(fullEditorMarkdown)
+          }
         }
-        
-        // Update React state
-        setContent(newContent)
-        
-        // Update editor directly via ref (if available) for immediate UI feedback.
-        // This avoids remount timing issues where editor gets stale markdown.
-        // We compute editorMarkdown inline: parse content into sections, filter unlocked, build markdown.
-        if (editorRef.current?.setMarkdown) {
-          const brandName = brandDetails?.name || "Your Brand"
-          // Re-parse newContent to get updated sections
-          const parsed = parseStyleGuideContent(newContent)
-          // Filter to unlocked sections (not cover)
-          const editable = parsed.filter((s) => s.id !== "cover" && isUnlocked(s.minTier))
-          const editableMarkdown = editable.map((s) => `## ${s.title}\n\n${s.content}`.trim()).join("\n\n")
-          const fullEditorMarkdown = `# ${brandName}\n\n${editableMarkdown}`
-          editorRef.current.setMarkdown(fullEditorMarkdown)
-        } else {
+
+        if (!editorRef.current?.replaceAtSelection || scope !== "selection") {
           // Fallback: force remount if ref not available
           setEditorKey((k) => k + 1)
         }

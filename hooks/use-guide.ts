@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 
 // Survives Strict Mode double-mount
 const tierFetchedForUser = new Set<string>()
@@ -71,8 +71,22 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
   const [brandDetails, setBrandDetails] = useState<any>(null)
   const [guideType, setGuideType] = useState<string>("style_guide")
 
-  // UI state
-  const [sections, setSections] = useState<StyleGuideSection[]>([])
+  // UI state: sections derived synchronously so expand/remount gets new content in same render
+  const sections = useMemo(() => {
+    if (!content) return []
+    const parsed = parseStyleGuideContent(content)
+    const coverSection: StyleGuideSection = {
+      id: "cover",
+      title: "Cover Page",
+      content: "",
+      level: 1,
+      isMainSection: true,
+      configId: "cover",
+      icon: STYLE_GUIDE_SECTIONS.find((s) => s.id === "cover")?.icon,
+      minTier: "starter",
+    }
+    return [coverSection, ...parsed]
+  }, [content])
   const [activeSectionId, setActiveSectionId] = useState<string>("cover")
   const [viewMode, setViewMode] = useState<"preview" | "edit">(defaultViewMode)
   const [subscriptionTier, setSubscriptionTier] = useState<Tier>("starter")
@@ -149,25 +163,13 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
     return () => observer.disconnect()
   }, [sections])
 
-  // Parse content into sections when content changes
+  // Keep activeSectionId valid when sections change (e.g. after expand)
   useEffect(() => {
-    if (!content) return
-
-    const parsed = parseStyleGuideContent(content)
-    const coverSection: StyleGuideSection = {
-      id: 'cover',
-      title: 'Cover Page',
-      content: '',
-      level: 1,
-      isMainSection: true,
-      configId: 'cover',
-      icon: STYLE_GUIDE_SECTIONS.find(s => s.id === 'cover')?.icon,
-      minTier: 'starter'
-    }
-    setSections([coverSection, ...parsed])
-    // Only set cover as active on initial load (not on every content change)
-    setActiveSectionId((prev) => prev || 'cover')
-  }, [content])
+    if (sections.length === 0) return
+    setActiveSectionId((prev) =>
+      sections.some((s) => s.id === prev) ? prev : "cover"
+    )
+  }, [sections])
 
   // Mode switching with scroll position preservation
   const handleModeSwitch = useCallback((mode: "preview" | "edit") => {

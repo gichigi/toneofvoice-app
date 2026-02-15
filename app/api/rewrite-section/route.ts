@@ -1,3 +1,4 @@
+// DEPRECATED: Replaced by @platejs/ai + /api/ai/command streaming route
 import { NextResponse } from "next/server"
 import { OpenAI } from "openai"
 import { createClient } from "@/lib/supabase-server"

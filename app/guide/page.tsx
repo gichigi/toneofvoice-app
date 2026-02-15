@@ -26,8 +26,6 @@ import {
   StyleGuideSection,
   Tier,
   STYLE_GUIDE_SECTIONS,
-  getSectionContentFromMarkdown,
-  replaceSectionInMarkdown,
 } from "@/lib/content-parser"
 import { PostExportPrompt } from "@/components/PostExportPrompt"
 import { ErrorMessage } from "@/components/ui/error-message"
@@ -72,8 +70,6 @@ function GuideContent() {
     setEditorKey,
     handleSectionSelect,
     handleModeSwitch,
-    handleRewrite,
-    isRewriting,
     isUnlocked,
     isSectionLocked,
   } = useGuide({
@@ -91,7 +87,6 @@ function GuideContent() {
   
   // Full-access flow specific state
   const [showDownloadOptions, setShowDownloadOptions] = useState(false)
-  const [selectionHighlightText, setSelectionHighlightText] = useState<string | null>(null)
   const [downloadFormat, setDownloadFormat] = useState<string | null>(null)
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
@@ -1257,8 +1252,6 @@ function GuideContent() {
           guideType={guideType as "core" | "complete" | "style_guide"}
           showPreviewBadge={isPreviewFlow && subscriptionTier === "starter"}
           isUnlocked={isUnlocked}
-          onRewrite={handleRewrite}
-          isRewriting={isRewriting}
           isSectionLocked={isSectionLocked}
           onUpgrade={() => {
             if (isPreviewFlow) {
@@ -1273,12 +1266,9 @@ function GuideContent() {
           storageKey={isPreviewFlow ? "preview-full" : "full-access-full"}
           editorId={isPreviewFlow ? "preview-single-editor" : "full-access-single-editor"}
           showEditTools={true}
-          rewriteBarDisabled={!user || (subscriptionTier !== "pro" && subscriptionTier !== "agency")}
-          rewriteBarDisabledMessage="Upgrade to Pro to use AI assist"
           websiteUrl={brandDetails?.websiteUrl}
           subscriptionTier={subscriptionTier as "starter" | "pro" | "agency"}
-          selectionHighlightText={selectionHighlightText}
-          onSelectionForHighlight={setSelectionHighlightText}
+          showAI={!!user && (subscriptionTier === "pro" || subscriptionTier === "agency")}
           pdfFooter={
             isPreviewFlow && subscriptionTier === "starter" ? (
               <div className="pdf-only mt-12 pt-8 border-t border-gray-200 px-8 pb-8">

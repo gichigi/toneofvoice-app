@@ -26,6 +26,7 @@ import {
 } from "@platejs/list-classic/react";
 import { LinkPlugin } from "@platejs/link/react";
 import { MarkdownPlugin } from "@platejs/markdown";
+import { AIChatPlugin } from "@platejs/ai/react";
 import remarkGfm from "remark-gfm";
 import {
   Bold,
@@ -43,7 +44,6 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { Editor, EditorContainer } from "@/components/ui/editor";
-import type { RenderLeafProps, TText } from "platejs";
 import { FixedToolbar } from "@/components/ui/fixed-toolbar";
 import { ToolbarButton, ToolbarGroup } from "@/components/ui/toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
@@ -63,6 +63,9 @@ import {
   ListItemElement,
 } from "@/components/ui/list-classic-node";
 import { LinkElement } from "@/components/ui/link-node";
+
+// AI plugins
+import { AIKit } from "@/components/editor/plugins/ai-kit";
 
 const STORAGE_KEY_PREFIX = "guide-edits-";
 
@@ -85,8 +88,8 @@ interface GuideEditorProps {
   editorId?: string;
   /** Use H2SectionElement for section ids (sidebar jump, IntersectionObserver) */
   useSectionIds?: boolean;
-  /** When set, show a persistent subtle highlight on this text in the editor (e.g. for AI "selected text") */
-  selectionHighlightText?: string;
+  /** Enable AI features (Cmd+J menu, streaming). Only for paid users. */
+  showAI?: boolean;
 }
 
 /** Ref handle exposed to parent components */
@@ -94,12 +97,6 @@ export interface GuideEditorRef {
   getMarkdown: () => string;
   /** Update editor content from new markdown without remounting */
   setMarkdown: (markdown: string) => void;
-  /** Get current selection range (Plate.js internal format) */
-  getSelection: () => unknown | null;
-  /** Get plain text of current selection */
-  getSelectedText: () => string;
-  /** Replace content at a saved selection range with new text */
-  replaceAtSelection: (savedSelection: unknown, newText: string) => void;
 }
 
 export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function GuideEditor({
@@ -112,7 +109,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   onFocusChange,
   editorId = "style-guide-editor",
   useSectionIds = false,
-  selectionHighlightText,
+  showAI = false,
 }, ref) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -168,6 +165,9 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
       CodePlugin.configure({
         node: { component: CodeLeaf },
       }),
+
+      // AI plugins (only when enabled)
+      ...(showAI ? AIKit : []),
     ],
     value: (ed) => {
       try {
@@ -184,7 +184,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
     },
   });
 
-  // Expose getMarkdown, setMarkdown, and selection methods to parent via ref
+  // Expose getMarkdown and setMarkdown to parent via ref
   useImperativeHandle(ref, () => ({
     getMarkdown: () => {
       try {
@@ -207,70 +207,22 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
         console.warn("[GuideEditor] setMarkdown error:", e);
       }
     },
-    getSelection: () => {
-      return editor.selection ? JSON.parse(JSON.stringify(editor.selection)) : null;
-    },
-    getSelectedText: () => {
-      if (!editor.selection) return "";
-      try {
-        const api = editor.api as { string?: (at?: unknown) => string };
-        return api.string?.(editor.selection) ?? "";
-      } catch {
-        return "";
-      }
-    },
-    replaceAtSelection: (savedSelection: unknown, newText: string) => {
-      try {
-        editor.tf.select(savedSelection as any);
-        editor.tf.deleteFragment();
-
-        // Clean up unwanted HTML tags (AI sometimes returns HTML instead of markdown)
-        let cleanText = newText
-          .replace(/<u>/g, '_')
-          .replace(/<\/u>/g, '_')
-          .replace(/<b>/g, '**')
-          .replace(/<\/b>/g, '**')
-          .replace(/<strong>/g, '**')
-          .replace(/<\/strong>/g, '**')
-          .replace(/<em>/g, '_')
-          .replace(/<\/em>/g, '_')
-          .replace(/<i>/g, '_')
-          .replace(/<\/i>/g, '_');
-
-        // Parse markdown to Slate nodes before inserting
-        const api = editor.getApi(MarkdownPlugin);
-        const nodes = api?.markdown?.deserialize?.(cleanText, { remarkPlugins: [remarkGfm] });
-
-        if (nodes && nodes.length > 0) {
-          // Extract inline content from paragraph nodes to avoid adding new lines
-          const inlineContent: any[] = [];
-          for (const node of nodes) {
-            if ((node as any).type === 'p' && (node as any).children) {
-              inlineContent.push(...(node as any).children);
-            } else {
-              inlineContent.push(node);
-            }
-          }
-
-          // Insert as fragment (inline, no new paragraphs)
-          if (inlineContent.length > 0) {
-            editor.tf.insertFragment(inlineContent);
-          } else {
-            editor.tf.insertText(cleanText);
-          }
-        } else {
-          // Fallback: plain text
-          editor.tf.insertText(cleanText);
-        }
-      } catch (e) {
-        console.warn("[GuideEditor] replaceAtSelection error:", e);
-      }
-    },
   }), [editor]);
 
   const handleValueChange = useCallback(
     ({ value }: { value: any[] }) => {
       if (!editor) return;
+
+      // Skip propagation while AI is streaming to prevent saving partial content
+      if (showAI) {
+        try {
+          const streaming = editor.getOption(AIChatPlugin, 'streaming');
+          if (streaming) return;
+        } catch {
+          // AIChatPlugin not loaded, continue normally
+        }
+      }
+
       try {
         const serialized = editor.api.markdown?.serialize?.() ?? "";
         if (serialized && onChangeRef.current) {
@@ -288,7 +240,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
         console.warn("[StyleGuideEditor] Serialize error:", e);
       }
     },
-    [editor, storageKey]
+    [editor, storageKey, showAI]
   );
 
   /** Insert a link at current selection via prompt */
@@ -305,74 +257,14 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   const handleFocus = useCallback(() => onFocusChange?.(true), [onFocusChange]);
   const handleBlur = useCallback(() => onFocusChange?.(false), [onFocusChange]);
 
-  // Custom leaf renderer for selection highlight decoration
-  const renderLeaf = useCallback((props: RenderLeafProps<{ selectionHighlight?: boolean } & TText>) => {
-    const { attributes, children, leaf } = props;
-    // Apply highlight background when selectionHighlight decoration is present
-    if (leaf.selectionHighlight) {
-      return (
-        <span
-          {...attributes}
-          className="bg-blue-100/90 dark:bg-blue-500/30 rounded-sm px-0.5 -mx-0.5 ring-1 ring-blue-300/40 dark:ring-blue-400/30"
-        >
-          {children}
-        </span>
-      );
-    }
-    return <span {...attributes}>{children}</span>;
-  }, []);
-
-  // Decorate callback that re-runs when selectionHighlightText changes.
-  // Highlights any text node whose content appears within the captured selection text.
-  // This handles multi-node selections (e.g. text spanning bold/italic formatting).
-  const decorate = useCallback(
-    (opts: { editor?: unknown; entry?: [unknown, number[]] } | [unknown, number[]]) => {
-      const highlightText = selectionHighlightText?.trim();
-      if (!highlightText) return [];
-      const entry = Array.isArray(opts) && opts.length === 2 ? opts : (opts as { entry?: [unknown, number[]] }).entry;
-      if (!entry) return [];
-      const [node, path] = entry;
-      const n = node as { text?: string };
-      if (typeof n?.text !== "string" || !n.text.trim()) return [];
-
-      const nodeText = n.text;
-      const ranges: { anchor: { path: number[]; offset: number }; focus: { path: number[]; offset: number }; selectionHighlight: boolean }[] = [];
-
-      // Strategy 1: Check if this node's text is contained within the highlight text
-      // (handles multi-node selections where each node is part of the whole)
-      if (highlightText.includes(nodeText.trim()) && nodeText.trim().length > 3) {
-        ranges.push({
-          anchor: { path: [...path], offset: 0 },
-          focus: { path: [...path], offset: nodeText.length },
-          selectionHighlight: true,
-        });
-      }
-      // Strategy 2: Check if the highlight text is contained within this node
-      // (handles single-node exact or partial matches)
-      else {
-        const idx = nodeText.indexOf(highlightText);
-        if (idx !== -1) {
-          ranges.push({
-            anchor: { path: [...path], offset: idx },
-            focus: { path: [...path], offset: idx + highlightText.length },
-            selectionHighlight: true,
-          });
-        }
-      }
-
-      return ranges;
-    },
-    [selectionHighlightText]
-  );
-
   return (
     <div className={cn("space-y-4", className)} onFocus={handleFocus} onBlur={handleBlur}>
       {/* Editable tip banner (shown once in unified doc) */}
       {showTip && !tipDismissed && !readOnly && (
         <div className="pdf-exclude flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
           <span>
-            This guide is fully editable. Click anywhere to make changes, or use
-            AI Assist to refine sections.
+            This guide is fully editable. Click anywhere to make changes
+            {showAI ? ", or press Cmd+J to use AI assist." : "."}
           </span>
           <Button
             variant="ghost"
@@ -385,11 +277,8 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
         </div>
       )}
 
-      <div
-        className="rounded-lg border bg-white dark:bg-gray-950"
-        data-selection-highlight={selectionHighlightText ? "true" : undefined}
-      >
-        <Plate editor={editor} onChange={handleValueChange} decorate={decorate}>
+      <div className="rounded-lg border bg-white dark:bg-gray-950">
+        <Plate editor={editor} onChange={handleValueChange}>
           {/* Toolbar — only visible when editing */}
           {!readOnly && (
             <TooltipProvider delayDuration={200}>
@@ -397,19 +286,19 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
               {/* Headings */}
               <ToolbarGroup className="flex-nowrap">
                 <ToolbarButton
-                  tooltip="Heading 1 (⌘+⌥+1)"
+                  tooltip="Heading 1 (Cmd+Alt+1)"
                   onClick={() => editor.tf.h1.toggle()}
                 >
                   <Heading1 className="size-4" />
                 </ToolbarButton>
                 <ToolbarButton
-                  tooltip="Heading 2 (⌘+⌥+2)"
+                  tooltip="Heading 2 (Cmd+Alt+2)"
                   onClick={() => editor.tf.h2.toggle()}
                 >
                   <Heading2 className="size-4" />
                 </ToolbarButton>
                 <ToolbarButton
-                  tooltip="Heading 3 (⌘+⌥+3)"
+                  tooltip="Heading 3 (Cmd+Alt+3)"
                   onClick={() => editor.tf.h3.toggle()}
                 >
                   <Heading3 className="size-4" />
@@ -418,25 +307,25 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
 
               {/* Text formatting */}
               <ToolbarGroup className="flex-nowrap">
-                <MarkToolbarButton nodeType="bold" tooltip="Bold (⌘+B)">
+                <MarkToolbarButton nodeType="bold" tooltip="Bold (Cmd+B)">
                   <Bold className="size-4" />
                 </MarkToolbarButton>
-                <MarkToolbarButton nodeType="italic" tooltip="Italic (⌘+I)">
+                <MarkToolbarButton nodeType="italic" tooltip="Italic (Cmd+I)">
                   <Italic className="size-4" />
                 </MarkToolbarButton>
                 <MarkToolbarButton
                   nodeType="underline"
-                  tooltip="Underline (⌘+U)"
+                  tooltip="Underline (Cmd+U)"
                 >
                   <Underline className="size-4" />
                 </MarkToolbarButton>
                 <MarkToolbarButton
                   nodeType="strikethrough"
-                  tooltip="Strikethrough (⌘+⇧+X)"
+                  tooltip="Strikethrough (Cmd+Shift+X)"
                 >
                   <Strikethrough className="size-4" />
                 </MarkToolbarButton>
-                <MarkToolbarButton nodeType="code" tooltip="Inline code (⌘+E)">
+                <MarkToolbarButton nodeType="code" tooltip="Inline code (Cmd+E)">
                   <Code className="size-4" />
                 </MarkToolbarButton>
               </ToolbarGroup>
@@ -490,7 +379,6 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
               placeholder="Type your style guide content..."
               readOnly={readOnly}
               className="prose prose-slate dark:prose-invert max-w-none style-guide-content style-guide-document px-8 py-6"
-              renderLeaf={renderLeaf}
             />
           </EditorContainer>
         </Plate>

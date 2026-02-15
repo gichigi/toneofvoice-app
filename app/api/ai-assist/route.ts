@@ -1,3 +1,4 @@
+// DEPRECATED: Replaced by @platejs/ai + /api/ai/command streaming route
 import { NextResponse } from "next/server";
 import { OpenAI } from "openai";
 import { createTracedOpenAI } from "@/lib/langsmith-openai";

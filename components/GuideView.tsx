@@ -2,13 +2,11 @@
 
 import { RefObject, useEffect, useState } from "react"
 import { playfairDisplay } from "@/lib/fonts"
-import { createPortal } from "react-dom"
 import { Eye, PenLine } from "lucide-react"
 import { GuideCover } from "@/components/GuideCover"
 import { GuideEditor, type GuideEditorRef } from "@/components/editor/GuideEditor"
 import { ContentGate } from "@/components/ContentGate"
 import { MarkdownRenderer } from "@/components/MarkdownRenderer"
-import { RewriteBar } from "@/components/RewriteBar"
 import {
   StyleGuideSection,
   Tier,
@@ -28,20 +26,14 @@ export interface GuideViewProps {
   guideType?: "core" | "complete" | "style_guide"
   showPreviewBadge?: boolean
   isUnlocked: (minTier?: Tier) => boolean
-  onRewrite: (instruction: string, scope: "section" | "selection" | "document", selectedText?: string, selectionRange?: unknown) => Promise<void>
-  isRewriting: boolean
   isSectionLocked: boolean
   onUpgrade: () => void
   editorKey: number
   editorRef: RefObject<GuideEditorRef | null>
   storageKey: string
   editorId: string
-  /** Show RewriteBar and floating toggle (true for preview always, true for full-access when paid) */
+  /** Show edit mode toggle (true for preview always, true for full-access when paid) */
   showEditTools: boolean
-  /** When true, RewriteBar is shown muted with tooltip message on hover/tap */
-  rewriteBarDisabled?: boolean
-  /** Message shown in tooltip when rewrite bar is disabled */
-  rewriteBarDisabledMessage?: string
   /** Optional banner above editor (e.g. "Style Guide Updated") */
   editorBanner?: React.ReactNode
   pdfFooter?: React.ReactNode
@@ -53,15 +45,13 @@ export interface GuideViewProps {
   websiteUrl?: string
   /** Subscription tier for branding visibility */
   subscriptionTier?: Tier
-  /** Text currently "selected" for AI (scope selection) - shown as persistent highlight in editor */
-  selectionHighlightText?: string | null
-  /** Called when RewriteBar has captured selection text for scope "selection" */
-  onSelectionForHighlight?: (text: string | null) => void
+  /** Enable AI features in editor (Cmd+J). Only for pro/agency users. */
+  showAI?: boolean
 }
 
 /**
- * Single shared guide view: cover, sections, preview/editor modes,
- * RewriteBar, floating toggle. Used by both /preview and /full-access.
+ * Single shared guide view: cover, sections, preview/editor modes.
+ * Used by both /preview and /full-access.
  */
 export function GuideView({
   sections,
@@ -75,8 +65,6 @@ export function GuideView({
   guideType = "core",
   showPreviewBadge = false,
   isUnlocked,
-  onRewrite,
-  isRewriting,
   isSectionLocked,
   onUpgrade,
   editorKey,
@@ -84,20 +72,14 @@ export function GuideView({
   storageKey,
   editorId,
   showEditTools,
-  rewriteBarDisabled = false,
-  rewriteBarDisabledMessage,
   editorBanner,
   pdfFooter = null,
   contentClassName,
   contentKey,
   websiteUrl,
   subscriptionTier = 'starter',
-  selectionHighlightText,
-  onSelectionForHighlight,
+  showAI = false,
 }: GuideViewProps) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
   const nonCover = sections.filter((s) => s.id !== "cover")
   const hasContent = (s: StyleGuideSection) => (s.content || "").trim().length > 0
   // Separate Questions section to render at bottom
@@ -153,7 +135,7 @@ export function GuideView({
                     index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                   )}
                 >
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-5xl mx-auto">
                     <MarkdownRenderer
                       content={`## ${section.title}\n\n${section.content}`}
                       selectedTraits={selectedTraits}
@@ -172,7 +154,7 @@ export function GuideView({
                     (unlockedSections.length + index) % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                   )}
                 >
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-5xl mx-auto">
                     <ContentGate
                       content={section.content}
                       locked={true}
@@ -195,7 +177,7 @@ export function GuideView({
                     (unlockedSections.length + lockedSections.length) % 2 === 0 ? "bg-white" : "bg-gray-50/30"
                   )}
                 >
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-5xl mx-auto">
                     <MarkdownRenderer
                       content={`## ${questionsSection.title}\n\n${questionsSection.content}`}
                       selectedTraits={selectedTraits}
@@ -208,7 +190,7 @@ export function GuideView({
               {/* Branded footer - after all content, tier-based visibility */}
               {(subscriptionTier === 'starter' || subscriptionTier === 'pro') && (
                 <div className="pdf-only px-12 md:px-20 py-12 border-t border-gray-200">
-                  <div className="max-w-3xl mx-auto text-center">
+                  <div className="max-w-5xl mx-auto text-center">
                     {subscriptionTier === 'starter' && (
                       <div className="space-y-4">
                         <p className="text-base font-semibold text-gray-900">
@@ -241,7 +223,7 @@ export function GuideView({
               {editorMarkdown && (
                 <div className="scroll-mt-4 px-12 md:px-20 py-16 md:py-20 relative" data-single-editor-root>
                   {editorBanner}
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-5xl mx-auto">
                     <GuideEditor
                       key={editorKey}
                       ref={editorRef}
@@ -251,7 +233,7 @@ export function GuideView({
                       showTip={true}
                       useSectionIds={true}
                       onFocusChange={undefined}
-                      selectionHighlightText={selectionHighlightText ?? undefined}
+                      showAI={showAI}
                       onChange={(md) => {
                         const withoutTitle = md.replace(/^#\s+.+\n*/, "").trim()
                         const full = lockedMarkdown
@@ -271,7 +253,7 @@ export function GuideView({
                   data-locked-section
                   className="pdf-section scroll-mt-4 px-12 md:px-20 py-16 md:py-20 border-t border-gray-100"
                 >
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-5xl mx-auto">
                     <ContentGate
                       content={section.content}
                       locked={true}
@@ -291,7 +273,7 @@ export function GuideView({
                   id={questionsSection.id}
                   className="pdf-section scroll-mt-4 px-12 md:px-20 py-16 md:py-20 border-t border-gray-100"
                 >
-                  <div className="max-w-3xl mx-auto">
+                  <div className="max-w-5xl mx-auto">
                     <MarkdownRenderer
                       content={`## ${questionsSection.title}\n\n${questionsSection.content}`}
                       selectedTraits={selectedTraits}
@@ -304,7 +286,7 @@ export function GuideView({
               {/* Branded footer - after all content, tier-based visibility */}
               {(subscriptionTier === 'starter' || subscriptionTier === 'pro') && (
                 <div className="pdf-only px-12 md:px-20 py-12 border-t border-gray-200">
-                  <div className="max-w-3xl mx-auto text-center">
+                  <div className="max-w-5xl mx-auto text-center">
                     {subscriptionTier === 'starter' && (
                       <div className="space-y-4">
                         <p className="text-base font-semibold text-gray-900">
@@ -336,26 +318,6 @@ export function GuideView({
           {pdfFooter}
         </div>
       </div>
-
-      {/* Floating components via portal - escape overflow/transform so they stay visible */}
-      {mounted &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <>
-            {showEditTools && viewMode === "edit" && !isSectionLocked && (
-              <RewriteBar
-                onRewrite={onRewrite}
-                isLoading={isRewriting}
-                editorRef={editorRef}
-                activeSectionId={activeSectionId}
-                disabled={rewriteBarDisabled}
-                disabledMessage={rewriteBarDisabledMessage}
-                onSelectionForHighlight={onSelectionForHighlight}
-              />
-            )}
-          </>,
-          document.body
-        )}
     </div>
   )
 }

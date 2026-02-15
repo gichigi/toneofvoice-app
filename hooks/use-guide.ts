@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+
+// Survives Strict Mode double-mount
+const tierFetchedForUser = new Set<string>()
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/AuthProvider"
 import { useToast } from "@/hooks/use-toast"
@@ -37,6 +40,7 @@ export interface UseGuideReturn {
   viewMode: "preview" | "edit"
   setViewMode: (mode: "preview" | "edit") => void
   subscriptionTier: Tier
+  setSubscriptionTier: (tier: Tier) => void
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
 
@@ -90,18 +94,24 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
     })
   }, [viewMode])
 
-  // Fetch subscription tier
+  // Fetch subscription tier only when not loading a guide by ID (page will set it from loadGuide)
   useEffect(() => {
     if (!user) {
       setSubscriptionTier("starter")
+      tierFetchedForUser.clear()
       return
     }
+    if (guideId) return
+
+    const userId = user.id
+    if (tierFetchedForUser.has(userId)) return
+    tierFetchedForUser.add(userId)
 
     fetch("/api/user-subscription-tier")
       .then(res => res.json())
       .then(data => setSubscriptionTier((data.subscription_tier === "free" ? "starter" : (data.subscription_tier || "starter")) as Tier))
       .catch(() => setSubscriptionTier("starter"))
-  }, [user])
+  }, [user?.id, guideId])
 
   // Scroll to section on sidebar click (center in viewport)
   const handleSectionSelect = useCallback((id: string) => {
@@ -193,6 +203,7 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
     viewMode,
     setViewMode,
     subscriptionTier,
+    setSubscriptionTier,
     isLoading,
     setIsLoading,
 

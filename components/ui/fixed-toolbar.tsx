@@ -4,14 +4,24 @@ import { cn } from '@/lib/utils';
 
 import { Toolbar } from './toolbar';
 
-export function FixedToolbar(props: React.ComponentProps<typeof Toolbar>) {
+export function FixedToolbar({
+  style,
+  ...props
+}: React.ComponentProps<typeof Toolbar>) {
   return (
     <Toolbar
       {...props}
       className={cn(
-        'scrollbar-hide sticky top-0 left-0 z-50 w-full flex-nowrap justify-start overflow-x-auto rounded-t-lg border-b border-b-border bg-background/95 p-1 backdrop-blur-sm supports-backdrop-blur:bg-background/60',
+        'scrollbar-hide sticky top-0 left-0 z-50 w-full overflow-x-auto rounded-t-lg border-b border-b-border bg-background/95 p-1 backdrop-blur-sm supports-backdrop-blur:bg-background/60',
         props.className
       )}
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'nowrap',
+        alignItems: 'center',
+        ...style,
+      }}
     />
   );
 }

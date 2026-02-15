@@ -5,6 +5,7 @@ import * as React from 'react';
 import {
   AIChatPlugin,
   AIPlugin,
+  rejectAISuggestions,
   useEditorChat,
   useLastAssistantMessage,
 } from '@platejs/ai/react';
@@ -72,16 +73,40 @@ export function AIMenu() {
   const { messages, status } = chat;
   const [anchorElement, setAnchorElement] = React.useState<HTMLElement | null>(null);
 
+  // Insert mode: aiChat node is anchor. Edit mode: refresh anchor when suggestions are ready
+  // (block DOM may have changed after applyAISuggestions).
   React.useEffect(() => {
-    if (streaming) {
+    if (streaming && mode === 'insert') {
       const anchor = api.aiChat.node({ anchor: true });
-      setTimeout(() => {
-        const anchorDom = editor.api.toDOMNode(anchor![0])!;
-        setAnchorElement(anchorDom);
-      }, 0);
+      if (anchor) {
+        setTimeout(() => {
+          const anchorDom = editor.api.toDOMNode(anchor[0]);
+          if (anchorDom) setAnchorElement(anchorDom);
+        }, 0);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [streaming]);
+  }, [streaming, mode]);
+
+  // Edit mode: refresh anchor when streaming finishes so popover stays near suggested content
+  const hasEditSuggestions =
+    !(status === 'streaming' || status === 'submitted') &&
+    toolName === 'edit' &&
+    mode === 'chat' &&
+    messages.length > 0;
+  React.useEffect(() => {
+    if (!hasEditSuggestions) return;
+    const id = requestAnimationFrame(() => {
+      const blocks = editor.getApi(BlockSelectionPlugin).blockSelection.getNodes();
+      const node = blocks.length > 0 ? blocks.at(-1)![0] : editor.api.blocks().at(-1)?.[0];
+      if (node) {
+        const dom = editor.api.toDOMNode(node);
+        if (dom && document.contains(dom)) setAnchorElement(dom);
+      }
+    });
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasEditSuggestions, messages.length]);
 
   const setOpen = (open: boolean) => {
     if (open) {
@@ -128,8 +153,9 @@ export function AIMenu() {
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
+  // Insert mode: hide menu during streaming (aiChat node is anchor)
   if (isLoading && mode === 'insert') return null;
-  if (toolName === 'edit' && mode === 'chat' && isLoading) return null;
+  // Edit mode: keep menu mounted so Accept/Reject popover appears when done
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
@@ -145,7 +171,7 @@ export function AIMenu() {
           api.aiChat.hide();
         }}
         align="center"
-        side="bottom"
+        side={hasEditSuggestions ? 'top' : 'bottom'}
       >
         <Command
           className="w-full rounded-lg border shadow-md"
@@ -210,7 +236,6 @@ const aiChatItems = {
     value: 'accept',
     onSelect: ({ editor }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
       editor.getTransforms(AIChatPlugin).aiChat.accept();
-      editor.tf.focus({ edge: 'end' });
     },
   },
   discard: {
@@ -219,7 +244,12 @@ const aiChatItems = {
     shortcut: 'Escape',
     value: 'discard',
     onSelect: ({ editor }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
-      editor.getTransforms(AIPlugin).ai.undo();
+      const mode = editor.getOption(AIChatPlugin, 'mode');
+      if (mode === 'chat') {
+        rejectAISuggestions(editor);
+      } else {
+        editor.getTransforms(AIPlugin).ai.undo();
+      }
       editor.getApi(AIChatPlugin).aiChat.hide();
     },
   },
@@ -266,7 +296,8 @@ const aiChatItems = {
     value: 'improveWriting',
     onSelect: ({ editor, input }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit(input, {
-        prompt: 'Improve the writing for clarity and flow, without changing meaning or adding new information.',
+        mode: 'chat',
+        prompt: 'Rewrite the following with improved clarity and flow, without changing meaning. Return only the improved text:\n\n{blockSelection}',
         toolName: 'edit',
       });
     },
@@ -277,7 +308,8 @@ const aiChatItems = {
     value: 'makeLonger',
     onSelect: ({ editor, input }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit(input, {
-        prompt: 'Make the content longer by elaborating on existing ideas, without changing meaning or adding new information.',
+        mode: 'chat',
+        prompt: 'Expand the following content by elaborating on existing ideas. Return only the expanded text:\n\n{blockSelection}',
         toolName: 'edit',
       });
     },
@@ -288,7 +320,8 @@ const aiChatItems = {
     value: 'makeShorter',
     onSelect: ({ editor, input }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit(input, {
-        prompt: 'Make the content shorter by reducing verbosity, without changing meaning or removing essential information.',
+        mode: 'chat',
+        prompt: 'Shorten the following by reducing verbosity while keeping essential information. Return only the shortened text:\n\n{blockSelection}',
         toolName: 'edit',
       });
     },
@@ -299,7 +332,8 @@ const aiChatItems = {
     value: 'fixSpelling',
     onSelect: ({ editor, input }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit(input, {
-        prompt: 'Fix spelling, grammar, and punctuation errors without changing meaning, tone, or adding new information.',
+        mode: 'chat',
+        prompt: 'Fix spelling, grammar, and punctuation in the following. Return only the corrected text:\n\n{blockSelection}',
         toolName: 'edit',
       });
     },
@@ -310,7 +344,8 @@ const aiChatItems = {
     value: 'simplifyLanguage',
     onSelect: ({ editor, input }: { editor: PlateEditor; aiEditor: SlateEditor; input: string }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit(input, {
-        prompt: 'Simplify the language using clearer and more straightforward wording, without changing meaning.',
+        mode: 'chat',
+        prompt: 'Simplify the following using clearer, straightforward wording. Return only the simplified text:\n\n{blockSelection}',
         toolName: 'edit',
       });
     },
@@ -354,7 +389,6 @@ const menuStateItems: Record<
       items: [
         aiChatItems.accept,
         aiChatItems.discard,
-        aiChatItems.insertBelow,
         aiChatItems.tryAgain,
       ],
     },
@@ -465,12 +499,16 @@ export const AIMenuItems = ({
   );
 };
 
+const editBarClassName = cn(
+  'fixed bottom-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-sm shadow-md'
+);
+
 export function AILoadingBar() {
   const chat = usePluginOption(AIChatPlugin, 'chat');
   const mode = usePluginOption(AIChatPlugin, 'mode');
   const toolName = usePluginOption(AIChatPlugin, 'toolName');
-  const { status } = chat;
-  const { api } = useEditorPlugin(AIChatPlugin);
+  const { status, messages } = chat;
+  const { api, editor } = useEditorPlugin(AIChatPlugin);
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
@@ -478,16 +516,13 @@ export function AILoadingBar() {
     api.aiChat.stop();
   });
 
+  // Loading bar during insert or edit streaming
   if (
     isLoading &&
     (mode === 'insert' || (toolName === 'edit' && mode === 'chat'))
   ) {
     return (
-      <div
-        className={cn(
-          '-translate-x-1/2 absolute bottom-4 left-1/2 z-20 flex items-center gap-3 rounded-md border border-border bg-muted px-3 py-1.5 text-muted-foreground text-sm shadow-md transition-all duration-300'
-        )}
-      >
+      <div className={editBarClassName}>
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
         <span>{status === 'submitted' ? 'Thinking...' : 'Writing...'}</span>
         <Button

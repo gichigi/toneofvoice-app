@@ -16,6 +16,8 @@ import { AILoadingBar, AIMenu } from '@/components/ui/ai-menu';
 import { AIAnchorElement, AILeaf } from '@/components/ui/ai-node';
 
 import { useChat } from '../use-chat';
+import { CursorOverlayKit } from './cursor-overlay-kit';
+import { MarkdownKit } from './markdown-kit';
 
 export const aiChatPlugin = AIChatPlugin.extend({
   options: {
@@ -77,9 +79,7 @@ export const aiChatPlugin = AIChatPlugin.extend({
             () => {
               applyAISuggestions(editor, content);
             },
-            {
-              split: isFirst,
-            }
+            { split: isFirst }
           );
         }
       },
@@ -94,6 +94,8 @@ export const aiChatPlugin = AIChatPlugin.extend({
 });
 
 export const AIKit = [
+  ...CursorOverlayKit,
+  ...MarkdownKit,
   BlockSelectionPlugin,
   AIPlugin.withComponent(AILeaf),
   aiChatPlugin,

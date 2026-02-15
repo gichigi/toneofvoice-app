@@ -110,8 +110,9 @@ export function GuideView({
           id="pdf-export-content"
           className={cn(
             playfairDisplay.variable,
-            "bg-white rounded-lg border shadow-sm overflow-hidden",
-            viewMode === "preview" && "preview-document",
+            viewMode === "edit"
+              ? "flex min-h-full flex-col bg-white overflow-hidden"
+              : "bg-white rounded-lg border shadow-sm overflow-hidden preview-document",
             contentClassName
           )}
         >
@@ -219,32 +220,32 @@ export function GuideView({
           ) : (
             <>
               <div id="cover" className="scroll-mt-4" />
-              {/* Single editor only: one Plate instance for all unlocked sections (avoids multiple editors) */}
+              {/* Single editor: fills viewport */}
               {editorMarkdown && (
-                <div className="scroll-mt-4 px-12 md:px-20 py-16 md:py-20 relative" data-single-editor-root>
+                <div
+                  className="flex min-h-0 min-w-0 flex-1 flex-col"
+                  data-single-editor-root
+                >
                   {editorBanner}
-                  <div className="max-w-5xl mx-auto">
-                    <GuideEditor
-                      key={editorKey}
-                      ref={editorRef}
-                      editorId={editorId}
-                      markdown={editorMarkdown}
-                      readOnly={false}
-                      showTip={true}
-                      useSectionIds={true}
-                      onFocusChange={undefined}
-                      showAI={showAI}
-                      subscriptionTier={subscriptionTier}
-                      onChange={(md) => {
-                        const withoutTitle = md.replace(/^#\s+.+\n*/, "").trim()
-                        const full = lockedMarkdown
-                          ? withoutTitle + "\n\n" + lockedMarkdown
-                          : withoutTitle
-                        onContentChange(full)
-                      }}
-                      storageKey={storageKey}
-                    />
-                  </div>
+                  <GuideEditor
+                    key={editorKey}
+                    ref={editorRef}
+                    editorId={editorId}
+                    markdown={editorMarkdown}
+                    readOnly={false}
+                    useSectionIds={true}
+                    onFocusChange={undefined}
+                    showAI={showAI}
+                    subscriptionTier={subscriptionTier}
+                    onChange={(md) => {
+                      const withoutTitle = md.replace(/^#\s+.+\n*/, "").trim()
+                      const full = lockedMarkdown
+                        ? withoutTitle + "\n\n" + lockedMarkdown
+                        : withoutTitle
+                      onContentChange(full)
+                    }}
+                    storageKey={storageKey}
+                  />
                 </div>
               )}
               {lockedSections.map((section) => (
@@ -315,7 +316,9 @@ export function GuideView({
             </>
           )}
 
-          <div className="pdf-exclude h-[50vh] min-h-[300px] shrink-0" aria-hidden />
+          {viewMode === "preview" && (
+            <div className="pdf-exclude h-[50vh] min-h-[300px] shrink-0" aria-hidden />
+          )}
           {pdfFooter}
         </div>
       </div>

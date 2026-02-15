@@ -73,12 +73,36 @@ export async function POST(req: Request) {
     const tier = (profile?.subscription_tier === "free" ? "starter" : profile?.subscription_tier) ?? "starter";
     const limit = tier === "starter" ? 1 : tier === "pro" ? 2 : 99;
 
-    const { count } = await supabase
+    const { count, data: existingGuides } = await supabase
       .from("style_guides")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", user.id);
+      .select("id", { count: "exact" })
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1);
 
     if ((count ?? 0) >= limit) {
+      // At limit: allow update of most recent guide (for "save preview" flow)
+      const mostRecent = existingGuides?.[0];
+      if (mostRecent?.id) {
+        const { data: guide, error } = await supabase
+          .from("style_guides")
+          .update({
+            title: title.slice(0, 255),
+            brand_name: brand_name?.slice(0, 255) ?? null,
+            content_md,
+            plan_type: "style_guide",
+            brand_details: brand_details ?? null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", mostRecent.id)
+          .eq("user_id", user.id)
+          .select("id, title, updated_at")
+          .single();
+
+        if (!error && guide) {
+          return NextResponse.json({ success: true, guide });
+        }
+      }
       return NextResponse.json(
         { error: "Guide limit reached. Upgrade to add more guides." },
         { status: 403 }

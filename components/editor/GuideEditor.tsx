@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { useCallback, useImperativeHandle, useRef, useState, forwardRef } from "react";
+import { useCallback, useImperativeHandle, useRef, forwardRef } from "react";
 import { Plate, usePlateEditor } from "platejs/react";
 import {
   BoldPlugin,
@@ -66,6 +66,10 @@ import { LinkElement } from "@/components/ui/link-node";
 
 // AI plugins
 import { AIKit } from "@/components/editor/plugins/ai-kit";
+// Plate-style SuggestionLeaf with hover/active (no DiscussionKit)
+import { SuggestionAIKit } from "@/components/editor/plugins/suggestion-ai-kit";
+// Floating toolbar (appears on text selection)
+import { FloatingToolbarKit } from "@/components/editor/plugins/floating-toolbar-kit";
 
 const STORAGE_KEY_PREFIX = "guide-edits-";
 
@@ -80,8 +84,6 @@ interface GuideEditorProps {
   className?: string;
   /** Read-only mode (preview mode) */
   readOnly?: boolean;
-  /** Show editable tip banner (only for first section in unified doc) */
-  showTip?: boolean;
   /** Callback when editor gains or loses focus (for dimming sidebar/header) */
   onFocusChange?: (focused: boolean) => void;
   /** Unique editor id when multiple editors on page (avoids Plate conflicts) */
@@ -107,7 +109,6 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   storageKey,
   className,
   readOnly = false,
-  showTip = true,
   onFocusChange,
   editorId = "style-guide-editor",
   useSectionIds = false,
@@ -116,7 +117,6 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
 }, ref) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const [tipDismissed, setTipDismissed] = useState(false);
 
   const editor = usePlateEditor({
     id: editorId,
@@ -169,8 +169,11 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
         node: { component: CodeLeaf },
       }),
 
-      // AI plugins (only when enabled)
-      ...(showAI ? AIKit : []),
+      // AI plugins + Plate-style SuggestionAIKit (SuggestionLeaf, Accept/Reject)
+      ...(showAI ? [...SuggestionAIKit, ...AIKit] : []),
+
+      // Floating toolbar (appears on text selection)
+      ...FloatingToolbarKit,
     ],
     value: (ed) => {
       try {
@@ -272,31 +275,17 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   const handleBlur = useCallback(() => onFocusChange?.(false), [onFocusChange]);
 
   return (
-    <div className={cn("space-y-4", className)} onFocus={handleFocus} onBlur={handleBlur}>
-      {/* Editable tip banner (shown once in unified doc) */}
-      {showTip && !tipDismissed && !readOnly && (
-        <div className="pdf-exclude flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
-          <span>
-            This guide is fully editable. Click anywhere to make changes
-            {showAI ? ", or press Cmd+J to use AI assist." : "."}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="shrink-0 text-blue-600 hover:text-blue-800 dark:text-blue-300"
-            onClick={() => setTipDismissed(true)}
-          >
-            Dismiss
-          </Button>
-        </div>
-      )}
-
-      <div className="rounded-lg border bg-white dark:bg-gray-950">
+    <div
+      className={cn("flex min-h-0 flex-1 flex-col gap-4", className)}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white dark:bg-gray-950">
         <Plate editor={editor} onChange={handleValueChange}>
           {/* Toolbar — only visible when editing */}
           {!readOnly && (
             <TooltipProvider delayDuration={200}>
-              <FixedToolbar className="pdf-exclude justify-start gap-1">
+              <FixedToolbar className="pdf-exclude shrink-0 justify-start gap-1 flex-row flex-nowrap overflow-x-auto">
               {/* Headings */}
               <ToolbarGroup className="flex-nowrap">
                 <ToolbarButton
@@ -387,7 +376,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
             </TooltipProvider>
           )}
 
-          <EditorContainer className="min-h-[420px]">
+          <EditorContainer className="min-h-0 flex-1 overflow-y-auto">
             <Editor
               variant="default"
               placeholder="Type your style guide content..."

@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
+
+// Module-level guard: survives Strict Mode double-mount (refs reset on unmount)
+const guideLoadGuard = { loading: new Set<string>(), loaded: new Set<string>() }
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Loader2, Eye, PenLine, Check, ChevronDown, RefreshCw, FileText, Download, Sparkles, Megaphone } from "lucide-react"
@@ -62,6 +65,7 @@ function GuideContent() {
     viewMode,
     setViewMode,
     subscriptionTier,
+    setSubscriptionTier,
     isLoading,
     setIsLoading,
     editorRef,
@@ -103,6 +107,12 @@ function GuideContent() {
       setCurrentGuideId(guideId)
     }
   }, [guideId, currentGuideId])
+  // Reset load guard when guideId changes (e.g. navigate to different guide)
+  useEffect(() => {
+    loadedGuideIdRef.current = null
+    guideLoadGuard.loaded.clear()
+    guideLoadGuard.loading.delete(guideId ?? "")
+  }, [guideId])
   const [isExpanding, setIsExpanding] = useState(false)
   const [expandedContentKey, setExpandedContentKey] = useState<number | null>(null)
 
@@ -112,6 +122,8 @@ function GuideContent() {
   const [contentReady, setContentReady] = useState(false)
   const [isQuickLoad, setIsQuickLoad] = useState(false)
   
+  // Prevent duplicate guide loads when effect re-runs (e.g. auth flapping, Strict Mode)
+  const loadedGuideIdRef = useRef<string | null>(null)
   // Handle subscription redirect from payment flow
   const subscribeTriggered = useRef(false)
   useEffect(() => {
@@ -161,6 +173,9 @@ function GuideContent() {
         router.replace(`/sign-in?redirectTo=${encodeURIComponent(`/guide?guideId=${guideId}`)}`)
         return
       }
+      if (loadedGuideIdRef.current === guideId) return
+      if (guideId && (guideLoadGuard.loading.has(guideId) || guideLoadGuard.loaded.has(guideId))) return
+      guideLoadGuard.loading.add(guideId)
 
       const loadGuide = async (retryCount = 0) => {
         try {
@@ -175,6 +190,7 @@ function GuideContent() {
           setLoadingProgress(50)
 
           if (!guideResponse.ok) {
+            guideLoadGuard.loading.delete(guideId)
             if (guideResponse.status === 404) {
               router.replace("/dashboard")
               return
@@ -195,6 +211,7 @@ function GuideContent() {
           setGuideType(guide.plan_type || "style_guide")
 
           const tier = (tierData?.subscription_tier === "free" ? "starter" : tierData?.subscription_tier) || (guide as any).subscription_tier || "starter"
+          setSubscriptionTier(tier as Tier)
 
           // If subscription just succeeded but tier is still free, retry after a delay
           if (subscriptionSuccess && (tier === "starter" || tier === "free") && retryCount < 3) {
@@ -213,10 +230,14 @@ function GuideContent() {
 
           setSavedToAccount(true)
           setCurrentGuideId(guide.id)
+          loadedGuideIdRef.current = guideId
+          guideLoadGuard.loading.delete(guideId)
+          guideLoadGuard.loaded.add(guideId)
 
           setLoadingProgress(100)
           setTimeout(() => setIsLoading(false), 300)
         } catch (error) {
+          guideLoadGuard.loading.delete(guideId)
           console.error("[Guide] Error loading guide:", error)
           toast({ title: "Could not load guide", variant: "destructive" })
           router.replace("/dashboard")
@@ -1268,7 +1289,7 @@ function GuideContent() {
           showEditTools={true}
           websiteUrl={brandDetails?.websiteUrl}
           subscriptionTier={subscriptionTier as "starter" | "pro" | "agency"}
-          showAI={!!user && (subscriptionTier === "pro" || subscriptionTier === "agency")}
+          showAI={!!user}
           pdfFooter={
             isPreviewFlow && subscriptionTier === "starter" ? (
               <div className="pdf-only mt-12 pt-8 border-t border-gray-200 px-8 pb-8">

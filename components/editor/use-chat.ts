@@ -9,10 +9,10 @@ import { useEditorRef, usePluginOption } from 'platejs/react';
 
 import { aiChatPlugin } from '@/components/editor/plugins/ai-kit';
 
-export type ToolName = 'edit' | 'generate';
+export type ToolName = 'comment' | 'edit' | 'generate';
 
 export type MessageDataPart = {
-  toolName: ToolName;
+  toolName?: ToolName;
 };
 
 export type Chat = UseChatHelpers<ChatMessage>;
@@ -29,6 +29,11 @@ export const useChat = () => {
       api: options.api || '/api/ai/command',
     }),
     ...options,
+    onData(data: { type?: string; data?: ToolName }) {
+      if (data?.type === 'data-toolName' && data?.data) {
+        editor.setOption(AIChatPlugin, 'toolName', data.data);
+      }
+    },
   });
 
   const chat = { ...baseChat };

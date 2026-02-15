@@ -48,6 +48,14 @@ import {
   PopoverAnchor,
   PopoverContent,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 export function AIMenu() {
@@ -366,6 +374,8 @@ export const AIMenuItems = ({
   const { messages } = usePluginOption(AIChatPlugin, 'chat');
   const aiEditor = usePluginOption(AIChatPlugin, 'aiEditor')!;
   const isSelecting = useIsSelecting();
+  const subscriptionTier = usePluginOption(AIChatPlugin, 'subscriptionTier') || 'starter';
+  const [showUpgradeDialog, setShowUpgradeDialog] = React.useState(false);
 
   const menuState = React.useMemo(() => {
     if (messages && messages.length > 0) {
@@ -394,6 +404,13 @@ export const AIMenuItems = ({
               className="[&_svg]:text-muted-foreground"
               value={menuItem.value}
               onSelect={() => {
+                // Gate AI features for free users (except accept/discard/tryAgain)
+                const freeActions = ['accept', 'discard', 'tryAgain'];
+                if (subscriptionTier === 'starter' && !freeActions.includes(menuItem.value)) {
+                  setShowUpgradeDialog(true);
+                  return;
+                }
+                
                 menuItem.onSelect?.({
                   aiEditor,
                   editor,
@@ -408,6 +425,42 @@ export const AIMenuItems = ({
           ))}
         </CommandGroup>
       ))}
+
+      {/* Upgrade Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Upgrade to use AI features</DialogTitle>
+            <DialogDescription>
+              AI-powered editing is available on Pro and Agency plans.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex items-start gap-3">
+              <Wand className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">AI-powered editing</p>
+                <p className="text-sm text-muted-foreground">Improve, shorten, simplify, and fix your content instantly</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <PenLine className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Continue writing</p>
+                <p className="text-sm text-muted-foreground">Let AI help you expand your tone of voice guidelines</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => window.location.href = '/dashboard/billing'}>
+              Upgrade to Pro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

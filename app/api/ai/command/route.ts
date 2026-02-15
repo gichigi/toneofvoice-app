@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     });
 
     const result = streamText({
-      model: openai('gpt-5.2'),
+      model: openai('gpt-4o-mini'),
       system: `You are an expert editor specializing in brand voice and style guides.
 Your role is to help users improve their tone of voice documentation.
 

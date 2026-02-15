@@ -90,6 +90,8 @@ interface GuideEditorProps {
   useSectionIds?: boolean;
   /** Enable AI features (Cmd+J menu, streaming). Only for paid users. */
   showAI?: boolean;
+  /** Subscription tier for AI feature gating */
+  subscriptionTier?: 'starter' | 'pro' | 'agency';
 }
 
 /** Ref handle exposed to parent components */
@@ -110,6 +112,7 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
   editorId = "style-guide-editor",
   useSectionIds = false,
   showAI = false,
+  subscriptionTier = 'starter',
 }, ref) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -183,6 +186,17 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
       }
     },
   });
+
+  // Set subscription tier on AI plugin when it changes
+  React.useEffect(() => {
+    if (showAI) {
+      try {
+        editor.setOption(AIChatPlugin, 'subscriptionTier' as any, subscriptionTier);
+      } catch {
+        // AIChatPlugin not loaded
+      }
+    }
+  }, [editor, showAI, subscriptionTier]);
 
   // Expose getMarkdown and setMarkdown to parent via ref
   useImperativeHandle(ref, () => ({

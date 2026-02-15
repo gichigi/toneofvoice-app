@@ -23,6 +23,7 @@ export const aiChatPlugin = AIChatPlugin.extend({
       api: '/api/ai/command',
       body: {},
     },
+    subscriptionTier: 'starter' as 'starter' | 'pro' | 'agency',
   },
   render: {
     afterContainer: AILoadingBar,

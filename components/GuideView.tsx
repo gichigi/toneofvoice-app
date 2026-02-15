@@ -234,6 +234,7 @@ export function GuideView({
                       useSectionIds={true}
                       onFocusChange={undefined}
                       showAI={showAI}
+                      subscriptionTier={subscriptionTier}
                       onChange={(md) => {
                         const withoutTitle = md.replace(/^#\s+.+\n*/, "").trim()
                         const full = lockedMarkdown

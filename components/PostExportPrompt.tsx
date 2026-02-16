@@ -51,7 +51,7 @@ export function PostExportPrompt({ content, onDismiss, className }: PostExportPr
                   Use your guidelines
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Reference when writing content, or paste into AI tools like ChatGPT and Claude
+                  Reference when writing content, or upload to AI tools like ChatGPT and Claude
                 </p>
               </div>
             </div>

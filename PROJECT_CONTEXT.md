@@ -1,6 +1,6 @@
 # Tone of Voice App - Project Context
 
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-02-16
 **Project:** AI-powered tone of voice guide generator
 **Stack:** Next.js 15, React 19, TypeScript, Tailwind, Supabase, Stripe, OpenAI, Firecrawl
 
@@ -19,6 +19,31 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 ---
 
 ## 📊 Recent Major Changes (Last 2 Weeks)
+
+### Audience Section & Error Handling (Feb 16, 2026)
+- **Audience prompt overhaul** (`lib/openai.ts`): New prompt drives content-team-friendly output
+  - Structure: **Overview** (1 sentence, who we write for – demographic/context, not "people who rely on us") → **Primary** (2 paragraphs, 2 sentences each: who + context, then goals/motivations/anxieties) → **Secondary** (1 paragraph, 2 sentences, brief only)
+  - Rules: length and format only (no bullets, short paragraphs); no writing advice in audience section; works for B2B, B2C, any brand
+  - Headings: `### Audience (Overview)`, `### Primary Audience`, `### Secondary Audience`
+  - Test script: `scripts/test-audience-prompt.mjs` – run against URLs or descriptions (e.g. Tesco, Stripe, U of T) to validate prompt
+- **Edge-case handling**
+  - **api-utils**: `REQUEST_ABORTED`, `SESSION_EXPIRED`, `INVALID_RESPONSE`, `STORAGE_CORRUPT`; `isAbortError()` so callers skip toasts on navigation; extended retryable list
+  - **Guide page**: Safe `JSON.parse` for localStorage; safe `res.json()` and 401 → sign-in/session messaging for load, expand, subscribe, save; skip toasts on AbortError
+  - **BillingActions**: Safe `res.json()`, 401 → "Session expired"; skip toast on AbortError
+  - **ErrorMessage**: Show "Try again" when `onRetry` is provided, not only when `error.canRetry`
+
+### UI & Billing Polish (Feb 16, 2026)
+- **Responsive**: Header mobile nav (Sheet + hamburger) when `showNavigation`; dashboard/billing `px-4 sm:px-6 lg:px-8`
+- **Billing**: Removed current-plan banner; improved card and trust-strip spacing
+- **UpgradeNudgeModal**: Generic "Guide limit reached" copy for starter and pro; "View plans" CTA
+- **FAQs**: Shared `REFUND_ANSWER` / `SUPPORT_ANSWER` in `lib/landing-data.tsx`; aligned homepage + billing; no em dash
+- **Word list order**: Preferred Terms → Spelling and Usage → Avoid Terms (last subsection)
+- **Agency plan**: "Soon" label pill for roadmap features (`PricingFeature` type in landing-data)
+
+### Guide Expand & Editor Fixes (Feb 2026)
+- **Expand full guide**: Sections derived from `content` with `useMemo` so edit/preview update in same render as `setContent`; no stale editor after "Generate full guide"
+- **Pro tier**: Guide limit 2 (not 5) across endpoints and UI
+- **Plate.js AI**: Migrated to `@platejs/ai` with streaming, Cmd+J menu, `/api/ai/command`; subscription tier gating for free users; Accept/Discard/Try Again
 
 ### Performance Optimizations (Feb 13, 2026)
 - **Reasoning effort reductions**: Eliminated reasoning tokens from Brand Expansion, Keywords, Trait Suggestions, Word List
@@ -72,10 +97,8 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 - **User Menu**: Added authentication menu component
 
 ### Auth & Content Gating
-- **Rewritten Auth**: Enhanced Supabase auth with better error handling
+- **Supabase Auth**: Enhanced error handling
 - **Content Gate**: Gradient fade on preview → locked sections → upgrade CTA
-- **Build Fixes**: Auth-related build errors resolved
-- **Tests**: Content parser tests updated
 
 ### Design System
 - **Typography Tokens**: Centralized in `lib/style-guide-styles.ts`
@@ -84,40 +107,15 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 - **Fonts**: Playfair Display (serif headings) + Geist Sans (body)
 - **Surface Parity**: Edit ↔ Preview mapping documented in `DESIGN_SYSTEM.md`
 
-### UX & Content Quality Improvements (Feb 2026)
-- **Word List Redesign**: Preferred Terms and Spelling/Usage now display as two-column tables (Use | Instead of) instead of bullet lists for better scanability
-- **Em Dash Removal**: Eliminated em dashes (—) from all generated content and UI copy
-  - Added explicit restrictions to all AI generation prompts
-  - Updated static templates to use hyphens, commas, or parentheses
-  - Verified with real-world testing: 0 em dashes found ✓
-- **Model Optimizations**: Strategic reasoning level adjustments for cost/speed (Feb 2026)
-  - **No reasoning ("none")**: Brand Expansion, Keywords, Trait Suggestions, Word List
-  - **Low reasoning**: Style Rules, Before/After, Audience Section, Content Guidelines
-  - **Medium reasoning**: Brand Voice Traits (complex trait generation)
-  - **Retry logic**: Reduced from 3 to 2 attempts (after token limit fixes)
-  - **Token limits**: Increased Keywords from 400→800 tokens (eliminates truncation)
-  - **Parallelization**: Audience + Keywords run in parallel (saves ~3s)
-  - Migrated gpt-4o-mini → gpt-5.2 low, gpt-4o → gpt-5.2 medium (4o deprecation)
-  - **Measured improvements (Feb 13, 2026)**:
-    - Extraction time: 25s → 13s (-48%)
-    - Extraction cost: $0.025 → $0.012 (-52%)
-    - Full guide time: 80s → 50s (-38%)
-    - Full guide cost: $0.095 → $0.050 (-47%)
-    - Total reasoning tokens eliminated: 3,390 per generation
-- **AI Assist Toolbar** (Edit Mode):
-  - Removed reasoning_effort parameter for fastest response
-  - Temporary visual highlight for AI-changed text (subtle blue, fades after 3s)
-  - Comprehensive error handling: timeouts, rate limits, service unavailability, input validation
-  - Specific error messages for each failure type
-  - Graceful degradation for non-critical features
-- **Cover Page**: Reduced whitespace (60vh from 80vh), larger title (text-7xl/9xl), better visual balance
-- **Audience Section**: Changed eyebrow from "AUDIENCE" to "WHO YOU'RE WRITING FOR", removed tone guidance from secondary audience
-- **Brand Description**: Extraction prompts updated to generate 2-3 cohesive paragraphs with natural flow, not bullet-like sentences
-- **Favicon Fallback**: Cascading fallback (Google → DuckDuckGo → direct favicon.ico) for dashboard guide cards
-- **User Email in Questions**: Fixed bug where user email wasn't appearing in Questions section when upgrading from preview
-- **Input Capitalization**: Brand name and keywords automatically capitalize first letter on blur
-- **UI Refinements**: Removed regenerate button, lock icon pills, "one step away" text; renamed "Download Preview" to "Download"
-- **Footer Component**: Created reusable Footer component, added to billing page
+### UX & Content Quality (Feb 2026)
+- **Word list**: Two-column tables (Use | Instead of) for Preferred Terms and Spelling/Usage; order Preferred → Spelling → Avoid (see UI & Billing Polish)
+- **Em dashes**: Banned in all generated content and UI; prompts and templates use hyphens/commas
+- **Cover**: 60vh whitespace, larger title (text-7xl/9xl)
+- **Audience**: Eyebrow "WHO YOU'RE WRITING FOR"; structure and prompt see "Audience Section & Error Handling" above
+- **Brand description**: Extraction outputs 2-3 paragraphs, natural flow
+- **Favicon**: Cascading fallback (Google → DuckDuckGo → favicon.ico) for guide cards
+- **Input**: Brand name and keywords capitalize first letter on blur
+- **Footer**: Reusable component on billing page
 
 ---
 
@@ -130,7 +128,7 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
   - `export-pdf-fallback/route.ts` : Client-side html2pdf fallback
   - `user-guide-limit/route.ts` : Guide limit checking
   - `webhook/route.ts` : Stripe webhooks
-  - `ai-assist/route.ts` : AI editing suggestions (rewrite, expand, shorten, etc.) with comprehensive error handling
+  - `ai/command/route.ts` : Plate.js AI command (Cmd+J, streaming, auth-gated)
 - **`/brand-details`**: Initial input form (URL or description)
 - **`/guide`**: Unified guide view/edit route (preview + full-access merged)
 - **`/dashboard`**: User dashboard, guide list, billing
@@ -147,8 +145,7 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 - **`UpgradeNudgeModal.tsx`**: Guide limit nudge modal
 - **`CreateGuideModal.tsx`**: New guide creation modal
 - **`Footer.tsx`**: Reusable footer component
-- **`editor/AIAssistToolbar.tsx`**: AI editing toolbar (rewrite, expand, shorten, etc.) with visual change highlighting
-- **`dashboard/*`**: Dashboard components
+- **`dashboard/*`**: Dashboard components (Plate.js AI lives in editor kit, Cmd+J)
 
 ### `/lib`
 - **`openai.ts`**: OpenAI API calls (guide generation, extraction prompts)
@@ -158,7 +155,7 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 - **`rules-renderer.ts`**: Sanitizes and renders writing rules
 - **`style-guide-styles.ts`**: Typography tokens (PREVIEW_*, EDITOR_*)
 - **`supabase-*.ts`**: Supabase client utilities (browser, server, admin, middleware)
-- **`api-utils.ts`**: API helpers (extraction, guide limits)
+- **`api-utils.ts`**: Error mapping and user-facing messages (`getUserFriendlyError`, `createErrorDetails`, `isAbortError`); ERROR_MESSAGES for SESSION_EXPIRED, INVALID_RESPONSE, REQUEST_ABORTED, STORAGE_CORRUPT; retryable list
 - **`pdf-chrome.ts`**: PDF generation utilities
 
 ### `/docs`
@@ -170,6 +167,7 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 ### Other Important Files
 - **`DESIGN_SYSTEM.md`**: Complete design system documentation (fonts, colors, spacing, components)
 - **`templates/style_guide_template.md`**: Base template for guide generation
+- **`scripts/test-audience-prompt.mjs`**: Test audience prompt against extract-website output (URLs or brand descriptions); prints prompt + OpenAI output for validation
 - **`README.md`**: Project README (outdated : mentions "core/complete" guides which are now deprecated)
 
 ---
@@ -191,7 +189,8 @@ Required for full functionality:
 - `pnpm dev` : Start dev server (runs on port 3002)
 - `pnpm test` : Run Vitest tests
 - `pnpm test:watch` : Watch mode
-- `curl -X POST http://localhost:3002/api/extract-website -H "Content-Type: application/json" -d '{"url":"https://example.com"}'` : Test extraction API
+- `node scripts/test-audience-prompt.mjs --baseUrl http://localhost:3002` : Test audience prompt (default: Tesco, Stripe, one description). Use `--url <url>` and/or `--desc "<text>"` for custom inputs. Requires `OPENAI_API_KEY` and running dev server.
+- `curl -X POST http://localhost:3002/api/extract-website -H "Content-Type: application/json" -d '{"url":"https://stripe.com"}'` : Test extraction API
 - `npx ccusage@latest` : Monitor Claude Code token usage
 
 ---
@@ -200,7 +199,8 @@ Required for full functionality:
 
 1. **Free Preview**: 1 guide, preview content only (locked sections)
 2. **Starter**: 10 guides/month, full access, all export formats
-3. **Agency** (formerly Team): Unlimited guides, full access, all features
+3. **Pro**: 2 guides, full access, all export formats
+4. **Agency** (formerly Team): Unlimited guides, full access, all features
 
 Guide limits enforced via `/api/user-guide-limit` and Supabase row-level security.
 
@@ -209,10 +209,11 @@ Guide limits enforced via `/api/user-guide-limit` and Supabase row-level securit
 ## 🎨 Brand Voice & Content
 
 The app teaches users about:
+- **Audience**: Who we write for (overview + primary with goals/motivations + secondary). Context only; no writing advice in this section.
 - **Voice Traits**: 3-trait framework (what it means, what it doesn't mean)
 - **Writing Rules**: 25 actionable rules (tone, grammar, format)
 - **Before/After Examples**: Real-world applications (headlines, emails, etc.)
-- **Word Lists**: Preferred terms and phrases for consistency
+- **Word Lists**: Preferred terms → Spelling and Usage → Avoid Terms
 
 Style guide output is designed to be:
 - **Usable by humans**: Share with team, print, reference
@@ -251,9 +252,8 @@ Style guide output is designed to be:
 
 ## ⚠️ Known Issues & Deprecations
 
-- **README.md**: Outdated (mentions "core/complete" guides, removed in recent overhaul)
-- **Planning MD files**: None found (user mentioned them, but glob returned no results : may be in different location)
-- **Old Routes**: `/preview` and `/full-access` redirect to `/guide` (backward compat)
+- **README.md**: Outdated (mentions "core/complete" guides)
+- **Old routes**: `/preview` and `/full-access` redirect to `/guide` (backward compat)
 
 ---
 

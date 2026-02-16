@@ -1301,9 +1301,9 @@ function GuideContent() {
           <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-medium">Generate full sections</p>
+                <p className="font-medium">Complete your tone of voice guide</p>
                 <p className="mt-0.5 text-blue-700">
-                  Your guide has placeholder sections. Generate Style Rules, Before/After examples, and Word List for this guide.
+                  Generate all sections of your guidelines with complete content.
                 </p>
               </div>
               <Button

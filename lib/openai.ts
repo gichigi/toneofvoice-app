@@ -505,10 +505,9 @@ Return STRICT JSON array:
 [{"category": "Category Name", "title": "Category Name", "description": "One sentence rule 8-12 words", "examples": {"good": "Example", "bad": "Example"}}]
 
 Requirements:
-- Each rule description must FRONT-LOAD the reason for the chosen rule based on the brand details given, then the concrete rule. Use instructive verbs (e.g. "Maintain a refined voice by…", "Provide a supportive tone by…"). Example: "Maintain a refined voice by limiting contractions." or "Provide a supportive tone by avoiding emojis in product copy." — one trait per rule, not listing all traits.
-- Use lowercase for the trait when it appears as the descriptor: "Stay direct by…", "Keep refined by…", "Be supportive by…" — capitalise only the first word (the verb), not the trait name.
+- Write rule descriptions naturally. Most should include why the rule matters, but use varied sentence structures to avoid monotony: "Use contractions to sound conversational and warm." or "Stick with British spelling throughout." or "Keep sentences under 20 words—shorter sentences are easier to scan." or "Multiple exclamation marks feel jarring and lose impact."
+- Break monotony by using different sentence patterns: some with "to" connectors, some with periods separating the action from the benefit, some as observations. Vary opening words and structure.
 - Pick the single trait that best fits each rule; vary which traits you use across rules.
-- Voice-shaping rules (1-7) must reference Selected Traits by name in that front-loaded reason.
 - Examples must sound like ${brandDetails.name} speaking to ${brandDetails.audience}
 - Description 8-12 words max
 - Exactly 25 rules, one per category

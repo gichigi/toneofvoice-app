@@ -6,6 +6,7 @@ const basicRules = dedent`
 
 /** Common rules shared across all edit prompts */
 export const commonEditRules = dedent`
+  - CRITICAL: Make ONLY the specific changes requested in the instruction. Do not improve, rewrite, or modify anything else.
   - Output ONLY the replacement content. Do not include any markup tags in your output.
   - Ensure the replacement is grammatically correct and reads naturally.
   - Preserve line breaks in the original content unless explicitly instructed to remove them.

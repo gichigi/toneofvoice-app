@@ -72,6 +72,8 @@ export function AIMenu() {
   const chat = usePluginOption(AIChatPlugin, 'chat');
   const { messages, status } = chat;
   const [anchorElement, setAnchorElement] = React.useState<HTMLElement | null>(null);
+  const subscriptionTier = usePluginOption(AIChatPlugin, 'subscriptionTier') || 'starter';
+  const [showUpgradeDialog, setShowUpgradeDialog] = React.useState(false);
 
   // Insert mode: aiChat node is anchor. Edit mode: refresh anchor when suggestions are ready
   // (block DOM may have changed after applyAISuggestions).
@@ -195,13 +197,44 @@ export function AIMenu() {
                   e.preventDefault();
                   api.aiChat.hide();
                 }
-                if (isHotkey('enter')(e) && !e.shiftKey && !value) {
-                  e.preventDefault();
-                  void api.aiChat.submit(input);
-                  setInput('');
+                if (isHotkey('enter')(e) && !e.shiftKey) {
+                  console.log('🔍 [CUSTOM PROMPT] Enter pressed:', {
+                    hasInput: !!input.trim(),
+                    input: input.trim(),
+                    menuValue: value,
+                    tier: subscriptionTier,
+                  });
+
+                  if (input.trim()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (subscriptionTier === 'starter') {
+                      console.log('❌ [CUSTOM PROMPT] Blocked - free tier');
+                      setShowUpgradeDialog(true);
+                      return;
+                    }
+
+                    console.log('✅ [CUSTOM PROMPT] Submitting:', input);
+                    void api.aiChat.submit(input, {
+                      mode: 'chat',
+                      prompt: isSelecting
+                        ? `${input}\n\n{blockSelection}`
+                        : input,
+                      toolName: isSelecting ? 'edit' : 'generate',
+                    });
+                    setInput('');
+                    setValue('');
+                  }
                 }
               }}
-              onValueChange={setInput}
+              onValueChange={(newInput) => {
+                setInput(newInput);
+                // Clear menu selection when user types custom input
+                if (newInput.trim()) {
+                  setValue('');
+                }
+              }}
               placeholder="Ask AI anything..."
               data-plate-focus
               autoFocus
@@ -214,11 +247,48 @@ export function AIMenu() {
                 input={input}
                 setInput={setInput}
                 setValue={setValue}
+                setShowUpgradeDialog={setShowUpgradeDialog}
               />
             </CommandList>
           )}
         </Command>
       </PopoverContent>
+
+      {/* Upgrade Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Upgrade to use AI features</DialogTitle>
+            <DialogDescription>
+              AI-powered editing is available on Pro and Agency plans.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex items-start gap-3">
+              <Wand className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">AI-powered editing</p>
+                <p className="text-sm text-muted-foreground">Improve, shorten, simplify, and fix your content instantly</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <PenLine className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Continue writing</p>
+                <p className="text-sm text-muted-foreground">Let AI help you expand your tone of voice guidelines</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => window.location.href = '/dashboard/billing'}>
+              Upgrade to Pro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Popover>
   );
 }
@@ -399,17 +469,18 @@ export const AIMenuItems = ({
   input,
   setInput,
   setValue,
+  setShowUpgradeDialog,
 }: {
   input: string;
   setInput: (value: string) => void;
   setValue: (value: string) => void;
+  setShowUpgradeDialog: (show: boolean) => void;
 }) => {
   const editor = useEditorRef();
   const { messages } = usePluginOption(AIChatPlugin, 'chat');
   const aiEditor = usePluginOption(AIChatPlugin, 'aiEditor')!;
   const isSelecting = useIsSelecting();
   const subscriptionTier = usePluginOption(AIChatPlugin, 'subscriptionTier') || 'starter';
-  const [showUpgradeDialog, setShowUpgradeDialog] = React.useState(false);
 
   const menuState = React.useMemo(() => {
     if (messages && messages.length > 0) {
@@ -423,10 +494,11 @@ export const AIMenuItems = ({
   }, [menuState]);
 
   React.useEffect(() => {
-    if (menuGroups.length > 0 && menuGroups[0].items.length > 0) {
+    // Only auto-select if user hasn't typed custom input
+    if (menuGroups.length > 0 && menuGroups[0].items.length > 0 && !input.trim()) {
       setValue(menuGroups[0].items[0].value);
     }
-  }, [menuGroups, setValue]);
+  }, [menuGroups, setValue, input]);
 
   return (
     <>
@@ -444,7 +516,7 @@ export const AIMenuItems = ({
                   setShowUpgradeDialog(true);
                   return;
                 }
-                
+
                 menuItem.onSelect?.({
                   aiEditor,
                   editor,
@@ -459,42 +531,6 @@ export const AIMenuItems = ({
           ))}
         </CommandGroup>
       ))}
-
-      {/* Upgrade Dialog */}
-      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle>Upgrade to use AI features</DialogTitle>
-            <DialogDescription>
-              AI-powered editing is available on Pro and Agency plans.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            <div className="flex items-start gap-3">
-              <Wand className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-sm">AI-powered editing</p>
-                <p className="text-sm text-muted-foreground">Improve, shorten, simplify, and fix your content instantly</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <PenLine className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-sm">Continue writing</p>
-                <p className="text-sm text-muted-foreground">Let AI help you expand your tone of voice guidelines</p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => window.location.href = '/dashboard/billing'}>
-              Upgrade to Pro
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

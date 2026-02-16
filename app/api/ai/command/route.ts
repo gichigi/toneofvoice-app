@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const isSelecting = editor.api.isExpanded();
-    const modelId = model || 'gpt-4o-mini';
+    const modelId = model || 'gpt-5-mini';
     const defaultModel = openai(modelId) as LanguageModel;
 
     const stream = createUIMessageStream<ChatMessage>({

@@ -578,7 +578,7 @@ Keywords (optional): ${keywordsLine}
 Products/services (optional): ${productsLine}
 
 Output markdown only, with these headings exactly:
-### Audience (Overview)
+### Overview
 ### Primary Audience
 ### Secondary Audience
 
@@ -646,16 +646,19 @@ Output markdown only.`;
 export function getHowToUseContent(brandName: string): string {
   return `This document outlines the rules for brand voice, spelling, grammar, and formatting across all content channels. Anyone writing or publishing content for ${brandName} should follow these guidelines.
 
-**Who should use this document**
+### Who should use this document
+
 Content team members, freelancers, agencies, and anyone creating branded materials (including when briefing AI tools).
 
-**When to reference it**
+### When to reference it
+
 - Starting new campaigns or content projects
 - Onboarding new writers or contractors
 - Reviewing drafts for brand consistency
 - Setting up AI writing assistants (paste into system prompt)
 
-**Using with AI tools**
+### Using with AI tools
+
 Paste this guide into your AI tool's system prompt or instructions to ensure generated content matches your brand voice. Include the Brand Voice and Style Rules sections for best results.`;
 }
 

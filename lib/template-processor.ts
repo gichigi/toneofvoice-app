@@ -109,6 +109,17 @@ export async function loadTemplate(templateName: string): Promise<string> {
 }
 
 // Function to format markdown content for consistent display
+// Simple normalization for audience content: just fix whitespace/newlines
+function normalizeMarkdownContent(content: string | undefined): string {
+  if (!content) return ''
+
+  return content
+    .replace(/\n{3,}/g, "\n\n") // Replace 3+ newlines with 2 (markdown blank line)
+    .replace(/\s+$/gm, "") // Remove trailing whitespace
+    .replace(/^\s+/gm, "") // Remove leading whitespace
+    .trim()
+}
+
 function formatMarkdownContent(content: string | undefined): string {
   if (!content) {
     console.warn('Empty content passed to formatMarkdownContent')
@@ -454,7 +465,7 @@ export async function renderStyleGuideTemplate({
     result = result.replace(
       /{{audience_section}}/g,
       audienceResult.success && audienceResult.content
-        ? audienceResult.content
+        ? normalizeMarkdownContent(audienceResult.content)
         : "_Could not generate audience section._"
     );
     result = result.replace(/{{style_rules}}/g, "_Unlock to see Style Rules._");
@@ -483,7 +494,7 @@ export async function renderStyleGuideTemplate({
     );
     result = result.replace(
       /{{audience_section}}/g,
-      audienceResult.success && audienceResult.content ? audienceResult.content : "_Could not generate audience._"
+      audienceResult.success && audienceResult.content ? normalizeMarkdownContent(audienceResult.content) : "_Could not generate audience._"
     );
   }
 

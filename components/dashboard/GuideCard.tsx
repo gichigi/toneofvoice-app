@@ -84,7 +84,7 @@ export function GuideCard({ id, title, planType, updatedAt, faviconUrl }: GuideC
 
       toast({
         title: "Guide deleted",
-        description: "The style guide has been permanently deleted.",
+        description: "Your tone of voice guide has been permanently deleted.",
       })
 
       // Refresh the page to update the list
@@ -150,7 +150,7 @@ export function GuideCard({ id, title, planType, updatedAt, faviconUrl }: GuideC
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete style guide?</DialogTitle>
+            <DialogTitle>Delete tone of voice guide?</DialogTitle>
             <DialogDescription>
               This will permanently delete "{title}". This action cannot be undone.
             </DialogDescription>

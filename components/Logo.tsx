@@ -7,34 +7,17 @@ interface LogoProps {
 
 export default function Logo({ size = "md", linkToHome = true }: LogoProps) {
   const sizeClasses = {
-    sm: {
-      logo: "h-6",
-      text: "text-base",
-      gap: "gap-2",
-    },
-    md: {
-      logo: "h-8",
-      text: "text-xl",
-      gap: "gap-3",
-    },
-    lg: {
-      logo: "h-10",
-      text: "text-2xl",
-      gap: "gap-3",
-    },
+    sm: "h-6 w-auto",
+    md: "h-8 w-auto",
+    lg: "h-10 w-auto",
   }
 
   const logoContent = (
-    <div className={`group flex items-center ${sizeClasses[size].gap}`}>
-      <img
-        src="/tone_of_voice_logo.svg"
-        alt="Tone of Voice"
-        className={`${sizeClasses[size].logo} w-auto`}
-      />
-      <span className={`${sizeClasses[size].text} font-semibold text-gray-900 dark:text-gray-100`}>
-        Tone of Voice
-      </span>
-    </div>
+    <img
+      src="/wordmark.svg"
+      alt="Tone of Voice"
+      className={sizeClasses[size]}
+    />
   )
 
   if (linkToHome) {

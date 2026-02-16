@@ -190,7 +190,7 @@ function GuideContent() {
 
       const loadGuide = async (retryCount = 0) => {
         try {
-          setLoadingStep("Loading your style guide...")
+          setLoadingStep("Loading your tone of voice guide...")
           setLoadingProgress(25)
 
           const [guideResponse, tierResponse] = await Promise.all([
@@ -245,7 +245,7 @@ function GuideContent() {
           if (subscriptionSuccess && tier !== "starter" && tier !== "free") {
             toast({
               title: "Subscription activated!",
-              description: "You now have full access to edit and export your style guides.",
+              description: "You now have full access to edit and export your tone of voice guides.",
             })
             router.replace(`/guide?guideId=${guideId}`, { scroll: false })
           }
@@ -372,7 +372,7 @@ function GuideContent() {
         // If we have cached content and this isn't a fresh generation request, load from cache
         const savedPreviewContent = localStorage.getItem("previewContent")
         if (savedPreviewContent && !generatePreview) {
-          setLoadingStep("Loading your style guide...")
+          setLoadingStep("Loading your tone of voice guide...")
           setLoadingProgress(90)
 
           setContent(savedPreviewContent)
@@ -422,7 +422,7 @@ function GuideContent() {
 
         if (cancelProgress) cancelProgress()
 
-        let errorMessage = 'Failed to generate style guide'
+        let errorMessage = 'Failed to generate tone of voice guide'
         if (!response.ok) {
           try {
             const errorData = await response.json()
@@ -585,7 +585,7 @@ function GuideContent() {
         throw new Error("Invalid response from server. Please try again.")
       }
       if (!data?.success) {
-        throw new Error(data?.error || "Failed to generate style guide")
+        throw new Error(data?.error || "Failed to generate tone of voice guide")
       }
       if (!data?.styleGuide || typeof data.styleGuide !== "string") {
         throw new Error("Invalid response from server. Please try again.")
@@ -894,8 +894,8 @@ function GuideContent() {
         toast({
           title: "Download started",
           description: usedFallback
-            ? "Your style guide preview is downloading."
-            : "Your style guide preview is downloading in PDF format.",
+            ? "Your tone of voice guide preview is downloading."
+            : "Your tone of voice guide preview is downloading in PDF format.",
         })
       } else {
         // Filter locked sections for non-PDF formats
@@ -915,7 +915,7 @@ function GuideContent() {
         document.body.removeChild(a)
         toast({
           title: "Download started",
-          description: `Your style guide preview is downloading in ${format.toUpperCase()} format.`,
+          description: `Your tone of voice guide preview is downloading in ${format.toUpperCase()} format.`,
         })
       }
     } catch (error) {
@@ -954,7 +954,7 @@ function GuideContent() {
       
       toast({
         title: "Download started",
-        description: `Your style guide is downloading in ${format.toUpperCase()} format.`,
+        description: `Your tone of voice guide is downloading in ${format.toUpperCase()} format.`,
       })
       setShowPostExportPrompt(true)
     } catch (error) {
@@ -1007,7 +1007,7 @@ function GuideContent() {
     const h1Idx = lines.findIndex(l => /^#\s+/.test(l))
     if (h1Idx !== -1) {
       const h1Text = lines[h1Idx].replace(/^#\s+/, '')
-      if ((brandName && h1Text.includes(brandName)) || h1Text.toLowerCase().includes('style guide')) {
+      if ((brandName && h1Text.includes(brandName)) || h1Text.toLowerCase().includes('tone of voice guide')) {
         lines.splice(h1Idx, 1)
       }
     }
@@ -1136,7 +1136,7 @@ function GuideContent() {
             </h1>
 
             <p className="text-sm text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto">
-              {loadingStep}
+              Typically takes 30–60 seconds
             </p>
 
             {/* Progress Section */}
@@ -1147,13 +1147,11 @@ function GuideContent() {
                 aria-label={`Loading progress: ${loadingProgress}%`}
               />
 
-              {/* Info Banner */}
+              {/* Loading step progress message */}
               {loadingProgress < 100 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                  <p className="text-blue-900 text-xs sm:text-sm font-medium">
-                    Typically takes 30-60 seconds
-                  </p>
-                </div>
+                <p className="text-xs sm:text-sm text-gray-500 text-center font-medium">
+                  {loadingStep}
+                </p>
               )}
 
               {/* What to do next */}
@@ -1455,7 +1453,7 @@ function GuideContent() {
         <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
           <DialogContent className="sm:max-w-[640px] text-sm sm:text-base">
             <DialogHeader className="space-y-4">
-              <DialogTitle className="text-base sm:text-xl">Get your full style guide</DialogTitle>
+              <DialogTitle className="text-base sm:text-xl">Get your full tone of voice guide</DialogTitle>
               <DialogDescription className="text-xs sm:text-base">
                 Subscribe to unlock all rules, editing, and exports
               </DialogDescription>
@@ -1516,7 +1514,7 @@ function GuideContent() {
         <Dialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Regenerate style guide?</DialogTitle>
+              <DialogTitle>Regenerate tone of voice guide?</DialogTitle>
               <DialogDescription>
                 You have unsaved edits. Regenerating will replace your changes with a fresh AI-generated guide. Are you sure?
               </DialogDescription>

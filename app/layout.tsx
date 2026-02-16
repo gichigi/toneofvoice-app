@@ -14,6 +14,7 @@ export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://toneofvoice.app'),
   title: "Define your brand tone of voice | Tone of Voice",
   description: "Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand.",
+  keywords: 'tone of voice, brand voice, brand guidelines, content strategy, writing guide, brand identity, brand communication',
   icons: {
     icon: [
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
@@ -42,6 +43,7 @@ export const metadata = {
         height: 630,
         alt: 'Tone of Voice - Define your brand tone of voice in minutes',
         type: 'image/png',
+        secureUrl: 'https://toneofvoice.app/og-image.png',
       },
     ],
   },
@@ -63,6 +65,9 @@ export const metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
+  },
+  verification: {
+    google: 'google-site-verification-code-here',
   },
 }
 
@@ -86,7 +91,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Explicit meta tags for compatibility */}
         <title>Define your brand tone of voice | Tone of Voice</title>
         <meta name="description" content="Generate a professional tone of voice guide - traits, rules, and examples - tailored to your brand." />
-        
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta name="theme-color" content="#ffffff" />
+        <link rel="canonical" href="https://toneofvoice.app" />
+        <link rel="alternate" type="application/rss+xml" href="https://toneofvoice.app/blog/feed.xml" />
+
         {/* WebPage Schema */}
         <script
           type="application/ld+json"
@@ -178,7 +187,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   "name": "How long does it take?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Most style guides are generated in under 2 minutes. You can review, download in multiple formats, and share with your team."
+                    "text": "Most tone of voice guides are generated in under 2 minutes. You can review, download in multiple formats, and share with your team."
                   }
                 },
                 {
@@ -186,20 +195,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   "name": "What formats can I download?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Your style guide is available in PDF, Word, HTML, and Markdown formats for easy sharing and integration with any workflow."
+                    "text": "Your tone of voice guide is available in PDF, Word, HTML, and Markdown formats for easy sharing and integration with any workflow."
                   }
                 },
                 {
                   "@type": "Question",
-                  "name": "What's included in the style guide?",
+                  "name": "What's included in your tone of voice guide?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "You'll get a brand voice definition, up to 99+ writing rules, tone guidelines, and practical examples tailored to your brand."
+                    "text": "You'll get your tone of voice defined, up to 99+ writing rules, voice traits, and practical examples tailored to your brand."
                   }
                 },
                 {
                   "@type": "Question",
-                  "name": "Can I edit my style guide?",
+                  "name": "Can I edit my tone of voice guide?",
                   "acceptedAnswer": {
                     "@type": "Answer",
                     "text": "Absolutely. Once generated, you can download Word, HTML, or Markdown, then edit however you like before saving or sharing."
@@ -218,7 +227,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   "name": "Can I share with my team?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes! Share your style guide with your entire team. You receive a permanent access link plus downloadable files."
+                    "text": "Yes! Share your tone of voice guide with your entire team. You receive a permanent access link plus downloadable files."
                   }
                 },
                 {

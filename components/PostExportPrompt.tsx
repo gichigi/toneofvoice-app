@@ -11,7 +11,7 @@ interface PostExportPromptProps {
 }
 
 /**
- * Shown after user exports their style guide. Shows next steps:
+ * Shown after user exports their tone of voice guide. Shows next steps:
  * share guidelines, use guidelines, update anytime. Dismissible.
  */
 export function PostExportPrompt({ content, onDismiss, className }: PostExportPromptProps) {
@@ -30,7 +30,7 @@ export function PostExportPrompt({ content, onDismiss, className }: PostExportPr
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-            Your style guide is ready. Here&apos;s what to do next:
+            Your tone of voice guide is ready. Here&apos;s what to do next:
           </p>
           <div className="space-y-2.5">
             <div className="flex items-start gap-3">

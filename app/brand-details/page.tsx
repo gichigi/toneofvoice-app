@@ -973,7 +973,7 @@ export default function BrandDetailsPage() {
                       <div className="border border-blue-200 rounded-lg bg-white p-4 space-y-3">
                         <div>
                           <Label htmlFor="keywordInput" className="text-sm font-semibold text-gray-900">Keywords</Label>
-                          <p className="text-xs text-muted-foreground mt-1">Key terms we'll use in your style guide.</p>
+                          <p className="text-xs text-muted-foreground mt-1">Key terms we'll use in your tone of voice guide.</p>
                         </div>
                         <div
                           className="flex w-full overflow-y-auto rounded-md border bg-white px-3 py-2 flex-wrap items-start gap-1 content-start"

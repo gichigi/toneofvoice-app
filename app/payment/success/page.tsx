@@ -55,7 +55,7 @@ function SuccessContent() {
     { message: 'Analyzing your brand voice and personality', progress: 25 },
     { message: 'Creating writing rules and examples', progress: 50 },
     { message: 'Building before/after samples and word list', progress: 75 },
-    { message: 'Finalizing your style guide', progress: 100 }
+    { message: 'Finalizing your tone of voice guide', progress: 100 }
   ]
 
   const updateProgress = (stage: 'start' | 'voice' | 'rules' | 'examples' | 'complete') => {
@@ -148,7 +148,7 @@ function SuccessContent() {
       if (progressInterval) clearInterval(progressInterval)
 
       if (!data.success) {
-        throw new Error(data.error || "Failed to generate style guide")
+        throw new Error(data.error || "Failed to generate tone of voice guide")
       }
 
       updateProgress('complete')
@@ -308,12 +308,12 @@ Thanks!`)}`
         
         <h1 className="text-xl font-semibold text-gray-900 mb-3">
           {generationStatus === 'generating' && "Payment Successful"}
-          {generationStatus === 'complete' && "Your Style Guide is Ready"}
+          {generationStatus === 'complete' && "Your Tone of Voice Guide is Ready"}
           {generationStatus === 'error' && "Generation Failed"}
         </h1>
         
         <p className="text-gray-600 text-sm mb-4">
-          {generationStatus === 'generating' && "We're generating your personalized style guide now."}
+          {generationStatus === 'generating' && "This might take 1–2 minutes. Please don't leave this page."}
           {generationStatus === 'complete' && "Your guide has been generated successfully"}
           {generationStatus === 'error' && "We couldn't make your guide. See details below."}
         </p>
@@ -322,11 +322,6 @@ Thanks!`)}`
           <div className="space-y-4 w-full">
             <p className="text-sm font-medium text-gray-700">{currentStep}</p>
             <Progress value={progress} className="h-2" />
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-blue-800 text-sm">
-                This might take 1–2 minutes. Please don&apos;t leave this page.
-              </p>
-            </div>
             {/* Remind them what they can do once it's ready */}
             <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-4 text-left space-y-3">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">When it&apos;s ready you can:</p>
@@ -369,7 +364,7 @@ Thanks!`)}`
               className="w-full"
               size="lg"
             >
-              View My Style Guide &rarr;
+              View My Tone of Voice Guide &rarr;
             </Button>
 
             {redirectCountdown !== null && redirectCountdown > 0 && (
@@ -402,8 +397,8 @@ Thanks!`)}`
               
             <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800">
-                <strong>Your payment is secure:</strong> You won't be charged again for retrying. 
-                We'll keep trying until your style guide is ready.
+                <strong>Your payment is secure:</strong> You won't be charged again for retrying.
+                We'll keep trying until your tone of voice guide is ready.
               </p>
             </div>
           </div>

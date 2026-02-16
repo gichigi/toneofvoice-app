@@ -1,6 +1,6 @@
 # Tone of Voice App
 
-Generate professional tone of voice guides in under 5 minutes using AI. No prompt engineering required.
+Generate professional brand voice and style guides in under 5 minutes using AI. No prompt engineering required.
 
 ## Features
 

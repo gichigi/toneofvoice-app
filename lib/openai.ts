@@ -704,17 +704,6 @@ Return strict JSON only.`;
       lines.push("");
     }
 
-    // Avoid Terms - single-column table (same structure/rhythm as other subsections)
-    if (avoid.length) {
-      lines.push("### Avoid Terms", "");
-      lines.push("| Avoid |");
-      lines.push("|-------|");
-      avoid.forEach((term: string) => {
-        lines.push(`| ${String(term)} |`);
-      });
-      lines.push("");
-    }
-
     // Spelling and Usage - two-column table
     if (spell.length) {
       lines.push("### Spelling and Usage", "");
@@ -724,6 +713,17 @@ Return strict JSON only.`;
         const use = typeof item === 'object' ? (item.use || '') : item.split(' not ')[0] || '';
         const instead = typeof item === 'object' ? (item.insteadOf || '') : item.split(' not ')[1] || '';
         lines.push(`| ${use} | ${instead} |`);
+      });
+      lines.push("");
+    }
+
+    // Avoid Terms - last subsection
+    if (avoid.length) {
+      lines.push("### Avoid Terms", "");
+      lines.push("| Avoid |");
+      lines.push("|-------|");
+      avoid.forEach((term: string) => {
+        lines.push(`| ${String(term)} |`);
       });
     }
 

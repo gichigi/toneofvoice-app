@@ -45,7 +45,7 @@ export default async function DashboardPage() {
       <AutoSaveGuide />
       <SubscriptionRefresh />
       <Header
-        containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
+        containerClass="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between"
         rightContent={
           <div className="flex items-center gap-2">
             <NewGuideButton limit={limit} used={used} />
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
       />
 
       <main className="flex-1 py-8">
-        <div className="max-w-5xl mx-auto px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-2xl font-semibold">Welcome back, {name}</h1>
           <p className="mt-1 text-muted-foreground">
             {(profile?.subscription_tier === "free" || profile?.subscription_tier === "starter")

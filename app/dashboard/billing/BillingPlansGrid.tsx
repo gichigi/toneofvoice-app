@@ -1,48 +1,26 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { PRICING_TIERS, TIER_THEME, type PricingTier } from "@/lib/landing-data"
+import { PRICING_TIERS, TIER_THEME, REFUND_ANSWER, SUPPORT_ANSWER, type PricingTier } from "@/lib/landing-data"
 import { BillingActions } from "./BillingActions"
 
-// Billing-specific FAQs: compelling, aligned with Pro/Agency plan cards
+// Billing FAQs: aligned with homepage refund/support; Pro = 2 guides, Agency = unlimited (matches codebase)
 const BILLING_FAQS: { q: string; a: React.ReactNode }[] = [
   {
     q: "What do I get with Pro?",
-    a: "Full access: unlock all sections (25 style rules, Before & After examples, key terminology), AI assist to refine your guidelines, and up to 2 saved guides. Update every section with AI assist and export as PDF, Word, or Markdown with subtle branding.",
+    a: "Full access: all sections (25 writing rules, Before & After examples, word list), AI assist, and up to 2 saved guides. Export as PDF, Word, or Markdown with subtle branding.",
   },
   {
     q: "What do I get with Agency?",
-    a: "Everything in Pro, plus unlimited style guides, white-label exports (no branding), the ability to manage multiple client brands from one account, and priority email support. Built for agencies and freelancers who need to scale.",
+    a: "Everything in Pro, plus unlimited guides, white-label exports (no branding), multiple client brands from one account, and priority email support.",
   },
   {
     q: "How do I cancel or get a refund?",
-    a: (
-      <span>
-        Manage your subscription anytime in your account. We offer a 30-day money-back guarantee. Email{" "}
-        <a
-          href="mailto:support@toneofvoice.app?subject=Refund%20Request"
-          className="text-primary hover:underline"
-        >
-          support@toneofvoice.app
-        </a>{" "}
-        within 30 days of purchase for a full refund.
-      </span>
-    ),
+    a: REFUND_ANSWER,
   },
   {
     q: "Questions? Contact support",
-    a: (
-      <span>
-        Email{" "}
-        <a
-          href="mailto:support@toneofvoice.app?subject=Support%20Request"
-          className="text-primary hover:underline"
-        >
-          support@toneofvoice.app
-        </a>
-        . Agency subscribers get priority support; we reply to all plans on business days.
-      </span>
-    ),
+    a: SUPPORT_ANSWER,
   },
 ]
 
@@ -61,54 +39,20 @@ export function BillingPlansGrid({
   hasCustomer,
   nextBilling,
 }: Props) {
-  const limitLabel = limit === 99 ? "unlimited" : String(limit)
-
   return (
-    <section className="w-full py-8 md:py-12">
+    <section className="w-full pt-4 pb-8 md:pt-6 md:pb-12">
       <div className="container px-4 md:px-6">
-        {/* Current plan summary: styled to match cards */}
-        <div className="mx-auto max-w-5xl mb-10">
-          <div className="rounded-xl border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-6 shadow-sm dark:border-gray-700 dark:from-gray-900 dark:to-gray-950 dark:bg-gray-950">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  Current plan: {tier.charAt(0).toUpperCase() + tier.slice(1)}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Guides: {used} of {limitLabel}
-                  {nextBilling && tier !== "starter" && (
-                    <span className="ml-2">Next billing: {nextBilling}</span>
-                  )}
-                </p>
-                {tier === "starter" && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <i>Upgrade to generate all sections, create up to 2 guidelines (Pro) or unlimited (Agency), and export in multiple formats.</i>
-                  </p>
-                )}
-              </div>
-              {(hasCustomer && (tier === "pro" || tier === "agency")) && (
-                <BillingActions
-                  hasCustomer={hasCustomer}
-                  tier={tier}
-                />
-              )}
-            </div>
-          </div>
+        {/* Section heading */}
+        <div className="flex flex-col items-center justify-center space-y-3 text-center mb-8">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+            Choose your plan
+          </h2>
+          <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+            Unlock your full guide, edit anytime, and export in multiple formats
+          </p>
         </div>
 
-        {/* Section heading: mirror pricing section */}
-        <div className="flex flex-col items-center justify-center space-y-4 text-center">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              Choose your plan
-            </h2>
-            <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Unlock your full guide, edit anytime, and export in multiple formats
-            </p>
-          </div>
-        </div>
-
-        <div className="mx-auto grid max-w-5xl gap-6 py-8 md:grid-cols-3">
+        <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
           {PRICING_TIERS.map((t) => (
             <BillingPlanCard
               key={t.id}
@@ -120,7 +64,7 @@ export function BillingPlansGrid({
         </div>
 
         {/* Trust strip */}
-        <div className="mx-auto max-w-5xl text-center py-6 border-t border-gray-200 dark:border-gray-800">
+        <div className="mx-auto max-w-5xl text-center pt-10 pb-6 border-t border-gray-200 dark:border-gray-800">
           <p className="text-sm text-muted-foreground">
             30-day money-back guarantee
             {" "}
@@ -186,8 +130,8 @@ function BillingPlanCard({
           Current
         </div>
       )}
-      <CardContent className="p-6 relative z-10">
-        <div className="flex flex-col items-center space-y-4 text-center">
+      <CardContent className="p-6 md:p-8 relative z-10">
+        <div className="flex flex-col items-center space-y-5 text-center">
           <h3 className={`text-2xl font-bold ${theme.nameClass}`}>
             {tierData.name}
           </h3>
@@ -198,22 +142,31 @@ function BillingPlanCard({
             <p className="text-sm text-muted-foreground">{tierData.sublabel}</p>
           </div>
           <ul className={theme.listClass}>
-            {tierData.features.map((feature, i) => (
-              <li key={i} className={theme.itemClass}>
-                <Icon
-                  className={`h-4 w-4 flex-shrink-0 ${theme.iconClass} ${theme.iconMargin}`}
-                />
-                <span>{feature}</span>
-              </li>
-            ))}
+            {tierData.features.map((feature, i) => {
+              const text = typeof feature === "string" ? feature : feature.text
+              const isSoon = typeof feature === "object" && feature.soon
+              return (
+                <li key={i} className={theme.itemClass}>
+                  <Icon
+                    className={`h-4 w-4 flex-shrink-0 ${theme.iconClass} ${theme.iconMargin}`}
+                  />
+                  <span>{text}</span>
+                  {isSoon && (
+                    <span className="ml-1.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Soon
+                    </span>
+                  )}
+                </li>
+              )
+            })}
           </ul>
           {/* CTA: BillingActions for pro/agency; starter has no button */}
           {tierData.id === "starter" ? (
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-4">
               {tierData.ctaSubtext}
             </p>
           ) : (
-            <div className="mt-2 w-full flex flex-col items-center gap-1">
+            <div className="mt-6 w-full flex flex-col items-center gap-3">
               <BillingActions
                 hasCustomer={hasCustomer}
                 tier={currentTier}

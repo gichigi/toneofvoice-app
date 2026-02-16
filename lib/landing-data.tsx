@@ -102,13 +102,15 @@ export const FEATURES_PROBLEMS: FeatureCard[] = [
 ]
 
 // --- Pricing ---
+export type PricingFeature = string | { text: string; soon?: true }
+
 export interface PricingTier {
   id: string
   name: string
   price: number
   priceLabel: string
   sublabel: string
-  features: string[]
+  features: PricingFeature[]
   cta: string
   ctaSubtext: string
   badge?: string
@@ -166,10 +168,10 @@ export const PRICING_TIERS: PricingTier[] = [
       "White-label exports (no branding)",
       "Manage multiple client brands",
       "Priority email support",
-      "Coming soon: Custom colors & branding",
-      "Coming soon: Client workspaces",
-      "Coming soon: Higher-quality AI models",
-      "Coming soon: Guidelines share link",
+      { text: "Custom colors & branding", soon: true },
+      { text: "Client workspaces", soon: true },
+      { text: "Higher-quality AI models", soon: true },
+      { text: "Guidelines share link", soon: true },
     ],
     cta: "Get Agency",
     ctaSubtext: "Best for agencies and freelancers",
@@ -236,6 +238,26 @@ export interface FaqItem {
   a: string | React.ReactNode
 }
 
+// Shared answers so homepage and billing FAQs stay aligned (no em dashes in UI)
+const REFUND_ANSWER = (
+  <span>
+    Manage your subscription anytime in your account. We offer a 30-day money-back guarantee. Email{" "}
+    <a href="mailto:support@toneofvoice.app?subject=Refund%20Request" className="text-primary hover:underline">
+      support@toneofvoice.app
+    </a>{" "}
+    within 30 days of purchase for a full refund.
+  </span>
+)
+const SUPPORT_ANSWER = (
+  <span>
+    Email{" "}
+    <a href="mailto:support@toneofvoice.app?subject=Support%20Request" className="text-primary hover:underline">
+      support@toneofvoice.app
+    </a>
+    . Agency subscribers get priority support; we reply to all plans on business days.
+  </span>
+)
+
 export const FAQ_ITEMS: FaqItem[] = [
   {
     q: "What's in the free preview?",
@@ -259,14 +281,17 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What's included in the guide?",
-    a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, and preferred terms. Pro/Agency also get full editing and AI assist.",
+    a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, and preferred terms. Pro and Agency also get full editing and AI assist.",
   },
   {
     q: "How do I cancel or get a refund?",
-    a: <span>Manage subscription and billing in your account. We offer a 30-day money-back guarantee—email <a href="mailto:support@toneofvoice.app?subject=Refund%20Request%20-%20Style%20Guide%20Purchase&body=Hi%20Tone%20of%20Voice%20Support%20Team,%0A%0AI%20would%20like%20to%20request%20a%20refund%20for%20my%20tone%20of%20voice%20guide%20purchase.%0A%0APurchase%20Details:%0A- Guide:%20Tone%20of%20Voice%20Guide%0A- Purchase%20Date:%20[Date]%0A- Email%20used%20for%20purchase:%20[Email]%0A%0AReason%20for%20refund%20(optional):%20%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@toneofvoice.app</a> within 30 days of purchase for a full refund.</span>,
+    a: REFUND_ANSWER,
   },
   {
     q: "How do I contact support?",
-    a: <span>Email us at <a href="mailto:support@toneofvoice.app?subject=Support%20Request&body=Hello%20Tone%20of%20Voice%20Support%20Team,%0A%0AI%20need%20help%20with:%0A%0A[Please%20describe%20your%20issue%20here]%0A%0AThanks,%0A[Your%20Name]" className="text-primary hover:underline">support@toneofvoice.app</a>, 24 hours on business days.</span>,
+    a: SUPPORT_ANSWER,
   },
 ]
+
+// For billing page: same refund/support copy; billing-specific Pro/Agency answers stay in BillingPlansGrid
+export { REFUND_ANSWER, SUPPORT_ANSWER }

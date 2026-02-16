@@ -37,12 +37,12 @@ export default async function BillingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-muted">
       <Header
-        containerClass="max-w-5xl mx-auto px-8 flex h-16 items-center justify-between"
+        containerClass="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between"
         rightContent={<UserMenu />}
       />
 
       <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-8 pt-8 pb-0">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-0">
           <Link
             href="/dashboard"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"

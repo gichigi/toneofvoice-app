@@ -42,14 +42,23 @@ function PricingCard({
             <p className="text-sm text-muted-foreground">{tier.sublabel}</p>
           </div>
           <ul className={theme.listClass}>
-            {tier.features.map((feature, i) => (
-              <li key={i} className={theme.itemClass}>
-                <Icon
-                  className={`h-4 w-4 flex-shrink-0 ${theme.iconClass} ${theme.iconMargin}`}
-                />
-                <span>{feature}</span>
-              </li>
-            ))}
+            {tier.features.map((feature, i) => {
+              const text = typeof feature === "string" ? feature : feature.text
+              const isSoon = typeof feature === "object" && feature.soon
+              return (
+                <li key={i} className={theme.itemClass}>
+                  <Icon
+                    className={`h-4 w-4 flex-shrink-0 ${theme.iconClass} ${theme.iconMargin}`}
+                  />
+                  <span>{text}</span>
+                  {isSoon && (
+                    <span className="ml-1.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Soon
+                    </span>
+                  )}
+                </li>
+              )
+            })}
           </ul>
           <Button
             size="lg"

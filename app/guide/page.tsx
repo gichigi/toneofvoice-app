@@ -32,7 +32,7 @@ import {
 } from "@/lib/content-parser"
 import { PostExportPrompt } from "@/components/PostExportPrompt"
 import { ErrorMessage } from "@/components/ui/error-message"
-import { createErrorDetails, ErrorDetails, getUserFriendlyError } from "@/lib/api-utils"
+import { createErrorDetails, ErrorDetails, getUserFriendlyError, isAbortError } from "@/lib/api-utils"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 import { useGuide } from "@/hooks/use-guide"
 import { Progress } from "@/components/ui/progress"
@@ -137,11 +137,22 @@ function GuideContent() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ plan: sub }),
         })
-        const data = await res.json()
-        if (res.ok && data.url) window.location.href = data.url
+        let data: { url?: string }
+        try {
+          data = await res.json()
+        } catch {
+          toast({ title: "Could not start checkout", description: "Invalid response. Please try again.", variant: "destructive" })
+          return
+        }
+        if (res.status === 401) {
+          toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" })
+          return
+        }
+        if (res.ok && data?.url) window.location.href = data.url
         else toast({ title: "Could not start checkout", variant: "destructive" })
       } catch (e) {
-        toast({ title: "Could not start checkout", variant: "destructive" })
+        if (isAbortError(e)) return
+        toast({ title: "Could not start checkout", description: getUserFriendlyError(e), variant: "destructive" })
       }
     }
     run()
@@ -195,11 +206,22 @@ function GuideContent() {
               router.replace("/dashboard")
               return
             }
+            if (guideResponse.status === 401) {
+              router.replace(`/sign-in?redirectTo=${encodeURIComponent(`/guide?guideId=${guideId}`)}`)
+              return
+            }
             throw new Error("Failed to load guide")
           }
 
-          const guide = await guideResponse.json()
-          const tierData = tierResponse.ok ? await tierResponse.json() : { subscription_tier: "starter" }
+          let guide: { id?: string; content_md?: string; brand_details?: unknown; brand_name?: string; plan_type?: string; subscription_tier?: string }
+          let tierData: { subscription_tier?: string } = { subscription_tier: "starter" }
+          try {
+            guide = await guideResponse.json()
+            if (tierResponse.ok) tierData = await tierResponse.json()
+          } catch {
+            guideLoadGuard.loading.delete(guideId)
+            throw new Error("Invalid response when loading guide. Please try again.")
+          }
 
           if (!guide) return
 
@@ -238,8 +260,14 @@ function GuideContent() {
           setTimeout(() => setIsLoading(false), 300)
         } catch (error) {
           guideLoadGuard.loading.delete(guideId)
+          if (isAbortError(error)) return
           console.error("[Guide] Error loading guide:", error)
-          toast({ title: "Could not load guide", variant: "destructive" })
+          const message = getUserFriendlyError(error) || (error instanceof Error ? error.message : "Something went wrong.")
+          toast({
+            title: "Could not load guide",
+            description: `${message} You can try again from the dashboard.`,
+            variant: "destructive",
+          })
           router.replace("/dashboard")
         }
       }
@@ -281,8 +309,19 @@ function GuideContent() {
       router.push("/brand-details?paymentComplete=true")
       return
     }
-    
-    setBrandDetails(JSON.parse(savedBrandDetails))
+
+    try {
+      setBrandDetails(JSON.parse(savedBrandDetails))
+    } catch (parseError) {
+      console.error("[Guide] Failed to parse saved brand details:", parseError)
+      toast({
+        title: "Saved data invalid",
+        description: "Your saved details are missing or invalid. Please go back to brand details and try again.",
+        variant: "destructive",
+      })
+      router.push("/brand-details?paymentComplete=true")
+      return
+    }
     if (savedGuideType) setGuideType(savedGuideType)
 
     if (alreadyGenerated && savedStyleGuide) {
@@ -428,13 +467,14 @@ function GuideContent() {
           }, 300)
         }
       } catch (error) {
+        if (isAbortError(error)) return
         console.error("[Guide] Preview generation failed:", error)
         if (cancelProgress) cancelProgress()
         if (isMounted) {
-          const message = error instanceof Error ? error.message : "Generation failed"
+          const message = getUserFriendlyError(error) || (error instanceof Error ? error.message : "Generation failed")
           toast({
             title: "Generation failed",
-            description: getUserFriendlyError(error) || message,
+            description: `${message} You can try again from the home page.`,
             variant: "destructive",
           })
           setShouldRedirect(true)
@@ -472,8 +512,15 @@ function GuideContent() {
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      const parsedBrandDetails = JSON.parse(savedBrandDetails)
-      const selectedTraits = savedSelectedTraits ? JSON.parse(savedSelectedTraits) : []
+      let parsedBrandDetails: Record<string, unknown>
+      let selectedTraits: string[] = []
+      try {
+        parsedBrandDetails = JSON.parse(savedBrandDetails) as Record<string, unknown>
+        selectedTraits = savedSelectedTraits ? (JSON.parse(savedSelectedTraits) as string[]) : []
+      } catch (parseError) {
+        console.error("[Guide] Failed to parse brand details or traits:", parseError)
+        throw new Error("Your saved details are missing or invalid. Please go back to brand details and try again.")
+      }
 
       const TTL_MS = 24 * 60 * 60 * 1000
       const canReuseTraits = generatedPreviewTraits &&
@@ -531,9 +578,17 @@ function GuideContent() {
       setLoadingStep("Assembling your complete guide...")
       setLoadingProgress(90)
 
-      const data = await response.json()
-      if (!data.success) {
-        throw new Error(data.error || 'Failed to generate style guide')
+      let data: { success?: boolean; error?: string; styleGuide?: string }
+      try {
+        data = await response.json()
+      } catch {
+        throw new Error("Invalid response from server. Please try again.")
+      }
+      if (!data?.success) {
+        throw new Error(data?.error || "Failed to generate style guide")
+      }
+      if (!data?.styleGuide || typeof data.styleGuide !== "string") {
+        throw new Error("Invalid response from server. Please try again.")
       }
 
       setLoadingStep("Saving to your account...")
@@ -558,8 +613,12 @@ function GuideContent() {
           })
           if (res.ok) {
             setSavedToAccount(true)
-            const json = await res.json()
-            if (json.guide?.id) setCurrentGuideId(json.guide.id)
+            try {
+              const json = await res.json()
+              if (json?.guide?.id) setCurrentGuideId(json.guide.id)
+            } catch {
+              console.warn("[Guide] Save succeeded but response body was invalid")
+            }
           } else if (res.status === 403) {
             toast({
               title: "Guide limit reached",
@@ -582,6 +641,7 @@ function GuideContent() {
       })
 
     } catch (error) {
+      if (isAbortError(error)) return
       console.error("Error generating style guide:", error)
       if (cancelProgress) cancelProgress()
       const errorDetails = createErrorDetails(error)
@@ -604,7 +664,17 @@ function GuideContent() {
           plan_type: "style_guide",
           brand_details: brandDetails,
         }),
-      }).catch(() => {})
+      })
+        .then((res) => {
+          if (!res.ok) return res.json().then((data) => { throw new Error(data?.error || "Save failed") })
+        })
+        .catch((err) => {
+          toast({
+            title: "Save failed",
+            description: `${getUserFriendlyError(err)} Your changes are still in the editor. We'll try again when you edit.`,
+            variant: "destructive",
+          })
+        })
     }, 2000)
     return () => clearTimeout(t)
   }, [currentGuideId, user, brandDetails, hasEdits, content, guideType])
@@ -623,23 +693,29 @@ function GuideContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       })
-      const data = await res.json()
+      let data: { error?: string; url?: string }
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error(res.status === 401 ? "Your session expired. Please sign in again." : "Invalid response. Please try again.")
+      }
       if (!res.ok) {
-        const errorMsg = data.error || `Failed to start checkout (${res.status})`
+        const errorMsg = res.status === 401 ? "Your session expired. Please sign in again." : (data?.error || `Failed to start checkout (${res.status})`)
         throw new Error(errorMsg)
       }
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url
       } else {
         throw new Error("No checkout URL returned")
       }
     } catch (e) {
+      if (isAbortError(e)) return
       console.error("Subscription error:", e)
-      const errorMessage = e instanceof Error ? e.message : "Could not start checkout"
-      toast({ 
-        title: "Could not start checkout", 
-        description: errorMessage,
-        variant: "destructive" 
+      const message = getUserFriendlyError(e) || (e instanceof Error ? e.message : "Could not start checkout.")
+      toast({
+        title: "Could not start checkout",
+        description: `${message} You can try again.`,
+        variant: "destructive",
       })
     } finally {
       setProcessingPlan(null)
@@ -667,12 +743,17 @@ function GuideContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guideId: currentGuideId }),
       })
-      const data = await res.json()
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to generate full guide")
+      let data: { error?: string; content?: string }
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error("Invalid response from server. Please try again.")
       }
-      if (!data.content) {
-        throw new Error("No content returned from server")
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to generate full guide")
+      }
+      if (!data?.content || typeof data.content !== "string") {
+        throw new Error("No content returned from server. Please try again.")
       }
 
       // Verify placeholders were removed before updating state
@@ -694,10 +775,12 @@ function GuideContent() {
         description: "Style Rules, Before/After, and Word List are now complete."
       })
     } catch (e) {
+      if (isAbortError(e)) return
       console.error("[Guide] Expand error:", e)
+      const message = getUserFriendlyError(e) || (e instanceof Error ? e.message : "Something went wrong.")
       toast({
         title: "Could not generate full guide",
-        description: e instanceof Error ? e.message : "Please try again.",
+        description: `${message} You can try again below.`,
         variant: "destructive",
       })
     } finally {

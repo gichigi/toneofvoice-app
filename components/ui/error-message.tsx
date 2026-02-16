@@ -32,7 +32,7 @@ export function ErrorMessage({
         )}
         
         <div className="flex flex-col sm:flex-row gap-2">
-          {showRetryButton && error.canRetry && onRetry && (
+          {showRetryButton && onRetry && (
             <Button
               onClick={onRetry}
               disabled={isRetrying}
@@ -119,7 +119,7 @@ export function PageError({
         </div>
         
         <div className="flex flex-col gap-3">
-          {error.canRetry && onRetry && (
+          {onRetry && (
             <Button
               onClick={onRetry}
               disabled={isRetrying}

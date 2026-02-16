@@ -558,33 +558,50 @@ Requirements:
 }
 
 
-// Audience section: primary + optional secondary audience
+// Audience section: overview + primary (goals/motivations) + secondary (brief). No writing advice.
 export async function generateAudienceSection(brandDetails: any): Promise<GenerationResult> {
-  const keywordSection =
+  const keywordsLine =
     Array.isArray(brandDetails.keywords) && brandDetails.keywords.length
-      ? `\nKeywords: ${brandDetails.keywords.slice(0, 25).join(", ")}`
+      ? brandDetails.keywords.slice(0, 25).join(", ")
       : "";
-  const productsServicesSection =
+  const productsLine =
     Array.isArray(brandDetails.productsServices) && brandDetails.productsServices.length
-      ? `\nProducts/Services: ${brandDetails.productsServices.slice(0, 15).join(", ")}`
+      ? brandDetails.productsServices.slice(0, 15).join(", ")
       : "";
-  const prompt = `Based on this brand, write an Audience section (markdown) with:
-1. **Primary audience** (2-4 sentences): Who they are, what they care about, how to address them
-2. **Secondary audience** (optional, 1-2 sentences): Brief description only. Do NOT include tone guidance or how to address them.
+
+  const prompt = `Write an Audience section for the brand below.
 
 Brand: ${brandDetails.name}
 What they do: ${brandDetails.brandDetailsDescription}
-Audience hint: ${brandDetails.audience || "general audience"}${keywordSection}${productsServicesSection}
+Audience hint: ${brandDetails.audience || "general audience"}
+Keywords (optional): ${keywordsLine}
+Products/services (optional): ${productsLine}
 
-IMPORTANT: Never use em dashes (—) in your output. Use hyphens (-) or rewrite sentences instead.
+Output markdown only, with these headings exactly:
+### Audience (Overview)
+### Primary Audience
+### Secondary Audience
 
-Output markdown only, no code blocks. Use ### Primary Audience and ### Secondary Audience as subheadings.`;
+Formatting rules:
+- No bullets. No numbered lists. No tables. No code blocks.
+- 1-2 sentences per paragraph. Keep sentences short.
+
+Length rules:
+- Overview: exactly 1 sentence.
+- Primary: exactly 2 paragraphs, 2 sentences each (4 sentences total).
+- Secondary: exactly 1 paragraph, 2 sentences.
+
+Detail rules:
+- Describe who they are and their context/mindset (goals, motivations, anxieties).
+- Do not include writing advice or tone guidance.
+- Be specific but don't invent facts. If unsure, use "often" or "typically."
+- Never use em dashes (—). Use hyphens (-) or rewrite.`;
 
   return generateWithOpenAI(
     prompt,
-    "You are a brand strategist who writes precise audience definitions.",
+    "You write precise, brand-specific audience sections for tone of voice guidelines.",
     "markdown",
-    400,
+    450,
     "gpt-5.2",
     "low"
   );

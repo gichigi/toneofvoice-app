@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { getUserFriendlyError, isAbortError } from "@/lib/api-utils";
 
 type Props = {
   hasCustomer: boolean;
@@ -15,16 +17,30 @@ type Props = {
 
 export function BillingActions({ hasCustomer, tier, plan, compact, buttonClass }: Props) {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleManage = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/create-portal-session", { method: "POST" });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else throw new Error(data.error || "Failed to open portal");
-    } catch {
+      let data: { url?: string; error?: string };
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(res.status === 401 ? "Your session expired. Please sign in again." : "Invalid response. Please try again.");
+      }
+      if (res.status === 401) throw new Error("Your session expired. Please sign in again.");
+      if (data?.url) window.location.href = data.url;
+      else throw new Error(data?.error || "Failed to open portal");
+    } catch (e) {
       setLoading(false);
+      if (isAbortError(e)) return;
+      const message = getUserFriendlyError(e) || (e instanceof Error ? e.message : "Could not open billing.");
+      toast({
+        title: "Could not open billing",
+        description: `${message} You can try again.`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -36,11 +52,24 @@ export function BillingActions({ hasCustomer, tier, plan, compact, buttonClass }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: p }),
       });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else throw new Error(data.error || "Failed to start checkout");
-    } catch {
+      let data: { url?: string; error?: string };
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(res.status === 401 ? "Your session expired. Please sign in again." : "Invalid response. Please try again.");
+      }
+      if (res.status === 401) throw new Error("Your session expired. Please sign in again.");
+      if (data?.url) window.location.href = data.url;
+      else throw new Error(data?.error || "Failed to start checkout");
+    } catch (e) {
       setLoading(false);
+      if (isAbortError(e)) return;
+      const message = getUserFriendlyError(e) || (e instanceof Error ? e.message : "Could not start checkout.");
+      toast({
+        title: "Could not start checkout",
+        description: `${message} You can try again.`,
+        variant: "destructive",
+      });
     }
   };
 

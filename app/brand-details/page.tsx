@@ -19,6 +19,7 @@ import VoiceTraitSelector from "@/components/VoiceTraitSelector"
 import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 import { useAuth } from "@/components/AuthProvider"
 import { UpgradeNudgeModal } from "@/components/dashboard/UpgradeNudgeModal"
+import { getUserFriendlyError } from "@/lib/api-utils"
 
 // Default brand details
 const defaultBrandDetails = {
@@ -642,13 +643,12 @@ export default function BrandDetailsPage() {
       router.push("/guide?generate=preview")
     } catch (error) {
       setLoading(false)
-      setProcessingStep('idle')
+      setProcessingStep("idle")
       console.error("[Brand Details] Validation failed:", error)
-
-      const message = error instanceof Error ? error.message : "Validation failed"
+      const message = getUserFriendlyError(error) || (error instanceof Error ? error.message : "Something went wrong.")
       toast({
         title: "Can't generate yet",
-        description: message,
+        description: `${message} You can fix the details above and try again.`,
         variant: "destructive",
       })
     }

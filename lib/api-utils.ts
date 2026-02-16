@@ -30,15 +30,22 @@ export const ERROR_MESSAGES = {
   NETWORK_ERROR: "Connection issue. Please check your internet and try again.",
   SERVER_ERROR: "Something went wrong on our end. Please try again in a moment.",
   VALIDATION_ERROR: "Please check your input and try again.",
-  
+  REQUEST_ABORTED: "Request was cancelled.",
+  SESSION_EXPIRED: "Your session expired. Please sign in again.",
+  INVALID_RESPONSE: "We got an unexpected response. Please try again.",
+  STORAGE_CORRUPT: "Your saved data is missing or invalid. Please go back and try again.",
   // Generic fallback
   UNKNOWN_ERROR: "Something unexpected happened. Please try again or contact support if the issue persists.",
 } as const
 
 // Error classification function
 export function classifyError(error: any): keyof typeof ERROR_MESSAGES {
+  if (error?.name === "AbortError") return "REQUEST_ABORTED"
   const errorMessage = error?.message?.toLowerCase() || error?.error?.toLowerCase() || String(error).toLowerCase()
-  
+  const status = typeof error?.status === "number" ? error.status : null
+  if (status === 401 || errorMessage.includes("401") || errorMessage.includes("unauthorized") || errorMessage.includes("session expired")) return "SESSION_EXPIRED"
+  if (error?.name === "SyntaxError" || errorMessage.includes("json") || errorMessage.includes("unexpected token") || errorMessage.includes("invalid json")) return "INVALID_RESPONSE"
+  if (errorMessage.includes("localstorage") || errorMessage.includes("saved data") || errorMessage.includes("saved details")) return "STORAGE_CORRUPT"
   // Website extraction errors
   if (errorMessage.includes('invalid url') || errorMessage.includes('malformed')) {
     return 'INVALID_URL'
@@ -107,6 +114,11 @@ export function getUserFriendlyError(error: any): string {
   return ERROR_MESSAGES[errorType]
 }
 
+// Callers can skip showing toast for aborted requests (e.g. user navigated away)
+export function isAbortError(error: any): boolean {
+  return error?.name === "AbortError"
+}
+
 // Enhanced error response interface
 export interface ErrorDetails {
   message: string
@@ -140,15 +152,25 @@ export function createErrorDetails(error: any): ErrorDetails {
   const errorType = classifyError(error)
   const message = ERROR_MESSAGES[errorType]
   
-  // Determine if error is retryable
+  // Determine if error is retryable (user can always retry in UI; this affects suggested copy)
   const retryableErrors: Array<keyof typeof ERROR_MESSAGES> = [
     'OPENAI_RATE_LIMIT',
-    'WEBSITE_TIMEOUT', 
+    'WEBSITE_TIMEOUT',
     'OPENAI_CONNECTION',
     'NETWORK_ERROR',
-    'SERVER_ERROR'
+    'SERVER_ERROR',
+    'TEMPLATE_PROCESSING',
+    'PAYMENT_FAILED',
+    'PAYMENT_TIMEOUT',
+    'VALIDATION_ERROR',
+    'WEBSITE_BLOCKED',
+    'WEBSITE_NOT_FOUND',
+    'INVALID_URL',
+    'UNKNOWN_ERROR',
+    'SESSION_EXPIRED',
+    'INVALID_RESPONSE',
+    'STORAGE_CORRUPT',
   ]
-  
   const canRetry = retryableErrors.includes(errorType)
   
   // Suggest specific actions based on error type

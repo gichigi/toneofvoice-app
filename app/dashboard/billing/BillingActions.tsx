@@ -64,10 +64,9 @@ export function BillingActions({ hasCustomer, tier, plan, compact, buttonClass }
     } catch (e) {
       setLoading(false);
       if (isAbortError(e)) return;
-      const message = getUserFriendlyError(e) || (e instanceof Error ? e.message : "Could not start checkout.");
       toast({
-        title: "Could not start checkout",
-        description: `${message} You can try again.`,
+        title: "Something went wrong",
+        description: "Please try again in a few minutes.",
         variant: "destructive",
       });
     }
@@ -94,9 +93,10 @@ export function BillingActions({ hasCustomer, tier, plan, compact, buttonClass }
     // Can subscribe/upgrade: starter -> pro/agency; pro -> agency
     const canUpgrade = (tier === "starter" && (plan === "pro" || plan === "agency")) || (tier === "pro" && plan === "agency");
     if (canUpgrade) {
+      const buttonLabel = plan === "pro" ? "Get Pro" : "Get Agency";
       return (
         <Button onClick={() => handleSubscribe(plan)} disabled={loading} size={compact ? "sm" : "default"} className={buttonClass}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tier === "pro" ? "Upgrade" : "Subscribe"}
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : buttonLabel}
         </Button>
       );
     }

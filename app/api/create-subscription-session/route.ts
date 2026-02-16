@@ -29,11 +29,23 @@ const AGENCY_PRICE_ID =
 /** Create Stripe Checkout session for subscription (Pro or Agency). User must be logged in. */
 export async function POST(req: Request) {
   try {
+    // Log config state (no secrets) to debug 500s in Vercel
+    const hasSecret = !!STRIPE_SECRET_KEY;
+    const hasProPrice = !!PRO_PRICE_ID;
+    const hasAgencyPrice = !!AGENCY_PRICE_ID;
+    console.log("[create-subscription-session] config check:", {
+      mode,
+      hasSecret,
+      hasProPrice,
+      hasAgencyPrice,
+      priceIdPrefix: PRO_PRICE_ID?.slice(0, 7) ?? null,
+    });
+
     // Check Stripe configuration first
     if (!STRIPE_SECRET_KEY) {
-      console.error("[create-subscription-session] Missing STRIPE_SECRET_KEY");
+      console.error("[create-subscription-session] Missing STRIPE_SECRET_KEY (mode=" + mode + ")");
       return NextResponse.json(
-        { error: "Payment service not configured. Please check Stripe API key." },
+        { error: "Service temporarily unavailable. Please try again later." },
         { status: 500 }
       );
     }
@@ -63,7 +75,7 @@ export async function POST(req: Request) {
         : `STRIPE_${plan.toUpperCase()}_PRICE_ID`;
       console.error(`[create-subscription-session] Missing ${envVarName} env var`);
       return NextResponse.json(
-        { error: `Subscription not configured. Missing ${envVarName}.` },
+        { error: "Service temporarily unavailable. Please try again later." },
         { status: 500 }
       );
     }
@@ -106,11 +118,7 @@ export async function POST(req: Request) {
         statusCode: e.statusCode,
       });
       return NextResponse.json(
-        { 
-          error: `Stripe error: ${e.message}`,
-          code: e.code,
-          type: e.type,
-        },
+        { error: "Service temporarily unavailable. Please try again later." },
         { status: e.statusCode || 500 }
       );
     }
@@ -125,20 +133,20 @@ export async function POST(req: Request) {
       // Check for common configuration errors
       if (e.message?.includes("apiKey") || e.message?.includes("Stripe")) {
         return NextResponse.json(
-          { error: "Payment service configuration error. Please check Stripe API key." },
+          { error: "Service temporarily unavailable. Please try again later." },
           { status: 503 }
         );
       }
       
       return NextResponse.json(
-        { error: e.message || "Failed to create checkout session" },
+        { error: "Service temporarily unavailable. Please try again later." },
         { status: 500 }
       );
     }
     
     console.error("[create-subscription-session] Unknown error:", e);
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: "Service temporarily unavailable. Please try again later." },
       { status: 500 }
     );
   }

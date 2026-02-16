@@ -143,6 +143,9 @@ export function GuideSidebar({
                       </div>
                       
                       <span className="flex-1 truncate transition-all duration-300">{section.title}</span>
+                      {locked && (
+                        <Lock className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

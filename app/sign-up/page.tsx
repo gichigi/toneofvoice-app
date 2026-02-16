@@ -51,7 +51,8 @@ function SignUpContent() {
         },
       });
       if (err) {
-        setError(err.message || "Sign up failed.");
+        const errorDetails = classifyAuthError(err);
+        setError(errorDetails.message);
         return;
       }
       if (data.user && !data.session) {
@@ -62,8 +63,10 @@ function SignUpContent() {
         router.push(redirectTo);
         router.refresh();
       }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      const errorDetails = classifyAuthError(error);
+      setError(errorDetails.message);
+      console.error("[sign-up] Error:", error);
     } finally {
       setLoading(false);
     }

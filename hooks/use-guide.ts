@@ -108,14 +108,13 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
     })
   }, [viewMode])
 
-  // Fetch subscription tier only when not loading a guide by ID (page will set it from loadGuide)
+  // Fetch subscription tier for all authenticated users
   useEffect(() => {
     if (!user) {
       setSubscriptionTier("starter")
       tierFetchedForUser.clear()
       return
     }
-    if (guideId) return
 
     const userId = user.id
     if (tierFetchedForUser.has(userId)) return
@@ -125,7 +124,7 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
       .then(res => res.json())
       .then(data => setSubscriptionTier((data.subscription_tier === "free" ? "starter" : (data.subscription_tier || "starter")) as Tier))
       .catch(() => setSubscriptionTier("starter"))
-  }, [user?.id, guideId])
+  }, [user?.id])
 
   // Scroll to section on sidebar click (center in viewport)
   const handleSectionSelect = useCallback((id: string) => {

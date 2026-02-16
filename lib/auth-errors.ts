@@ -174,11 +174,16 @@ export function classifyAuthError(error: any): AuthErrorDetails {
     };
   }
 
-  // Configuration errors
+  // Configuration errors (wrong/missing API key, 401 from auth service, env)
   if (
     errorMessage.includes("missing supabase") ||
     errorMessage.includes("configuration") ||
-    errorMessage.includes("env")
+    errorMessage.includes("env") ||
+    errorMessage.includes("api key") ||
+    errorMessage.includes("apikey") ||
+    errorMessage.includes("invalid key") ||
+    errorMessage.includes("401") ||
+    errorMessage.includes("jwt")
   ) {
     return {
       message: AUTH_ERROR_MESSAGES.CONFIG_ERROR,

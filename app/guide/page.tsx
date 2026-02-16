@@ -141,7 +141,7 @@ function GuideContent() {
         try {
           data = await res.json()
         } catch {
-          toast({ title: "Could not start checkout", description: "Invalid response. Please try again.", variant: "destructive" })
+          toast({ title: "Something went wrong", description: "Please try again in a few minutes.", variant: "destructive" })
           return
         }
         if (res.status === 401) {
@@ -149,10 +149,10 @@ function GuideContent() {
           return
         }
         if (res.ok && data?.url) window.location.href = data.url
-        else toast({ title: "Could not start checkout", variant: "destructive" })
+        else toast({ title: "Something went wrong", description: "Please try again in a few minutes.", variant: "destructive" })
       } catch (e) {
         if (isAbortError(e)) return
-        toast({ title: "Could not start checkout", description: getUserFriendlyError(e), variant: "destructive" })
+        toast({ title: "Something went wrong", description: "Please try again in a few minutes.", variant: "destructive" })
       }
     }
     run()
@@ -711,10 +711,9 @@ function GuideContent() {
     } catch (e) {
       if (isAbortError(e)) return
       console.error("Subscription error:", e)
-      const message = getUserFriendlyError(e) || (e instanceof Error ? e.message : "Could not start checkout.")
       toast({
-        title: "Could not start checkout",
-        description: `${message} You can try again.`,
+        title: "Something went wrong",
+        description: "Please try again in a few minutes.",
         variant: "destructive",
       })
     } finally {

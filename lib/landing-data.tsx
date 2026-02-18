@@ -36,8 +36,9 @@ export const WHATS_INCLUDED_FEATURES: WhatsIncludedFeature[] = [
   { number: 3, suffix: "", title: "Brand voice traits", description: "Complete definitions, do's, and don'ts customised for your brand.", iconBg: "bg-purple-100", delay: "100ms" },
   { number: 10, suffix: "", title: "Brand terms & phrases", description: "Preferred words and phrases so every piece of content stays on-brand.", iconBg: "bg-green-100", delay: "200ms" },
   { number: 5, suffix: "", title: "Before/After examples", description: "Your brand voice applied to real content types (e.g. headlines, emails).", iconBg: "bg-orange-100", delay: "300ms" },
-  { number: 3, suffix: "", title: "Export formats", description: "PDF to share, Word to edit, Markdown for AI tools.", iconBg: "bg-indigo-100", delay: "400ms" },
-  { number: 5, suffix: "", title: "Minutes to complete", description: "No prompting, no templates. Enter a URL or short description to start.", iconBg: "bg-pink-100", delay: "500ms" },
+  { number: 12, suffix: "", title: "AI cleanup rules", description: "Rules to catch robotic writing patterns so your content sounds human, not generated.", iconBg: "bg-red-100", delay: "400ms" },
+  { number: 3, suffix: "", title: "Export formats", description: "PDF to share, Word to edit, Markdown for AI tools.", iconBg: "bg-indigo-100", delay: "500ms" },
+  { number: 5, suffix: "", title: "Minutes to complete", description: "No prompting, no templates. Enter a URL or short description to start.", iconBg: "bg-pink-100", delay: "600ms" },
 ]
 
 // --- Comparison table ---
@@ -85,11 +86,11 @@ export interface FeatureCard {
 
 export const FEATURES_SOLUTIONS: FeatureCard[] = [
   { icon: CheckCircle, title: "Consistent messaging", desc: "Clear, unified voice across all content that resonates with your audience and builds trust" },
-  { icon: FileCheck, title: "Complete tone of voice guidelines", desc: "Detailed guidelines with tone of voice traits, do's/don'ts, and examples to align your entire team" },
+  { icon: FileCheck, title: "Complete tone of voice guidelines", desc: "Detailed guidelines with tone of voice traits, do's/don'ts, and examples to align your entire team - plus custom sections to fit your needs" },
   { icon: UserCheck, title: "Team alignment", desc: "Everyone writes in your brand's voice, creating consistent experiences at every touchpoint" },
   { icon: Shield, title: "Strong brand identity", desc: "Every message reinforces who you are, making your brand instantly recognizable and memorable" },
   { icon: Heart, title: "Customer trust", desc: "Clear, consistent voice builds credibility and makes customers feel confident choosing you" },
-  { icon: Zap, title: "Faster content creation", desc: "Guidelines eliminate guesswork, so your team spends less time debating and more time creating" },
+  { icon: Zap, title: "Faster content creation", desc: "Guidelines eliminate guesswork. AI cleanup rules catch robotic patterns. Your team spends less time rewriting and more time shipping" },
 ]
 
 export const FEATURES_PROBLEMS: FeatureCard[] = [
@@ -128,6 +129,7 @@ export const PRICING_TIERS: PricingTier[] = [
     features: [
       "Brand, audience & how to use",
       "Content guidelines & brand voice",
+      "12 AI writing cleanup rules",
       "Edit and save your guide",
       "Export as PDF",
     ],
@@ -148,6 +150,7 @@ export const PRICING_TIERS: PricingTier[] = [
       "Key terminology",
       "Generate up to 2 full guides",
       "AI assist to refine guidelines",
+      "Add custom sections to your guide",
       "Export as PDF/Markdown/Word",
       "Subtle branding on exports",
     ],
@@ -269,7 +272,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Can I edit my tone of voice guide?",
-    a: "Yes. On Pro or Agency you can edit every section in the app, use AI assist to rewrite parts, and export as PDF, Word, or Markdown. Edits auto-save.",
+    a: "Yes. On Pro or Agency you can edit every section, add your own custom sections (e.g. Social Media Voice, Email Guidelines), use AI assist to rewrite parts, and export as PDF, Word, or Markdown. Edits auto-save.",
   },
   {
     q: "What export formats do I get?",
@@ -281,7 +284,11 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What's included in the guide?",
-    a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, and preferred terms. Pro and Agency also get full editing and AI assist.",
+    a: "About your brand, audience, content guidelines, brand voice traits (with do's/don'ts), 25 writing rules, before/after examples, preferred terms, and 12 AI cleanup rules. Pro and Agency also get full editing, custom sections, and AI assist.",
+  },
+  {
+    q: "What are the AI writing cleanup rules?",
+    a: "Every guide includes 12 rules for catching common AI writing patterns - em dashes, hedging language, robotic rhythm, gift-wrapped endings, and more. Use them to clean up any AI-generated draft so it sounds human. Included on all plans, free and paid.",
   },
   {
     q: "How do I cancel or get a refund?",

@@ -18,6 +18,7 @@ interface GuideLayoutProps {
   brandName: string
   children: ReactNode
   onUpgrade: () => void
+  onAddSection?: (title: string) => void
   headerContent?: ReactNode
   /** View mode for Preview/Edit toggle */
   viewMode?: "preview" | "edit"
@@ -37,6 +38,7 @@ export function GuideLayout({
   brandName,
   children,
   onUpgrade,
+  onAddSection,
   headerContent,
   viewMode,
   onModeSwitch,
@@ -56,6 +58,7 @@ export function GuideLayout({
         subscriptionTier={subscriptionTier}
         brandName={brandName}
         onUpgrade={onUpgrade}
+        onAddSection={onAddSection}
       />
       <SidebarInset className="bg-gray-50/50">
         <header className="layout-header flex h-16 shrink-0 items-center gap-2 border-b bg-white/50 px-4 backdrop-blur-xl transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 sticky top-0 z-10">

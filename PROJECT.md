@@ -16,6 +16,8 @@ AI-powered SaaS that generates professional tone of voice guides in under 5 minu
 - 25 writing rules (tone, grammar, formatting)
 - 10 brand terms and phrases for consistent vocabulary
 - 5 before/after examples showing voice applied to real content
+- 12 AI writing cleanup rules (universal, all tiers)
+- Custom sections (Pro/Agency: add up to 5 additional sections)
 - Export formats: PDF (Puppeteer + html2pdf fallback), Word-compatible HTML, Markdown
 
 ---
@@ -26,8 +28,8 @@ AI-powered SaaS that generates professional tone of voice guides in under 5 minu
 |------|--------|--------|
 | Free Preview | 1 | Preview sections only (locked sections behind paywall) |
 | Starter | 10/month | Full access, all export formats |
-| Pro | 2 | Full access, all export formats |
-| Agency (formerly Team) | Unlimited | Full access, all features + roadmap |
+| Pro | 2 | Full access, all export formats, custom sections (up to 5) |
+| Agency (formerly Team) | Unlimited | Full access, all features, custom sections (up to 5), roadmap |
 
 Guide limits enforced via `/api/user-guide-limit` and Supabase row-level security.
 
@@ -100,6 +102,23 @@ Format: Two-column tables (Use | Instead of) for Preferred Terms and Spelling/Us
 ### Content Rules
 - No em dashes anywhere in generated content or UI copy - use hyphens or rewrite
 - Brand description: 80-120 words, 2-3 paragraphs, outcome-focused, no buzzwords
+
+### AI Writing Cleanup Rules (NEW)
+- Universal section in every guide (all tiers, including free)
+- 12 rules for removing AI writing patterns: em dashes, hedging, staccato rhythm, gift-wrapped endings, etc.
+- Adapted from deslop.md source file
+- Positioned after Word List, before Questions section
+- Editable like any other section (Pro/Agency only)
+- Highlighted in landing page, pricing cards, and FAQ as key selling point
+
+### Custom Sections (NEW)
+- Pro/Agency users can add up to 5 custom sections
+- Added via sidebar "+ Add section" button (inline text input)
+- Positioned before Questions/Contact section
+- First-time hint animation (pulse effect) for discovery
+- Locked for free users (triggers upgrade modal)
+- Max 60 characters per section title
+- Auto-saves like standard sections
 
 ---
 

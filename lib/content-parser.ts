@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   Users,
   BookOpen,
+  Eraser,
   Mail,
   type LucideIcon
 } from "lucide-react"
@@ -78,6 +79,13 @@ export const STYLE_GUIDE_SECTIONS: SectionConfig[] = [
     icon: BookOpen,
     minTier: 'pro',
     matchHeading: /^Word List/i
+  },
+  {
+    id: 'ai-writing-cleanup',
+    label: 'AI Writing Cleanup',
+    icon: Eraser,
+    minTier: 'starter',
+    matchHeading: /^AI Writing Cleanup/i
   },
   {
     id: 'contact',
@@ -277,6 +285,32 @@ export function mergeEditableIntoFullMarkdown(
     result = replaceSectionInMarkdown(result, unlockedSectionIds[i], newContent)
   }
   return result
+}
+
+/**
+ * Insert a custom section into the markdown, before the Questions/Contact section.
+ * Returns the updated markdown. Returns original if title is empty.
+ * Max 5 custom sections allowed (sections not matching any STYLE_GUIDE_SECTIONS config).
+ */
+export function insertCustomSection(markdown: string, title: string): string {
+  const trimmed = title.trim().slice(0, 60)
+  if (!trimmed || !markdown) return markdown
+
+  // Count existing custom sections (not matching any known config)
+  const sections = parseStyleGuideContent(markdown)
+  const customCount = sections.filter(s => !s.configId).length
+  if (customCount >= 5) return markdown
+
+  const newSection = `\n\n## ${trimmed}\n\nStart writing here...\n\n`
+
+  // Insert before Questions/Contact section
+  const contactMatch = /^## (Questions\?|Get in Touch|Contact)/im.exec(markdown)
+  if (contactMatch) {
+    const insertPos = contactMatch.index
+    return markdown.slice(0, insertPos) + newSection.trimStart() + markdown.slice(insertPos)
+  }
+
+  return markdown + newSection
 }
 
 /**

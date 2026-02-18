@@ -40,6 +40,12 @@
 
 ---
 
+## AI Writing Cleanup
+
+{{ai_writing_cleanup}}
+
+---
+
 ## Questions?
 
 {{contact_section}}

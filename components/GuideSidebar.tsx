@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Lock, Sparkles, ChevronsUpDown, User, CreditCard, LogOut } from "lucide-react"
-import { StyleGuideSection, Tier } from "@/lib/content-parser"
+import { Lock, Sparkles, ChevronsUpDown, User, CreditCard, LogOut, Plus } from "lucide-react"
+import { StyleGuideSection, Tier, STYLE_GUIDE_SECTIONS } from "@/lib/content-parser"
+import { useState, useRef, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/components/AuthProvider"
@@ -38,6 +39,7 @@ interface GuideSidebarProps {
   subscriptionTier: Tier
   brandName: string
   onUpgrade: () => void
+  onAddSection?: (title: string) => void
 }
 
 export function GuideSidebar({
@@ -47,6 +49,7 @@ export function GuideSidebar({
   subscriptionTier,
   brandName,
   onUpgrade,
+  onAddSection,
 }: GuideSidebarProps) {
   const { setOpenMobile } = useSidebar()
   const { user } = useAuth()
@@ -85,6 +88,42 @@ export function GuideSidebar({
     const contact = sections.find((s) => s.id === "contact")
     return contact ? [...rest, contact] : rest
   })()
+
+  // Custom section input state
+  const [isAddingSection, setIsAddingSection] = useState(false)
+  const [newSectionTitle, setNewSectionTitle] = useState("")
+  const addSectionInputRef = useRef<HTMLInputElement>(null)
+  const canAddSection = subscriptionTier !== 'starter'
+  const customCount = sections.filter(s => !STYLE_GUIDE_SECTIONS.some(c => c.matchHeading.test(s.title))).length
+  const atLimit = customCount >= 5
+
+  // Show hint animation for paid users who haven't used this yet
+  const [showHint, setShowHint] = useState(false)
+  useEffect(() => {
+    if (canAddSection && typeof window !== 'undefined') {
+      const seen = localStorage.getItem('customSectionHintSeen')
+      if (!seen) setShowHint(true)
+    }
+  }, [canAddSection])
+
+  useEffect(() => {
+    if (isAddingSection && addSectionInputRef.current) {
+      addSectionInputRef.current.focus()
+    }
+  }, [isAddingSection])
+
+  const handleAddSectionConfirm = () => {
+    const trimmed = newSectionTitle.trim()
+    if (trimmed && onAddSection) {
+      onAddSection(trimmed)
+      if (showHint) {
+        localStorage.setItem('customSectionHintSeen', 'true')
+        setShowHint(false)
+      }
+    }
+    setNewSectionTitle("")
+    setIsAddingSection(false)
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-gray-100 bg-white/50 backdrop-blur-xl supports-[backdrop-filter]:bg-white/50">
@@ -150,6 +189,57 @@ export function GuideSidebar({
                   </SidebarMenuItem>
                 )
               })}
+              {/* Add Section button */}
+              <SidebarMenuItem>
+                {isAddingSection ? (
+                  <div className="px-2 py-1">
+                    <input
+                      ref={addSectionInputRef}
+                      type="text"
+                      value={newSectionTitle}
+                      onChange={(e) => setNewSectionTitle(e.target.value.slice(0, 60))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddSectionConfirm()
+                        if (e.key === 'Escape') {
+                          setNewSectionTitle("")
+                          setIsAddingSection(false)
+                        }
+                      }}
+                      onBlur={handleAddSectionConfirm}
+                      placeholder="Section name..."
+                      className="w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                ) : (
+                  <SidebarMenuButton
+                    onClick={() => {
+                      if (!canAddSection) {
+                        onUpgrade()
+                        return
+                      }
+                      if (atLimit) return
+                      setIsAddingSection(true)
+                    }}
+                    tooltip={!canAddSection ? "Upgrade to add custom sections" : atLimit ? "Maximum 5 custom sections" : "Add a new section"}
+                    className={cn(
+                      "h-10 transition-all duration-300",
+                      canAddSection && !atLimit
+                        ? "text-gray-500 hover:text-gray-900 hover:bg-gray-50/80 border border-dashed border-gray-200 hover:border-gray-300"
+                        : "text-gray-400 opacity-60",
+                      showHint && "animate-pulse"
+                    )}
+                  >
+                    <div className="relative flex items-center justify-center">
+                      {canAddSection ? (
+                        <Plus className="size-4 text-gray-400" />
+                      ) : (
+                        <Lock className="size-3.5 text-gray-400" />
+                      )}
+                    </div>
+                    <span className="flex-1 truncate">Add section</span>
+                  </SidebarMenuButton>
+                )}
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -47,7 +47,7 @@ export default function HeroSection() {
             AI-Powered Tone of Voice Guidelines
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl mb-4">
-            Get ChatGPT to <em>finally</em> sound like you
+            Create your tone of voice guidelines in minutes
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mb-8 hero-lead">
             Stop asking AI to &quot;make it sound good.&quot; Create high-quality, professional{" "}

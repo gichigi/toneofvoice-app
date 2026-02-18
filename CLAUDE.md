@@ -11,7 +11,7 @@ For product details, architecture, and flows see **`PROJECT.md`**.
 - **CRITICAL: Low verbosity always** - Keep responses short and concise. Never write long explanations.
 - **Plain English**: Short, casual sentences. No jargon.
 - **Be direct**: Tell the truth. Admit when you don't know. Suggest solutions.
-- **Challenge when needed**: Don't just agree. Push back if something's wrong.
+- **Be critical**: Evaluate approaches honestly. Push back when an implementation is weak, a flow is confusing, or a shortcut will cause problems later. Don't say what the user wants to hear.
 
 ### Before You Start
 1. **Read `PROJECT.md`** - product spec, architecture, key files
@@ -20,9 +20,8 @@ For product details, architecture, and flows see **`PROJECT.md`**.
 4. **Refer to docs**: `DESIGN_SYSTEM.md`, `/docs/RELEASE-NOTES-*.md`, `/docs/CHANGELOG-*.md`
 
 ### Clarifying Before Starting
-- If a task is ambiguous, ask 1-2 targeted clarifying questions **before** writing any code
-- Identify the success criteria upfront. If not given, state your assumed "Done when:" and proceed
-- Frame your understanding of the task back to the user in one sentence before starting complex work
+- Only ask clarifying questions when there's **genuine high uncertainty** that would cause you to build the wrong thing - don't ask about details you can figure out
+- If not given success criteria, state your assumed "Done when:" in one sentence and proceed
 - Never ask clarifying questions mid-task - make reasonable decisions and keep going
 
 ### Writing Style
@@ -55,10 +54,10 @@ Clarity and usability over aesthetics.
 | Tool | How to use | Notes |
 |------|-----------|-------|
 | `pnpm` | `pnpm <cmd>` | Always use instead of npm |
-| `supabase` | `npx supabase <cmd>` | Supabase CLI (not globally installed) |
-| `vercel` | Not available | Use Vercel dashboard or env config |
+| `supabase` | `npx supabase <cmd>` | Not globally installed |
+| `vercel` | `vercel <cmd>` | Installed globally |
+| `gh` | `gh <cmd>` | Installed globally |
 | `stripe` | Not available | Use API directly or Stripe dashboard |
-| `gh` | Not available | Use GitHub web UI |
 
 For Supabase schema/data operations: `npx supabase db ...` or query via the Supabase MCP server if configured.
 
@@ -72,6 +71,8 @@ For Supabase schema/data operations: `npx supabase db ...` or query via the Supa
 - Update tests when changing logic
 - Never commit API keys
 - Sanitize user inputs, validate server-side
+- **Always leave comments** when writing or refactoring code - explain the why, not the what
+- Use documented APIs and official SDKs - don't roll your own when a library exists
 
 ---
 
@@ -82,6 +83,40 @@ For Supabase schema/data operations: `npx supabase db ...` or query via the Supa
 - Supabase is source of truth (localStorage only for creation flow)
 - Use tokens from `lib/style-guide-styles.ts` for typography
 - Update both code and `DESIGN_SYSTEM.md` when changing styles
+
+---
+
+## Best Practices
+
+Apply these standards by default - don't wait to be asked:
+
+**UX & Product**
+- User flows should be obvious - if a user has to think, simplify
+- Information architecture: group related things, separate unrelated things, hierarchy first
+- Error states, empty states, and loading states are part of the feature - not afterthoughts
+- Microcopy matters: labels, placeholders, CTAs, and tooltips should be specific and action-oriented
+- Confirm destructive actions; use optimistic UI for non-destructive ones
+
+**UI & Responsive Design**
+- Mobile-first. Test every layout at 375px, 768px, and 1280px
+- Touch targets minimum 44px. Don't hide important actions on mobile
+- Don't use fixed pixel widths for containers - use `max-w-*` with full width defaults
+
+**Backend & Data**
+- Validate at the boundary (API route), not just the client
+- Keep DB queries out of components - go through `/lib` or API routes
+- Never expose internal error details to the client
+- Use Supabase RLS as the last line of defence, not the only one
+
+**Auth & Security**
+- Verify `userId` from Supabase session before any DB write
+- Don't trust client-sent `userId` - always derive from session server-side
+- Middleware handles route protection; individual routes handle data protection
+
+**APIs & Integrations**
+- Use official SDKs (Stripe.js, Supabase client) - don't hand-roll API calls
+- Handle webhook events idempotently - assume they can arrive more than once
+- Log enough context to debug production issues without logging PII
 
 ---
 
@@ -115,15 +150,21 @@ For Supabase schema/data operations: `npx supabase db ...` or query via the Supa
 
 ## Commit Conventions
 
+Commits are a permanent record - write them for someone reading the history in 6 months.
+
 ```
 type(scope): subject
 
-body (optional)
+- What changed and why (not just what)
+- Note any trade-offs or decisions made
+- Reference issues or PRs if relevant
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 **Types:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`
+
+Always push to GitHub after completing a feature or fix so work is never lost locally.
 
 ---
 

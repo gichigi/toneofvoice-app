@@ -436,56 +436,8 @@ export default function BrandDetailsPage() {
         emailsSent: []
       };
       localStorage.setItem("emailCapture", JSON.stringify(emailCaptureData));
-      
-      // Also save to server-side for abandoned cart tracking
-      try {
-        if (process.env.NODE_ENV !== "production") {
-          console.log('[Email Capture Client] Starting server-side storage...', {
-            sessionToken: sessionToken?.substring(0, 8) + '***',
-            email: trimmedEmail.substring(0, 3) + '***',
-            timestamp: new Date().toISOString()
-          });
-        }
-        
-        const response = await fetch('/api/capture-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionToken,
-            email: trimmedEmail
-          })
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (process.env.NODE_ENV !== "production") {
-            console.log('[Email Capture Client] Successfully stored server-side:', {
-              success: result.success,
-              captureId: result.captureId,
-              duration: result.duration
-            });
-          }
-        } else {
-          const errorText = await response.text();
-          if (process.env.NODE_ENV !== "production") {
-            console.error('[Email Capture Client] Failed to store server-side:', {
-              status: response.status,
-              statusText: response.statusText,
-              error: errorText
-            });
-          }
-        }
-      } catch (error) {
-        if (process.env.NODE_ENV !== "production") {
-          console.error('[Email Capture Client] Network error storing server-side:', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined
-          });
-        }
-      }
     } else if (!trimmedEmail) {
       localStorage.removeItem("emailCapture");
-      // Note: We don't delete from server-side as we want to track all attempts
     }
   };
 

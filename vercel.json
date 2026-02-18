@@ -1,10 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/process-abandoned-emails",
-      "schedule": "0 * * * *"
-    }
-  ],
   "redirects": [
     {
       "source": "/:path*",

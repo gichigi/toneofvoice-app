@@ -32,5 +32,4 @@ export interface EmailCapture {
   email: string
   captured_at?: string
   payment_completed: boolean
-  abandoned_email_sent?: boolean
 } 

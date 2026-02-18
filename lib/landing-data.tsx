@@ -34,11 +34,10 @@ export interface WhatsIncludedFeature {
 export const WHATS_INCLUDED_FEATURES: WhatsIncludedFeature[] = [
   { number: 25, suffix: "", title: "Writing rules", description: "Clear, actionable rules (tone, grammar, format) in your guide - ready for AI and your team.", iconBg: "bg-blue-100", delay: "0ms" },
   { number: 3, suffix: "", title: "Brand voice traits", description: "Complete definitions, do's, and don'ts customised for your brand.", iconBg: "bg-purple-100", delay: "100ms" },
-  { number: 10, suffix: "", title: "Brand terms & phrases", description: "Preferred words and phrases so every piece of content stays on-brand.", iconBg: "bg-green-100", delay: "200ms" },
+  { number: 10, suffix: "", title: "Brand keywords", description: "Preferred words and phrases so every piece of content stays on-brand.", iconBg: "bg-green-100", delay: "200ms" },
   { number: 5, suffix: "", title: "Before/After examples", description: "Your brand voice applied to real content types (e.g. headlines, emails).", iconBg: "bg-orange-100", delay: "300ms" },
   { number: 12, suffix: "", title: "AI cleanup rules", description: "Rules to catch robotic writing patterns so your content sounds human, not generated.", iconBg: "bg-red-100", delay: "400ms" },
-  { number: 3, suffix: "", title: "Export formats", description: "PDF to share, Word to edit, Markdown for AI tools.", iconBg: "bg-indigo-100", delay: "500ms" },
-  { number: 5, suffix: "", title: "Minutes to complete", description: "No prompting, no templates. Enter a URL or short description to start.", iconBg: "bg-pink-100", delay: "600ms" },
+  { number: 5, suffix: "", title: "Minutes to complete", description: "No prompting, no templates. Enter a URL or short description to start.", iconBg: "bg-pink-100", delay: "500ms" },
 ]
 
 // --- Comparison table ---

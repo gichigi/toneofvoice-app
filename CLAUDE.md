@@ -61,6 +61,11 @@ Clarity and usability over aesthetics.
 
 For Supabase schema/data operations: `npx supabase db ...` or query via the Supabase MCP server if configured.
 
+### GitHub Token Auth Notes
+- **Git operations**: use token in URL — `https://user:TOKEN@github.com/org/repo.git` (always works)
+- **REST API**: use `Authorization: token <TOKEN>` — NOT `Bearer`. Using `Bearer` returns 401 even with a valid token.
+- If API returns 401, check the header format first before assuming the token is invalid.
+
 ---
 
 ## Code Quality

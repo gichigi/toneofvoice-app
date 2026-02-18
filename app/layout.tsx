@@ -94,7 +94,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#ffffff" />
         <link rel="canonical" href="https://toneofvoice.app" />
-        <link rel="alternate" type="application/rss+xml" href="https://toneofvoice.app/blog/feed.xml" />
 
         {/* WebPage Schema */}
         <script

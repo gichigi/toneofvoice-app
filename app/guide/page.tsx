@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, Suspense } from "react"
 const guideLoadGuard = { loading: new Set<string>(), loaded: new Set<string>() }
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Loader2, Eye, PenLine, Check, ChevronDown, RefreshCw, FileText, Download, Sparkles, Megaphone } from "lucide-react"
+import { Loader2, Eye, PenLine, Check, RefreshCw, FileText, Download, Sparkles, X } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/AuthProvider"
 import { track } from "@vercel/analytics"
@@ -101,6 +101,15 @@ function GuideContent() {
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(guideId)
   const [showPostExportPrompt, setShowPostExportPrompt] = useState(false)
+  // First-visit tip: points users to Edit guide + Download (dismissed via localStorage)
+  const [guideCTADismissed, setGuideCTADismissed] = useState(false)
+
+  // Read localStorage to see if the guide action tip has been dismissed before
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("guide_hint_dismissed")) setGuideCTADismissed(true)
+    } catch {}
+  }, [])
 
   // Sync currentGuideId when URL guideId param changes (e.g., after AutoSaveGuide redirect)
   useEffect(() => {
@@ -1246,16 +1255,16 @@ function GuideContent() {
     </Button>
   ) : (
     <div className="flex items-center gap-3">
-      
       <Button
         onClick={() => setShowDownloadOptions(true)}
         disabled={isDownloading}
+        variant="outline"
         className="gap-2"
       >
         {isDownloading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <ChevronDown className="h-4 w-4" />
+          <Download className="h-4 w-4" />
         )}
         Download
       </Button>
@@ -1328,6 +1337,29 @@ function GuideContent() {
             onDismiss={() => setShowPostExportPrompt(false)}
             className="mb-3 shrink-0"
           />
+        )}
+        {/* First-visit tip: surfaces Edit guide + Download for new users who miss the header buttons */}
+        {!guideCTADismissed && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 shrink-0">
+            <p className="text-sm text-gray-700">
+              {isPreviewFlow ? (
+                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF.</>
+              ) : (
+                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF, Word doc, or Markdown.</>
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                try { localStorage.setItem("guide_hint_dismissed", "1") } catch {}
+                setGuideCTADismissed(true)
+              }}
+              className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="Dismiss tip"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
         <GuideView
           sections={sections}

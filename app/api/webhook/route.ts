@@ -23,11 +23,6 @@ function getStripe() {
 // Store sent emails to prevent spam (in production, use a database)
 const sentEmails = new Set<string>();
 
-// Generate discount code for abandoned cart recovery
-function generateDiscountCode(): string {
-  return 'COMEBACK20';
-}
-
 // Log webhook event details for debugging
 function logWebhookDetails(event: any, error?: any) {
   const timestamp = new Date().toISOString()
@@ -162,82 +157,8 @@ async function handlePaymentSuccess(session: Stripe.Checkout.Session) {
       console.error('❌ Failed to send personal follow-up email:', emailResult.error);
     }
     
-    // Mark email capture as payment completed to prevent abandoned cart emails
-    const emailCaptureToken = session.metadata?.email_capture_token;
-    if (emailCaptureToken) {
-      console.log('📧 Marking email capture as payment completed:', emailCaptureToken.substring(0, 8) + '***');
-      try {
-        const captureResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/api/capture-email`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionToken: emailCaptureToken })
-        });
-        
-        if (captureResponse.ok) {
-          console.log('✅ Email capture marked as payment completed');
-        } else {
-          console.error('❌ Failed to mark email capture as completed:', await captureResponse.text());
-        }
-      } catch (error) {
-        console.error('❌ Error updating email capture:', error);
-      }
-    }
-    
   } catch (error) {
     console.error('Error handling payment success:', error);
-  }
-}
-
-// Handle expired session (abandoned cart)
-async function handleSessionExpired(session: Stripe.Checkout.Session) {
-  try {
-    console.log('Processing expired session:', session.id);
-    
-    // Extract customer details and recovery info
-    const customerEmail = session.customer_details?.email;
-    const customerName = session.customer_details?.name;
-    const recoveryUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://toneofvoice.app'}/brand-details?fromExtraction=true`;
-    const expiresAt = session.after_expiration?.recovery?.expires_at;
-    
-    // Check if customer consented to promotional emails
-    const hasConsent = session.consent?.promotions === 'opt_in';
-    
-    if (!customerEmail || !recoveryUrl || !hasConsent) {
-      console.log('Missing email, recovery URL, or consent - skipping abandoned cart email');
-      console.log('Email:', !!customerEmail, 'Recovery URL:', !!recoveryUrl, 'Consent:', hasConsent);
-      return;
-    }
-    
-    // Check if we already sent an abandoned cart email for this customer
-    const emailKey = `abandoned_${customerEmail}`;
-    if (sentEmails.has(emailKey)) {
-      console.log('Abandoned cart email already sent to:', customerEmail);
-      return;
-    }
-    
-    // Generate discount code
-    const discountCode = generateDiscountCode();
-    
-    // Send abandoned cart recovery email
-    console.log('🔄 Sending abandoned cart email...')
-    const emailResult = await emailService.sendAbandonedCartEmail({
-      customerEmail,
-      customerName: customerName || undefined,
-      recoveryUrl,
-      discountCode,
-      sessionId: session.id,
-    });
-    
-    if (emailResult.success) {
-      sentEmails.add(emailKey);
-      console.log('✅ Abandoned cart email sent successfully to:', customerEmail);
-      console.log('🎯 Discount code:', discountCode);
-    } else {
-      console.error('❌ Failed to send abandoned cart email:', emailResult.error);
-    }
-    
-  } catch (error) {
-    console.error('Error handling session expiration:', error);
   }
 }
 
@@ -351,10 +272,6 @@ export async function POST(request: Request) {
 
       case "checkout.session.async_payment_succeeded":
         await handlePaymentSuccess(event.data.object as Stripe.Checkout.Session)
-        break
-
-      case "checkout.session.expired":
-        await handleSessionExpired(event.data.object as Stripe.Checkout.Session)
         break
 
       case "customer.subscription.updated":

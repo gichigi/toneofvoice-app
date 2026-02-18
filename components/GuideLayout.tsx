@@ -86,14 +86,14 @@ export function GuideLayout({
               <Button
                 type="button"
                 onClick={() => onModeSwitch(viewMode === "preview" ? "edit" : "preview")}
-                variant="outline"
-                size="sm"
+                // Filled/prominent when in preview so "Edit guide" is easy to spot; outline when already editing
+                variant={viewMode === "preview" ? "default" : "outline"}
                 className="flex items-center gap-2"
               >
                 {viewMode === "preview" ? (
                   <>
                     <PenLine className="size-4 shrink-0" aria-hidden />
-                    <span className="whitespace-nowrap">Edit</span>
+                    <span className="whitespace-nowrap">Edit guide</span>
                   </>
                 ) : (
                   <>

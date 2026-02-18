@@ -1,17 +1,29 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let _client: SupabaseClient | null = null
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
-  )
+// Lazily initialise so the env check only fires inside a request handler,
+// not at module evaluation time (which happens during Next.js build).
+function getClient(): SupabaseClient {
+  if (!_client) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) {
+      throw new Error(
+        'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY'
+      )
+    }
+    _client = createClient(url, key)
+  }
+  return _client
 }
 
-// Create and export Supabase client
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Proxy defers client creation until first property access, keeping build safe.
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop: string | symbol) {
+    return (getClient() as any)[prop as string]
+  },
+})
 
 // Email capture types
 export interface EmailCapture {
@@ -20,5 +32,4 @@ export interface EmailCapture {
   email: string
   captured_at?: string
   payment_completed: boolean
-  abandoned_email_sent?: boolean
 } 

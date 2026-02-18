@@ -59,7 +59,7 @@
 
     --radius: 0.5rem;
 
-    --blog-text: 0 0% 14.1%; /* #242424 - Medium-style blog text color */ --highlight: oklch(0.852 0.199 91.936);
+    --highlight: oklch(0.852 0.199 91.936);
   }
 
   .dark {

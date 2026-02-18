@@ -56,7 +56,7 @@ Clarity and usability over aesthetics.
 | `pnpm` | `pnpm <cmd>` | Always use instead of npm |
 | `supabase` | `npx supabase <cmd>` | Not globally installed |
 | `vercel` | `vercel <cmd>` | Installed globally |
-| `gh` | `gh <cmd>` | Installed globally |
+| `gh` | Not available | Not installed in Claude Code web sessions |
 | `stripe` | Not available | Use API directly or Stripe dashboard |
 
 For Supabase schema/data operations: `npx supabase db ...` or query via the Supabase MCP server if configured.
@@ -145,6 +145,28 @@ Apply these standards by default - don't wait to be asked:
 3. Escape HTML, sanitize markdown outputs
 4. Rate limit API routes (especially `/api/extract-website`)
 5. Always verify `userId` from Supabase before DB operations
+
+---
+
+## Git Workflow (Claude Code Web)
+
+Claude Code web sessions can only push to `claude/` prefixed branches - direct pushes to `main` return 403.
+
+**To merge a feature branch to main:**
+1. Merge the source branch into the session's `claude/` working branch locally
+2. Push the `claude/` branch to remote (`git push -u origin claude/<branch-name>`)
+3. Open the PR on GitHub: `https://github.com/gichigi/toneofvoice-app/compare/main...<claude-branch>`
+4. Merge the PR via the GitHub UI
+
+**To merge `main` into a feature branch** (sync):
+```bash
+git fetch origin main
+git checkout <feature-branch>
+git merge origin/main
+git push -u origin claude/<working-branch>
+```
+
+**`gh` CLI is not available** in Claude Code web sessions - use `curl` against `api.github.com` or direct GitHub UI instead.
 
 ---
 

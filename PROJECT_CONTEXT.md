@@ -1,6 +1,6 @@
 # Tone of Voice App - Project Context
 
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-18
 **Project:** AI-powered tone of voice guide generator
 **Stack:** Next.js 15, React 19, TypeScript, Tailwind, Supabase, Stripe, OpenAI, Firecrawl
 
@@ -19,6 +19,21 @@ Tone of Voice App is a SaaS platform that generates professional tone of voice g
 ---
 
 ## 📊 Recent Major Changes (Last 2 Weeks)
+
+### Rebrand Polish + AI Fixes (Feb 16-18, 2026)
+- **Terminology**: All user-facing copy switched to "Tone of Voice" (removed "style guide" references throughout)
+- **Wordmark**: `public/wordmark.svg` + `public/wordmark.png` added; `Logo.tsx` now renders wordmark in nav; nav links centered with absolute positioning on desktop
+- **SEO**: `public/robots.txt` and `public/sitemap.xml` added; enhanced metadata (keywords, secure URLs) in `app/layout.tsx`
+- **Style Rules prompt** (`lib/openai.ts`): Encourages varied sentence structures - "Use contractions to sound warm" vs "Multiple exclamation marks feel jarring" rather than formulaic patterns
+- **AI Cmd+J** (`app/api/ai/command/route.ts`, `components/ui/ai-menu.tsx`): Fixed custom prompt submission (now includes mode, toolName, template); minimality constraint added to prevent over-editing; model upgraded to `gpt-5-mini`
+- **Auth/checkout**: Generic error messages for sign-up and checkout; "Get Pro/Agency" copy; lock icons added to `GuideSidebar`; Vercel env var logging added
+- **Cover**: Heading container widened (`max-w-3xl` → `max-w-5xl`) to prevent unnecessary wrapping
+- **Audience Overview**: Label simplified from "Audience (Overview)" to "Overview"
+- **`normalizeMarkdownContent()`** added in `lib/template-processor.ts` for audience section whitespace handling
+- **New test scripts**: `scripts/test-style-rules.mjs`, `scripts/test-style-rules-detailed.mjs` - run against guide content to validate rule quality and variety
+- **`scripts/test-audience-prompt.mjs`**: Expanded with `--url` and `--desc` flags, better output formatting
+- **Interstitial**: Removed redundant paragraph + blue banner; consolidated loading state messaging; banner copy generalized to "Generate full guidelines"
+- **"How to Use" section**: Bold headings converted to `###` markdown headings with proper spacing
 
 ### Audience Section & Error Handling (Feb 16, 2026)
 - **Audience prompt overhaul** (`lib/openai.ts`): New prompt drives content-team-friendly output

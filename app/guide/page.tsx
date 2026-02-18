@@ -1340,7 +1340,11 @@ function GuideContent() {
         {!guideCTADismissed && (
           <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 shrink-0">
             <p className="text-sm text-gray-700">
-              <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF.</>
+              {isPreviewFlow ? (
+                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF.</>
+              ) : (
+                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF, Word doc, or Markdown.</>
+              )}
             </p>
             <button
               type="button"

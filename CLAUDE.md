@@ -19,6 +19,12 @@ For product details, architecture, and flows see **`PROJECT.md`**.
 3. **Check recent commits** - what changed since last update
 4. **Refer to docs**: `DESIGN_SYSTEM.md`, `/docs/RELEASE-NOTES-*.md`, `/docs/CHANGELOG-*.md`
 
+### Clarifying Before Starting
+- If a task is ambiguous, ask 1-2 targeted clarifying questions **before** writing any code
+- Identify the success criteria upfront. If not given, state your assumed "Done when:" and proceed
+- Frame your understanding of the task back to the user in one sentence before starting complex work
+- Never ask clarifying questions mid-task - make reasonable decisions and keep going
+
 ### Writing Style
 - **UI/User-facing copy**: Never use em dash (—). Use hyphen (-) or rewrite.
 - **Code comments**: Clear and short
@@ -31,6 +37,30 @@ For product details, architecture, and flows see **`PROJECT.md`**.
 
 ### UI Priorities
 Clarity and usability over aesthetics.
+
+---
+
+## Agentic Working Style
+
+- **Don't stop mid-task** to ask permission or confirm small decisions - make reasonable choices and keep going
+- **Frame the full feature**, not the first step. When given a feature request, plan, scaffold, and connect all files needed to complete it end-to-end
+- **Use success criteria as your finish line**: if the task includes "Done when:", run until every criterion is met before responding
+- **If genuinely blocked** (missing secret, broken auth, external dependency) - state exactly what you'd do next, why you can't proceed, and what the user needs to do. Don't just hand the task back
+- **Complete, then report** - deliver the finished thing with a short summary, not a running commentary
+
+---
+
+## Available CLIs & Tools
+
+| Tool | How to use | Notes |
+|------|-----------|-------|
+| `pnpm` | `pnpm <cmd>` | Always use instead of npm |
+| `supabase` | `npx supabase <cmd>` | Supabase CLI (not globally installed) |
+| `vercel` | Not available | Use Vercel dashboard or env config |
+| `stripe` | Not available | Use API directly or Stripe dashboard |
+| `gh` | Not available | Use GitHub web UI |
+
+For Supabase schema/data operations: `npx supabase db ...` or query via the Supabase MCP server if configured.
 
 ---
 

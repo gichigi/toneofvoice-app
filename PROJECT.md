@@ -75,7 +75,8 @@ Guide limits enforced via `/api/user-guide-limit` and Supabase row-level securit
 3. Locked sections excluded from PDF for free users
 
 ### AI/LLM
-- Model: gpt-5.2 with `reasoning_effort: "none"` for extraction (speed/cost)
+- Extraction/generation: `gpt-5.2` with `reasoning_effort: "none"` (speed/cost)
+- AI Cmd+J (Plate.js): `gpt-5-mini` with minimality constraint (don't over-edit)
 - Generation prompts: `lib/openai.ts`
 - Extraction prompt: `lib/prompts/extraction-prompt.ts`
 - Template: `templates/style_guide_template.md`
@@ -105,16 +106,37 @@ Format: Two-column tables (Use | Instead of) for Preferred Terms and Spelling/Us
 ## Key Directories & Files
 
 ### `/app`
-- `/api/extract-website/route.ts` - website scraping + AI extraction
-- `/api/export-pdf/route.ts` - Puppeteer PDF generation
-- `/api/user-guide-limit/route.ts` - guide limit checking
-- `/api/webhook/route.ts` - Stripe webhooks
-- `/api/ai/command/route.ts` - Plate.js AI (Cmd+J, streaming, auth-gated)
-- `/brand-details` - input form
-- `/guide` - unified guide view/edit (preview + full-access)
+**Key pages:**
+- `/brand-details` - input form (URL or description)
+- `/guide` - unified view/edit (preview + full-access)
 - `/dashboard` - guide list, billing
 - `/payment` - Stripe checkout
 - `/auth`, `/sign-in`, `/sign-up` - Supabase auth
+
+**API routes:**
+- `extract-website` - Firecrawl/Cheerio scraping + OpenAI extraction
+- `preview` - generate preview sections (About, Audience, Voice, Guidelines)
+- `generate-styleguide` - full guide generation
+- `expand-style-guide` - generate locked sections only (merge mode)
+- `save-style-guide` - persist guide to DB
+- `load-style-guide` - load guide by ID
+- `delete-style-guide` - delete guide
+- `export-pdf` - Puppeteer PDF (primary)
+- `export-pdf-fallback` - html2pdf fallback
+- `user-guide-limit` - guide limit check
+- `user-subscription-tier` - get tier
+- `verify-subscription` - post-payment verification
+- `create-subscription-session` - Stripe checkout
+- `create-checkout-session` - Stripe one-off checkout
+- `create-portal-session` - Stripe billing portal
+- `webhook` - Stripe webhooks
+- `ai/command` - Plate.js AI (Cmd+J, streaming, `gpt-5-mini`, auth-gated)
+- `ai-assist` - inline AI assist bar
+- `rewrite-section` - rewrite a guide section
+- `load-template` - load base template
+- `blog/*` - blog generation and retrieval
+- `capture-email` - email capture
+- `admin/*` - admin login/logout
 
 ### `/components`
 - `StyleGuideView.tsx` - main guide component (edit/preview modes)
@@ -141,10 +163,15 @@ Format: Two-column tables (Use | Instead of) for Preferred Terms and Spelling/Us
 - `STRIPE-RESTRICTED-KEY-SETUP.md` - Stripe restricted key setup
 - `LANGSMITH-SETUP.md` - AI observability setup
 
+### `/public`
+- `wordmark.svg` / `wordmark.png` - brand wordmark for navigation
+- `robots.txt`, `sitemap.xml` - SEO
+
 ### Other
 - `DESIGN_SYSTEM.md` - fonts, colors, spacing, components
 - `templates/style_guide_template.md` - base template for guide generation
 - `PROJECT_CONTEXT.md` - recent changes log (update after major changes)
+- `docs/STYLE_GUIDE_GENERATION.md` - generation flow detail (preview, full, merge, DB save)
 
 ---
 
@@ -204,11 +231,19 @@ Format: Two-column tables (Use | Instead of) for Preferred Terms and Spelling/Us
 ```bash
 pnpm test                                              # Run Vitest tests
 pnpm test:watch                                        # Watch mode
-node scripts/test-audience-prompt.mjs                 # Test audience prompt (Tesco, Stripe, description)
+
+# Test scripts (require OPENAI_API_KEY + running dev server)
+node scripts/test-audience-prompt.mjs                 # Test audience prompt (defaults: Tesco, Stripe, description)
 node scripts/test-audience-prompt.mjs --url <url>     # Custom URL
+node scripts/test-audience-prompt.mjs --desc "<text>" # Custom description
+node scripts/test-style-rules.mjs                     # Validate style rule quality
+node scripts/test-style-rules-detailed.mjs            # Detailed style rule output and analysis
+
+# Direct API testing
 curl -X POST http://localhost:3002/api/extract-website \
   -H "Content-Type: application/json" \
   -d '{"url":"https://stripe.com"}'                   # Test extraction API
+
 npx ccusage@latest                                    # Check Claude Code token usage
 ```
 

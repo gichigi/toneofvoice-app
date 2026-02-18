@@ -13,6 +13,7 @@ import {
   StyleGuideSection,
   Tier,
   STYLE_GUIDE_SECTIONS,
+  insertCustomSection,
 } from "@/lib/content-parser"
 
 export interface UseGuideOptions {
@@ -57,6 +58,9 @@ export interface UseGuideReturn {
   // Utilities
   isUnlocked: (minTier?: Tier) => boolean
   isSectionLocked: boolean
+
+  // Custom sections
+  handleAddSection: (title: string) => void
 }
 
 export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
@@ -188,6 +192,24 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
   const activeSection = sections.find(s => s.id === activeSectionId)
   const isSectionLocked = activeSection ? !isUnlocked(activeSection.minTier) : false
 
+  // Add a custom section to the guide
+  const handleAddSection = useCallback((title: string) => {
+    if (!content) return
+    const newMarkdown = insertCustomSection(content, title)
+    if (newMarkdown === content) return // no change (empty title or at limit)
+    setContent(newMarkdown)
+    setEditorKey(k => k + 1)
+    // After render, scroll to the new section
+    requestAnimationFrame(() => {
+      const newSections = parseStyleGuideContent(newMarkdown)
+      const newSection = newSections.find(s => s.title === title.trim().slice(0, 60))
+      if (newSection) {
+        setActiveSectionId(newSection.id)
+        document.getElementById(newSection.id)?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+    })
+  }, [content])
+
   return {
     // Content state
     content,
@@ -221,5 +243,8 @@ export function useGuide(options: UseGuideOptions = {}): UseGuideReturn {
     // Utilities
     isUnlocked,
     isSectionLocked,
+
+    // Custom sections
+    handleAddSection,
   }
 }

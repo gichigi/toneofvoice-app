@@ -76,6 +76,7 @@ function GuideContent() {
     handleModeSwitch,
     isUnlocked,
     isSectionLocked,
+    handleAddSection,
   } = useGuide({
     guideId,
     defaultViewMode: "preview",
@@ -1304,6 +1305,7 @@ function GuideContent() {
         onModeSwitch={handleModeSwitch}
         showEditTools={true}
         headerContent={headerContent}
+        onAddSection={handleAddSection}
       >
         {showExpandBanner && (
           <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">

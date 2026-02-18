@@ -1337,10 +1337,14 @@ function GuideContent() {
           />
         )}
         {/* First-visit tip: surfaces Edit guide + Download for new users who miss the header buttons */}
-        {!isPreviewFlow && !guideCTADismissed && (
+        {!guideCTADismissed && (
           <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 shrink-0">
             <p className="text-sm text-gray-700">
-              <span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> in the top right to make changes, then <strong>Download</strong> when ready.
+              {isPreviewFlow ? (
+                <><span className="font-medium">Tip:</span> Use <strong>Download</strong> in the top right to save a PDF of your preview.</>
+              ) : (
+                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> in the top right to make changes, then <strong>Download</strong> when ready.</>
+              )}
             </p>
             <button
               type="button"

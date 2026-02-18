@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react"
 
-export function useMobile(breakpoint = 640): boolean {
+// 768 matches Tailwind's md breakpoint, which is also when the desktop sidebar CSS shows (md:block).
+// Using 640 caused a 640-767px dead zone: no Sheet and no visible desktop sidebar.
+export function useMobile(breakpoint = 768): boolean {
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {

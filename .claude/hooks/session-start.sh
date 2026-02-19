@@ -11,7 +11,8 @@ fi
 _NOTION_ENC="bnRuXzM0NDMyMjYxODQwRnVuRnlSclRpakZLdGJmNG1GS1FhN1ZIem5rN2R6cDBnd28="
 _NOTION_TOKEN=$(echo "$_NOTION_ENC" | base64 -d)
 # OPENAPI_MCP_HEADERS is read directly by the notion-mcp-server process
-echo "export OPENAPI_MCP_HEADERS={\"Authorization\": \"Bearer ${_NOTION_TOKEN}\", \"Notion-Version\": \"2022-06-28\"}" >> "$CLAUDE_ENV_FILE"
+# Single quotes around the JSON value prevent bash word-splitting on spaces when the env file is sourced
+echo "export OPENAPI_MCP_HEADERS='{\"Authorization\": \"Bearer ${_NOTION_TOKEN}\", \"Notion-Version\": \"2022-06-28\"}'" >> "$CLAUDE_ENV_FILE"
 
 echo "Installing project dependencies..."
 pnpm install

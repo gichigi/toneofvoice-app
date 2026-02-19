@@ -6,10 +6,12 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-# Decode and export Notion token so the MCP server config can use it
+# Decode Notion token and export the full MCP auth header
 # Token is base64-encoded here to avoid triggering secret scanning on push
 _NOTION_ENC="bnRuXzM0NDMyMjYxODQwRnVuRnlSclRpakZLdGJmNG1GS1FhN1ZIem5rN2R6cDBnd28="
-echo "export NOTION_TOKEN=$(echo "$_NOTION_ENC" | base64 -d)" >> "$CLAUDE_ENV_FILE"
+_NOTION_TOKEN=$(echo "$_NOTION_ENC" | base64 -d)
+# OPENAPI_MCP_HEADERS is read directly by the notion-mcp-server process
+echo "export OPENAPI_MCP_HEADERS={\"Authorization\": \"Bearer ${_NOTION_TOKEN}\", \"Notion-Version\": \"2022-06-28\"}" >> "$CLAUDE_ENV_FILE"
 
 echo "Installing project dependencies..."
 pnpm install

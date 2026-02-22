@@ -5,8 +5,8 @@
 ## Before You Start
 
 1. Read the project spec / README
-2. Check `tasks/lessons.md` - mistakes to avoid repeating
-3. Check recent commits - what changed
+2. Check `tasks/lessons.md` for mistakes to avoid - create the file if it doesn't exist
+3. Skim the last 5-10 commits to understand recent direction and avoid undoing recent work
 
 ---
 
@@ -47,14 +47,14 @@
 
 ### Verification
 - Never mark a task complete without proving it works
-- Ask yourself: "Would a staff engineer approve this?"
+- Check: does it handle the error case? Does it work without the happy path? Is there a test or log proving it?
 - Run tests, check logs, demonstrate correctness
 - If you can't verify, say so explicitly - don't silently mark done
 
 ### Elegance
-- For non-trivial changes (2+ files or new patterns): pause and ask "is there a more elegant way?"
-- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious, single-file fixes - don't over-engineer
+- If a fix touches 3+ files, introduces a new abstraction, or required more than one rewrite attempt - pause and ask: is there a simpler approach that achieves the same result?
+- If yes: implement the simpler version. If no: proceed and note why in the commit.
+- Skip this check for single-file, obviously correct fixes - don't over-engineer
 
 ### Bug Fixing
 - When given a bug report with clear scope: just fix it. Don't ask for hand-holding
@@ -77,7 +77,7 @@ When uncertain whether to proceed or ask:
 | Requirements are ambiguous or contradictory | Ask ONE focused clarifying question, then proceed |
 | You've hit an unexpected blocker mid-task | Stop, describe what you found, propose options |
 | The task is clear but complex | Plan autonomously, proceed |
-| You're >30% into a task and realize the approach is wrong | Stop immediately, re-plan, surface to user |
+| Mid-task you realize the approach requires touching files outside original scope | Stop immediately, re-plan, surface to user |
 | A bug fix requires changing more than originally scoped | Flag the expanded scope before continuing |
 
 **Default rule:** Attempt the task. Surface blockers early. Don't ask for permission to do the obvious.
@@ -107,14 +107,14 @@ If not given success criteria, state your assumed "Done when:" in one sentence a
 
 - **Always use `pnpm`** not `npm`
 - Don't auto-run builds after fixes unless it's a big refactor
-- Run `pnpm test` before committing
+- If tests exist, run `pnpm test` before committing - fix failures before marking done, don't commit around them
 
 ---
 
 ## Code Quality
 
 - TypeScript strictly - explicit types over `any`
-- Handle errors gracefully with clear user messages
+- Handle errors explicitly: log server-side, show a human-readable message client-side. Never swallow errors silently or expose stack traces to users.
 - Update tests when changing logic
 - Never commit API keys or secrets
 - Sanitize user inputs, validate server-side
@@ -125,15 +125,16 @@ If not given success criteria, state your assumed "Done when:" in one sentence a
 ## Best Practices
 
 **UX & Product**
-- User flows should be obvious - if a user has to think, simplify
-- Error states, empty states, and loading states are part of the feature - not afterthoughts
-- Microcopy matters: labels, placeholders, CTAs, and tooltips should be specific and action-oriented
-- Confirm destructive actions; use optimistic UI for non-destructive ones
+- If a primary action requires more than 2 steps, flag it - don't implement a complex flow without surfacing it
+- Every feature needs error, empty, and loading states - implement them, don't leave TODOs
+- Labels, placeholders, CTAs, and tooltips should say what happens, not describe the element (e.g. "Save changes" not "Submit")
+- Destructive actions need confirmation. Non-destructive actions should feel instant - use optimistic UI
 
 **UI & Responsive Design**
-- Mobile-first. Test every layout at 375px, 768px, and 1280px
-- Touch targets minimum 44px
-- Don't use fixed pixel widths for containers - use `max-w-*` with full width defaults
+- Write styles mobile-first - start with the small layout, add `md:` and `lg:` variants up
+- Interactive elements must be at least 44px tall - use `min-h-[44px]` or `py-3` as a floor
+- Never use fixed `px` widths on containers - use `w-full max-w-*` so they shrink on small screens
+- Every layout must have a defined behaviour at 375px, 768px, and 1280px - if it breaks, fix it before shipping
 
 **Backend & Data**
 - Validate at the boundary (API route), not just the client
@@ -157,7 +158,7 @@ type(scope): subject
 - What changed and why (not just what)
 - Note any trade-offs or decisions made
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **Types:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `style`

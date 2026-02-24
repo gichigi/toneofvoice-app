@@ -1,29 +1,15 @@
 "use client";
 
-// Fires Meta Pixel conversion events on the dashboard after specific actions:
-// 1. Stripe redirect: ?subscription=success&plan=pro|agency → Purchase + Subscribe
-// 2. Google OAuth sign-up: localStorage flag set on sign-up page → CompleteRegistration
-//    (guarded by created_at check to avoid firing for returning OAuth users)
+// Fires CompleteRegistration for Google OAuth sign-ups.
+// Purchase/Subscribe events are handled in SubscriptionRefresh (not here) because
+// SubscriptionRefresh runs before this component mounts (Suspense timing issue).
 import { useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { MetaPixel } from "@/lib/meta-pixel";
 import { createClient } from "@/lib/supabase-browser";
 
 export function MetaPixelPurchase() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-
-  // Handle Stripe success redirect
-  useEffect(() => {
-    const subscription = searchParams.get("subscription");
-    const plan = searchParams.get("plan") as "pro" | "agency" | null;
-
-    if (subscription === "success" && (plan === "pro" || plan === "agency")) {
-      MetaPixel.purchase(plan);
-      // Remove params from URL so a refresh doesn't re-fire the event
-      router.replace("/dashboard", { scroll: false });
-    }
-  }, [searchParams, router]);
 
   // Handle Google OAuth sign-up: check for flag set on the sign-up page
   useEffect(() => {
@@ -45,6 +31,9 @@ export function MetaPixelPurchase() {
       }
     });
   }, []); // run once on mount
+
+  // searchParams kept in scope to satisfy the Suspense requirement for useSearchParams
+  void searchParams;
 
   return null;
 }

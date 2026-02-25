@@ -48,7 +48,7 @@ function AisgLabel() {
           <div className="bg-indigo-600"></div>
         </div>
       </div>
-      <span>AISG</span>
+      <span>TOV App</span>
     </div>
   )
 }
@@ -64,7 +64,7 @@ function MobileAisgLabel() {
           <div className="bg-indigo-600"></div>
         </div>
       </div>
-      <span>AISG</span>
+      <span>TOV App</span>
     </div>
   )
 }

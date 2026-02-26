@@ -37,6 +37,7 @@ import BreadcrumbSchema from "@/components/BreadcrumbSchema"
 import { useGuide } from "@/hooks/use-guide"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { MetaPixel } from "@/lib/meta-pixel"
 
 function GuideContent() {
   const router = useRouter()
@@ -691,6 +692,7 @@ function GuideContent() {
   
   // Handle subscription (preview flow)
   const handleSubscription = async (plan: "pro" | "agency") => {
+    MetaPixel.initiateCheckout(plan)
     try {
       setProcessingPlan(plan)
       if (!user) {
@@ -1439,16 +1441,12 @@ function GuideContent() {
         <Dialog open={exportGateDialogOpen} onOpenChange={setExportGateDialogOpen}>
           <DialogContent className="sm:max-w-[420px] text-sm sm:text-base">
             <DialogHeader>
-              <DialogTitle>You need an account</DialogTitle>
+              <DialogTitle>Sign up free to download</DialogTitle>
               <DialogDescription>
-                Sign in or sign up to unlock the following:
+                Your free account also unlocks:
               </DialogDescription>
             </DialogHeader>
             <ul className="mt-3 space-y-2 text-sm text-gray-600">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 shrink-0 text-green-600" />
-                Export your preview as PDF
-              </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 shrink-0 text-green-600" />
                 Save guides and edit anytime
@@ -1459,7 +1457,7 @@ function GuideContent() {
               </li>
             </ul>
             <p className="mt-4 text-xs text-gray-500">
-              Your current preview stays in place. After signing in you can export this same guide.
+              Your preview is safe - pick up right where you left off.
             </p>
             <DialogFooter className="mt-6 flex gap-3 sm:gap-2">
               <Button

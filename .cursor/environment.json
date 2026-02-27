@@ -1,0 +1,7 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "corepack enable && corepack prepare pnpm@10 --activate && pnpm config set store-dir \"$HOME/.pnpm-store\" && node -v && pnpm -v && pnpm install --frozen-lockfile"
+}

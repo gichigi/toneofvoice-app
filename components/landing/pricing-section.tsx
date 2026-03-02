@@ -83,7 +83,7 @@ export default function PricingSection() {
       price: tier.price,
       location: "homepage",
     })
-    router.push("/brand-details")
+    router.push("/#hero")
   }
 
   return (

@@ -195,13 +195,13 @@ export default function HeroSection() {
                   })()}
                 </div>
                 <Link
-                  href="/brand-details"
+                  href="#hero"
                   onClick={() =>
                     track("Manual Entry Clicked", { location: "hero" })
                   }
                   className="text-gray-500 underline font-medium text-xs whitespace-nowrap"
                 >
-                  Add brand details manually
+                  Add details manually here
                 </Link>
               </div>
             </div>

@@ -38,10 +38,10 @@ Guide limits enforced via `/api/user-guide-limit` and Supabase row-level securit
 ## Key User Flows
 
 ### 1. Preview Flow (Free)
-1. User enters URL or description at `/brand-details`
+1. User enters URL or description on the home page hero
 2. `/api/extract-website` scrapes site (Firecrawl primary, Cheerio fallback) → OpenAI extracts brand info
-3. AI generates preview sections: About, Audience, Voice, Guidelines
-4. Stored in localStorage, redirected to `/guide`
+3. Extracted brand details (including suggested traits + keywords) are stored in `localStorage`
+4. User is redirected straight to `/guide?generate=preview` where AI generates preview sections: About, Audience, Voice, Guidelines
 5. Gradient fade → locked sections → upgrade CTA
 
 ### 2. Full Guide Flow (Paid)
@@ -70,6 +70,14 @@ Guide limits enforced via `/api/user-guide-limit` and Supabase row-level securit
 - If homepage thin (<2500 chars), maps and scrapes 2-3 key subpages
 - Fallback: Cheerio when `FIRECRAWL_API_KEY` not set
 - Both URL and description routes use same OpenAI model/prompt for consistency
+
+### Future: Advanced guide settings (not yet implemented)
+- Potential UI surfaces (deferred):
+  - Header-level “Guide settings” drawer on `/guide` for language variant, formality, reading level, and keywords
+  - Inline quick settings in the editor toolbar that apply to future AI edits only
+- Behavior principles:
+  - Settings should update generation inputs and optional regenerated sections, without silently overwriting existing manual edits
+  - Users should be able to choose whether changes apply only to future AI actions or also regenerate specific sections (e.g. Style Rules, Word List)
 
 ### PDF Export
 1. **Primary**: POST to `/api/export-pdf` (Puppeteer + Chromium, server-side)
@@ -126,7 +134,7 @@ Format: Two-column tables (Use | Instead of) for Preferred Terms and Spelling/Us
 
 ### `/app`
 **Key pages:**
-- `/brand-details` - input form (URL or description)
+- `/` - marketing site and primary input (URL or description)
 - `/guide` - unified view/edit (preview + full-access)
 - `/dashboard` - guide list, billing
 - `/payment` - Stripe checkout

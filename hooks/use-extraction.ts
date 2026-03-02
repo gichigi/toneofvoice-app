@@ -358,8 +358,7 @@ export function useExtraction(): UseExtractionReturn {
     })
 
     if (validation.inputType === "empty") {
-      console.log(`[USER_JOURNEY] Empty input - redirecting to manual entry`)
-      router.push("/brand-details")
+      console.log(`[USER_JOURNEY] Empty input - staying on homepage for manual entry`)
       return
     }
 
@@ -420,26 +419,57 @@ export function useExtraction(): UseExtractionReturn {
           name: data.brandName || "",
           brandDetailsDescription: data.brandDetailsDescription,
           audience: data.audience || "",
+          websiteUrl: data.url || "",
+          englishVariant: "american",
+          formalityLevel: "Neutral",
+          readingLevel: "6-8",
         }
-        if (data.url) brandDetails.website_url = data.url
-        if (Array.isArray(data.productsServices))
+        if (Array.isArray(data.productsServices)) {
           brandDetails.productsServices = data.productsServices
+        }
+
         if (data.keywords) {
-          const kw = Array.isArray(data.keywords)
-            ? data.keywords.join("\n")
+          const keywordsArray = Array.isArray(data.keywords)
+            ? data.keywords
             : String(data.keywords)
-          localStorage.setItem("brandKeywords", kw)
+                .split(/\r?\n|,/)
+                .map((k: string) => k.trim())
+                .filter(Boolean)
+
+          brandDetails.keywords = keywordsArray
+
+          try {
+            const kw = keywordsArray.join("\n")
+            localStorage.setItem("brandKeywords", kw)
+          } catch {
+            // ignore storage errors
+          }
         }
-        if (data.suggestedTraits) {
-          localStorage.setItem(
-            "suggestedTraits",
-            JSON.stringify(data.suggestedTraits)
-          )
+
+        if (Array.isArray(data.suggestedTraits)) {
+          try {
+            localStorage.setItem(
+              "suggestedTraits",
+              JSON.stringify(data.suggestedTraits)
+            )
+            const autoSelectedTraits = data.suggestedTraits.slice(0, 3)
+            if (autoSelectedTraits.length > 0) {
+              localStorage.setItem(
+                "selectedTraits",
+                JSON.stringify(autoSelectedTraits)
+              )
+            }
+          } catch {
+            // ignore storage errors
+          }
         }
+
         localStorage.setItem("brandDetails", JSON.stringify(brandDetails))
         console.log(`[USER_JOURNEY] Brand details saved to localStorage:`, {
           hasName: !!brandDetails.name,
-          descriptionLength: brandDetails.brandDetailsDescription?.length || 0,
+          descriptionLength:
+            (brandDetails.brandDetailsDescription as string | undefined)
+              ?.length || 0,
         })
 
         setIsSuccess(true)
@@ -452,11 +482,11 @@ export function useExtraction(): UseExtractionReturn {
           `[PERFORMANCE] Total extraction completed in ${totalTime.toFixed(2)}ms`
         )
         console.log(
-          `[USER_JOURNEY] Extraction successful - redirecting to brand-details`
+          `[USER_JOURNEY] Extraction successful - redirecting to guide preview`
         )
 
         setTimeout(() => {
-          router.push("/brand-details?fromExtraction=true")
+          router.push("/guide?generate=preview")
         }, 800)
       } else {
         const { type, message } = classifyError(data || {}, response)

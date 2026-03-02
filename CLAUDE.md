@@ -7,6 +7,7 @@
 1. Read the project spec / README
 2. Check `tasks/lessons.md` for mistakes to avoid - create the file if it doesn't exist
 3. Skim the last 5-10 commits to understand recent direction and avoid undoing recent work
+4. **Once per day**: add a new entry to `docs/playtime.md` - a 60-second explore of anything interesting (linguistics, UX, a rabbit hole, whatever). Keep it short and honest.
 
 ---
 

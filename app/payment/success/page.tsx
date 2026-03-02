@@ -98,11 +98,10 @@ function SuccessContent() {
         console.error("[Payment Success] No brand details found in localStorage")
         toast({
           title: "Session expired",
-          description: "Please fill in your brand details again.",
+          description: "Please enter your website or description again.",
           variant: "destructive",
         })
-        // Redirect to brand details page with payment complete flag
-        router.push("/brand-details?paymentComplete=true")
+        router.push("/")
         return
       }
 

@@ -173,7 +173,7 @@ function GuideContent() {
   // Detect if we're loading cached content for better messaging
   useEffect(() => {
     if (generatePreview) {
-      // Fresh generation from /brand-details: always show full interstitial
+      // Fresh generation from homepage or creation flow: always show full interstitial
       setIsQuickLoad(false)
     } else if (guideId) {
       setIsQuickLoad(true)
@@ -262,7 +262,7 @@ function GuideContent() {
           }
 
           setSavedToAccount(true)
-          setCurrentGuideId(guide.id)
+          setCurrentGuideId(guide.id ?? null)
           loadedGuideIdRef.current = guideId
           guideLoadGuard.loading.delete(guideId)
           guideLoadGuard.loaded.add(guideId)
@@ -314,10 +314,10 @@ function GuideContent() {
       console.error("[Guide] No brand details found in localStorage")
       toast({
         title: "Session expired",
-        description: "Please fill in your brand details again.",
+        description: "Please enter your website or description again.",
         variant: "destructive",
       })
-      router.push("/brand-details?paymentComplete=true")
+      router.push("/")
       return
     }
 
@@ -327,10 +327,10 @@ function GuideContent() {
       console.error("[Guide] Failed to parse saved brand details:", parseError)
       toast({
         title: "Saved data invalid",
-        description: "Your saved details are missing or invalid. Please go back to brand details and try again.",
+        description: "Your saved details are missing or invalid. Please enter your website or description again.",
         variant: "destructive",
       })
-      router.push("/brand-details?paymentComplete=true")
+      router.push("/")
       return
     }
     if (savedGuideType) setGuideType(savedGuideType)
@@ -343,10 +343,10 @@ function GuideContent() {
     }
   }, [guideId, authLoading, user, router, toast, isPreviewFlow, alreadyGenerated, subscriptionSuccess])
   
-  // Handle redirect for preview flow
+  // Handle redirect for preview flow when brand details load fails
   useEffect(() => {
     if (shouldRedirect) {
-      router.push("/brand-details")
+      router.push("/")
     }
   }, [shouldRedirect, router])
   
@@ -1281,7 +1281,6 @@ function GuideContent() {
       <AutoSaveGuide />
       <BreadcrumbSchema items={[
         { name: "Home", url: "https://toneofvoice.app" },
-        { name: "Brand Details", url: "https://toneofvoice.app/brand-details" },
         { name: "Tone of Voice Guide", url: "https://toneofvoice.app/guide" }
       ]} />
       

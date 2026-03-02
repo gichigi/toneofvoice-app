@@ -239,16 +239,16 @@ Style guide output is designed to be:
 ## 🏗️ Architecture Notes
 
 ### Guide Generation Flow
-1. **Brand Details** (`/brand-details`) → User enters URL or description
-2. **Extraction** (`/api/extract-website`) → Firecrawl/Cheerio scrapes site → OpenAI extracts brand info
-3. **Preview Generation** → AI generates preview sections (About, Audience, Voice, Guidelines)
+1. **Homepage hero** (`/`) → User enters URL or description
+2. **Extraction** (`/api/extract-website`) → Firecrawl/Cheerio scrapes site → OpenAI extracts brand info (including suggested traits and keywords)
+3. **Preview Generation** (`/guide?generate=preview`) → AI generates preview sections (About, Audience, Voice, Guidelines) using auto-picked traits + keywords
 4. **Payment** (`/payment`) → Stripe checkout
 5. **Full Guide Generation** → AI generates locked sections (Style Rules, Examples, Word List)
 6. **Merge Mode**: If preview exists, preserve it and only generate new sections
 7. **Save to DB** → Guide saved with `guideId`, user redirected to `/guide?guideId=X`
 
 ### Storage Strategy
-- **localStorage**: Creation flow (brand details, preview content)
+- **localStorage**: Creation flow (extracted brand details, traits, keywords, preview content)
 - **Supabase DB**: Source of truth once guide has `guideId`
 - **Auto-save**: 2s debounce on edits (if authenticated + has guideId)
 

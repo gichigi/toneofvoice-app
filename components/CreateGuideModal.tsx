@@ -176,10 +176,8 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
     const validation = handleInputValidation(effective);
     if (!validation) return;
 
-    // Handle empty input - navigate to manual entry
+    // Handle empty input - keep user in modal for manual entry
     if (validation.inputType === "empty") {
-      onOpenChange(false);
-      router.push("/brand-details");
       return;
     }
 
@@ -215,21 +213,49 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
       }
 
       if (data.success) {
-        // Save to localStorage
         const brandDetails: Record<string, unknown> = {
           name: data.brandName || "",
           brandDetailsDescription: data.brandDetailsDescription,
           audience: data.audience || "",
+          websiteUrl: data.url || "",
+          englishVariant: "american",
+          formalityLevel: "Neutral",
+          readingLevel: "6-8",
         };
-        if (Array.isArray(data.productsServices))
+        if (Array.isArray(data.productsServices)) {
           brandDetails.productsServices = data.productsServices;
+        }
+
         if (data.keywords) {
-          const kw = Array.isArray(data.keywords) ? data.keywords.join("\n") : String(data.keywords);
-          localStorage.setItem("brandKeywords", kw);
+          const keywordsArray = Array.isArray(data.keywords)
+            ? data.keywords
+            : String(data.keywords)
+                .split(/\r?\n|,/)
+                .map((k: string) => k.trim())
+                .filter(Boolean);
+
+          brandDetails.keywords = keywordsArray;
+
+          try {
+            const kw = keywordsArray.join("\n");
+            localStorage.setItem("brandKeywords", kw);
+          } catch {
+            // ignore storage errors
+          }
         }
-        if (data.suggestedTraits) {
-          localStorage.setItem("suggestedTraits", JSON.stringify(data.suggestedTraits));
+
+        if (Array.isArray(data.suggestedTraits)) {
+          try {
+            localStorage.setItem("suggestedTraits", JSON.stringify(data.suggestedTraits));
+            const autoSelectedTraits = data.suggestedTraits.slice(0, 3);
+            if (autoSelectedTraits.length > 0) {
+              localStorage.setItem("selectedTraits", JSON.stringify(autoSelectedTraits));
+            }
+          } catch {
+            // ignore storage errors
+          }
         }
+
         localStorage.setItem("brandDetails", JSON.stringify(brandDetails));
 
         // Show success state briefly
@@ -241,7 +267,7 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
         // Close modal and redirect after short delay
         setTimeout(() => {
           onOpenChange(false);
-          router.push("/brand-details?fromExtraction=true");
+          router.push("/guide?generate=preview");
         }, 800);
       } else {
         // Show error
@@ -359,13 +385,13 @@ export function CreateGuideModal({ open, onOpenChange }: CreateGuideModalProps) 
 
           <div className="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center">
             <Link
-              href="/brand-details"
+              href="/"
               onClick={() => {
                 onOpenChange(false);
               }}
               className="text-gray-500 underline font-medium text-xs sm:text-sm whitespace-nowrap text-center sm:text-left"
             >
-              Add brand details manually
+              Start again on homepage
             </Link>
 
             <Button

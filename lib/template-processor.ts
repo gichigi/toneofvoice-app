@@ -1,3 +1,4 @@
+import { traceable } from "langsmith/traceable"
 import {
   generateBrandVoiceTraits,
   generateStyleRules,
@@ -5,7 +6,6 @@ import {
   generateBeforeAfterSamples,
   generateWordList,
   getHowToUseContent,
-  generateAudienceSummary,
 } from "./openai"
 
 // Configuration for preview limits - easy to adjust for A/B testing
@@ -399,17 +399,19 @@ const AI_WRITING_CLEANUP_CONTENT = `Use these rules to clean up AI-generated dra
 - After: "Slack solved the wrong problem brilliantly. Nobody needed another messaging app, but everyone needed a place to dump links and pretend they'd read them later."`;
 
 // Shared function to render style guide template (unified template, isPreview for free-tier flow)
-export async function renderStyleGuideTemplate({
-  brandDetails,
-  useAIContent = false,
-  isPreview = false,
-  userEmail,
-}: {
-  brandDetails: any;
-  useAIContent?: boolean;
-  isPreview?: boolean;
-  userEmail?: string | null;
-}): Promise<string> {
+// Wrapped with traceable so all child LLM calls appear nested under one parent span in LangSmith
+export const renderStyleGuideTemplate = traceable(
+  async function renderStyleGuideTemplate({
+    brandDetails,
+    useAIContent = false,
+    isPreview = false,
+    userEmail,
+  }: {
+    brandDetails: any;
+    useAIContent?: boolean;
+    isPreview?: boolean;
+    userEmail?: string | null;
+  }): Promise<string> {
   console.log(`[renderStyleGuideTemplate] isPreview=${isPreview}, useAIContent=${useAIContent}`);
 
   const template = await loadTemplate("style_guide_template");
@@ -468,20 +470,13 @@ export async function renderStyleGuideTemplate({
     englishVariant: brandDetails.englishVariant || "american",
   };
 
-  if (!validatedDetails.audience || validatedDetails.audience.toLowerCase() === "general audience") {
-    try {
-      const aud = await generateAudienceSummary({
-        name: validatedDetails.name,
-        brandDetailsDescription: validatedDetails.brandDetailsDescription,
-      });
-      if (aud.success && aud.content) validatedDetails.audience = aud.content.trim();
-    } catch (_e) {
-      /* ignore */
-    }
-  }
-
+  // generateAudienceSection derives the audience from brandDetailsDescription directly —
+  // no need to pre-enrich a vague audience field with a separate blocking LLM call
   let traitsContext: string | undefined;
   let brandVoiceContent: string;
+
+  // Kick off audience generation immediately — it's independent of traits, so run in parallel
+  const audiencePromise = isPreview ? generateAudienceSection(validatedDetails) : null;
 
   if (brandDetails.previewTraits) {
     brandVoiceContent = brandDetails.previewTraits;
@@ -513,7 +508,8 @@ export async function renderStyleGuideTemplate({
   result = result.replace(/{{how_to_use_section}}/g, getHowToUseContent(brandName));
 
   if (isPreview) {
-    const audienceResult = await generateAudienceSection(validatedDetails);
+    // audiencePromise was started before traits — just await the already-running call
+    const audienceResult = await audiencePromise!;
     result = result.replace(
       /{{audience_section}}/g,
       audienceResult.success && audienceResult.content
@@ -551,7 +547,9 @@ export async function renderStyleGuideTemplate({
   }
 
   return await prepareMarkdownContent(result);
-}
+  },
+  { name: "renderStyleGuideTemplate", run_type: "chain" }
+)
 
 // Render preview-style guide (free-tier: traits + audience + content guidelines, locked sections get placeholders)
 export async function renderPreviewStyleGuide({ brandDetails }: { brandDetails: any }): Promise<string> {

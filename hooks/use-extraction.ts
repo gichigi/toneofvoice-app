@@ -485,9 +485,7 @@ export function useExtraction(): UseExtractionReturn {
           `[USER_JOURNEY] Extraction successful - redirecting to guide preview`
         )
 
-        setTimeout(() => {
-          router.push("/guide?generate=preview")
-        }, 800)
+        router.push("/guide?generate=preview")
       } else {
         const { type, message } = classifyError(data || {}, response)
         setError(message)

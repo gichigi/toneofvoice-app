@@ -414,7 +414,6 @@ function GuideContent() {
           console.warn('[Guide] Failed to parse selectedTraits:', parseError)
         }
 
-        await new Promise(resolve => setTimeout(resolve, 600))
         if (!isMounted) return
 
         setLoadingStep("Creating your tone of voice and guidelines...")

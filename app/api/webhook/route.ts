@@ -247,6 +247,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 })
   }
 
+  if (!STRIPE_WEBHOOK_SECRET) {
+    console.error(`[webhook] STRIPE_WEBHOOK_SECRET not configured (mode=${mode})`)
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 })
+  }
+
   try {
     const stripe = getStripe()
     // Verify webhook signature using raw buffer
@@ -306,10 +311,6 @@ export async function POST(request: Request) {
       console.error("Could not parse webhook payload:", parseErr)
     }
     
-    return NextResponse.json({ 
-      error: "Webhook handler failed", 
-      message: err.message,
-      url: normalizedUrl
-    }, { status: 400 })
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 400 })
   }
 } 

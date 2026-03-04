@@ -139,7 +139,7 @@ export async function POST(req: Request) {
           ],
           max_completion_tokens: 500,
         }),
-        new Promise((_, reject) =>
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("Request timeout")), 30000)
         ),
       ]);

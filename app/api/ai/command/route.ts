@@ -2,15 +2,15 @@ import type { NextRequest } from 'next/server';
 
 import {
   createOpenAI,
-  type LanguageModel,
 } from '@ai-sdk/openai';
 import {
   createUIMessageStream,
   createUIMessageStreamResponse,
-  generateText,
-  Output,
+  generateObject,
+  streamObject,
   streamText,
   tool,
+  type LanguageModel,
 } from 'ai';
 import { createSlateEditor } from 'platejs';
 import { nanoid } from 'platejs';
@@ -91,9 +91,11 @@ export async function POST(req: NextRequest) {
             ? (['generate', 'edit', 'comment'] as const)
             : (['generate', 'comment'] as const);
 
-          const { output: chosenTool } = await generateText({
+          // AI SDK v5: use generateObject with output:'enum' instead of generateText+Output.choice
+          const { object: chosenTool } = await generateObject({
             model: defaultModel,
-            output: Output.choice({ options: enumOptions }),
+            output: 'enum',
+            enum: enumOptions as unknown as string[],
             prompt,
           });
 
@@ -209,23 +211,20 @@ function getCommentTool(
           ),
       });
 
-      const { partialOutputStream } = streamText({
+      // AI SDK v5: use streamObject with output:'array' + elementStream instead of streamText+Output.array
+      const { elementStream } = streamObject({
         model,
-        output: Output.array({ element: commentSchema }),
+        output: 'array',
+        schema: commentSchema,
         prompt: getCommentPrompt(editor, { messages: messagesRaw }),
       });
 
-      let lastLength = 0;
-      for await (const partialArray of partialOutputStream) {
-        for (let i = lastLength; i < partialArray.length; i++) {
-          const comment = partialArray[i];
-          writer.write({
-            id: nanoid(),
-            data: { comment, status: 'streaming' },
-            type: 'data-comment',
-          });
-        }
-        lastLength = partialArray.length;
+      for await (const comment of elementStream) {
+        writer.write({
+          id: nanoid(),
+          data: { comment, status: 'streaming' },
+          type: 'data-comment',
+        });
       }
 
       writer.write({
@@ -259,22 +258,20 @@ function getTableTool(
         id: z.string().describe('The id of the table cell to update.'),
       });
 
-      const { partialOutputStream } = streamText({
+      // AI SDK v5: use streamObject with output:'array' + elementStream instead of streamText+Output.array
+      const { elementStream } = streamObject({
         model,
-        output: Output.array({ element: cellUpdateSchema }),
+        output: 'array',
+        schema: cellUpdateSchema,
         prompt: buildEditTableMultiCellPrompt(editor, messagesRaw),
       });
 
-      let lastLength = 0;
-      for await (const partialArray of partialOutputStream) {
-        for (let i = lastLength; i < partialArray.length; i++) {
-          writer.write({
-            id: nanoid(),
-            data: { cellUpdate: partialArray[i], status: 'streaming' },
-            type: 'data-table',
-          });
-        }
-        lastLength = partialArray.length;
+      for await (const cellUpdate of elementStream) {
+        writer.write({
+          id: nanoid(),
+          data: { cellUpdate, status: 'streaming' },
+          type: 'data-table',
+        });
       }
 
       writer.write({

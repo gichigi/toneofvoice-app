@@ -4,6 +4,7 @@ import Logger from "@/lib/logger"
 import { validateUrl } from "@/lib/url-validation"
 import { scrapeSiteForExtraction, scrapeSiteWithJsonExtraction } from "@/lib/firecrawl-site-scraper"
 import * as cheerio from "cheerio"
+import type { Element } from "domhandler"
 
 // Define interfaces for brand details
 interface TargetAudienceDetail {
@@ -60,7 +61,7 @@ async function fetchAndExtractWithCheerio(url: string): Promise<string> {
 
   const subpageLinks: string[] = []
   $("a").each((_: unknown, el: unknown) => {
-    const href = $(el as cheerio.Element).attr("href") || ""
+    const href = $(el as Element).attr("href") || ""
     if (/about|company|team/i.test(href) && !href.startsWith("#") && !href.startsWith("mailto:")) {
       let u = href
       if (!/^https?:\/\//i.test(u)) u = new URL(u, url).href

@@ -23,15 +23,20 @@ export const MetaPixel = {
   completeRegistration: () => fbq("track", "CompleteRegistration"),
 
   /** Fire when a new user account is created (MOF ad set optimisation). */
-  lead: () => fbq("track", "Lead"),
+  lead: () => {
+    console.log("[MetaPixel] Lead fired");
+    fbq("track", "Lead");
+  },
 
   /** Fire when a user clicks "Get Pro" / "Get Agency". */
   initiateCheckout: (plan: "pro" | "agency") =>
     fbq("track", "InitiateCheckout", { content_name: plan }),
 
   /** Fire on high-intent pages (e.g. billing/pricing). */
-  viewContent: (contentName: string) =>
-    fbq("track", "ViewContent", { content_name: contentName }),
+  viewContent: (contentName: string) => {
+    console.log("[MetaPixel] ViewContent fired", { content_name: contentName });
+    fbq("track", "ViewContent", { content_name: contentName });
+  },
 
   /** Fire after Stripe redirects back with ?subscription=success. */
   purchase: (plan: "pro" | "agency") => {

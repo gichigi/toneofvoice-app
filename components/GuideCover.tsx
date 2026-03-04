@@ -9,6 +9,8 @@ interface GuideCoverProps {
   className?: string
   websiteUrl?: string
   subscriptionTier?: 'starter' | 'pro' | 'agency'
+  /** Optional small note rendered below the website URL (e.g. attribution on sample guides) */
+  disclaimer?: string
 }
 
 // Eyebrow: short label above title (avoid "Brand Identity" – redundant/wrong for voice docs)
@@ -21,7 +23,8 @@ export function GuideCover({
   showPreviewBadge,
   className,
   websiteUrl,
-  subscriptionTier = 'starter'
+  subscriptionTier = 'starter',
+  disclaimer,
 }: GuideCoverProps) {
   const formattedDate = date || new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -71,6 +74,9 @@ export function GuideCover({
             <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
               {subtitle}
             </p>
+          )}
+          {disclaimer && (
+            <p className="text-xs text-gray-400 mt-1 italic">{disclaimer}</p>
           )}
 
           {/* Branding - tier-based visibility */}

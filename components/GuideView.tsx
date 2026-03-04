@@ -47,6 +47,10 @@ export interface GuideViewProps {
   subscriptionTier?: Tier
   /** Enable AI features in editor (Cmd+J). Only for pro/agency users. */
   showAI?: boolean
+  /** Optional attribution note shown on the cover page (e.g. for sample guides) */
+  coverDisclaimer?: string
+  /** Optional date string for the cover page (defaults to today) */
+  coverDate?: string
 }
 
 /**
@@ -79,6 +83,8 @@ export function GuideView({
   websiteUrl,
   subscriptionTier = 'starter',
   showAI = false,
+  coverDisclaimer,
+  coverDate,
 }: GuideViewProps) {
   const nonCover = sections.filter((s) => s.id !== "cover")
   const hasContent = (s: StyleGuideSection) => (s.content || "").trim().length > 0
@@ -122,9 +128,11 @@ export function GuideView({
                 <GuideCover
                   brandName={brandName}
                   guideType={guideType}
+                  date={coverDate}
                   showPreviewBadge={showPreviewBadge}
                   websiteUrl={websiteUrl}
                   subscriptionTier={subscriptionTier}
+                  disclaimer={coverDisclaimer}
                 />
               </div>
               {unlockedSections.map((section, index) => (

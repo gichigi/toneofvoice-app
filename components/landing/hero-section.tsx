@@ -217,7 +217,7 @@ export default function HeroSection() {
                 <Link
                   href="/example"
                   onClick={() => track("Sample Guide Clicked", { location: "hero" })}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors group"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors group rounded-full bg-gray-100 hover:bg-gray-200 px-4 py-1.5"
                 >
                   <Eye className="h-3.5 w-3.5 shrink-0" />
                   See a sample guide first

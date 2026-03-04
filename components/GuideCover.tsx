@@ -68,15 +68,15 @@ export function GuideCover({
           <div className="h-1 w-24 bg-gray-900 animate-in slide-in-from-left-4 duration-700 delay-500 rounded-full" />
         </div>
 
-        <div className="pt-12 space-y-1 text-gray-500 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-500 max-w-3xl">
+        <div className="pt-12 space-y-3 text-gray-500 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-500 max-w-3xl">
           <p className="text-sm transition-colors duration-300 hover:text-gray-600">{formattedDate}</p>
           {subtitle && (
-            <p className="text-sm font-medium text-gray-900 mt-2 transition-all duration-300 hover:translate-x-1">
+            <p className="text-sm font-medium text-gray-900 transition-all duration-300 hover:translate-x-1">
               {subtitle}
             </p>
           )}
           {disclaimer && (
-            <p className="text-xs text-gray-400 mt-1 italic">{disclaimer}</p>
+            <p className="text-xs text-gray-400 italic">{disclaimer}</p>
           )}
 
           {/* Branding - tier-based visibility */}

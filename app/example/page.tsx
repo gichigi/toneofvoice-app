@@ -120,8 +120,8 @@ export default function ExampleGuidePage() {
               editorId="example"
               showEditTools={false}
               websiteUrl={EXAMPLE_GUIDE_WEBSITE_URL}
-              // Treat as pro so the cover shows a small tasteful branding link
-              subscriptionTier="pro"
+              // Agency tier = no branding link; the coverDisclaimer already attributes the tool
+              subscriptionTier="agency"
               showAI={false}
               coverDate={EXAMPLE_GUIDE_DATE}
               coverDisclaimer={EXAMPLE_GUIDE_DISCLAIMER}

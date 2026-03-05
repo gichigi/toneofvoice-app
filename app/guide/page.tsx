@@ -1449,7 +1449,7 @@ function GuideContent() {
               {isPreviewFlow ? (
                 <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF.</>
               ) : (
-                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, or <strong>Download</strong> to export it as a PDF, Word doc, or Markdown.</>
+                <><span className="font-medium">Tip:</span> Use <strong>Edit guide</strong> to customize your guide, then hit <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-violet-200">✦ Ask AI</span> to rewrite any section instantly.</>
               )}
             </p>
             <button

@@ -42,11 +42,14 @@ import {
   Quote,
   Minus,
   Link as LinkIcon,
+  WandSparkles,
 } from "lucide-react";
 import { Editor, EditorContainer } from "@/components/ui/editor";
 import { FixedToolbar } from "@/components/ui/fixed-toolbar";
 import { ToolbarButton, ToolbarGroup } from "@/components/ui/toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
+import { AIToolbarButton } from "@/components/ui/ai-toolbar-button";
+import { UndoToolbarButton, RedoToolbarButton } from "@/components/ui/history-toolbar-button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -286,6 +289,12 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
           {!readOnly && (
             <TooltipProvider delayDuration={200}>
               <FixedToolbar className="pdf-exclude shrink-0 justify-start gap-1 flex-row flex-nowrap overflow-x-auto">
+              {/* Undo / Redo */}
+              <ToolbarGroup className="flex-nowrap">
+                <UndoToolbarButton />
+                <RedoToolbarButton />
+              </ToolbarGroup>
+
               {/* Headings */}
               <ToolbarGroup className="flex-nowrap">
                 <ToolbarButton
@@ -307,6 +316,16 @@ export const GuideEditor = forwardRef<GuideEditorRef, GuideEditorProps>(function
                   <Heading3 className="size-4" />
                 </ToolbarButton>
               </ToolbarGroup>
+
+              {/* AI button — only for paid users with showAI enabled */}
+              {showAI && (
+                <ToolbarGroup className="flex-nowrap">
+                  <AIToolbarButton tooltip="AI writing commands (Cmd+J)">
+                    <WandSparkles className="size-4" />
+                    <span className="ml-1 text-xs font-medium">Ask AI</span>
+                  </AIToolbarButton>
+                </ToolbarGroup>
+              )}
 
               {/* Text formatting */}
               <ToolbarGroup className="flex-nowrap">

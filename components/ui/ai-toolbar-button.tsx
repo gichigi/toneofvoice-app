@@ -30,6 +30,12 @@ export function AIToolbarButton(
           });
           document.dispatchEvent(event);
         }
+        // Focus the AI input after menu opens - autoFocus alone isn't reliable
+        // when triggered from outside the editor via toolbar click
+        requestAnimationFrame(() => {
+          const input = document.querySelector<HTMLElement>('[data-plate-focus]');
+          input?.focus();
+        });
       }}
       onMouseDown={(e) => {
         e.preventDefault();

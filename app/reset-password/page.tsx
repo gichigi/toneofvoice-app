@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Lock, CheckCircle2 } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import { classifyAuthError } from "@/lib/auth-errors";
 import { Button } from "@/components/ui/button";
 import { AuthError } from "@/components/ui/auth-error";
 
@@ -61,7 +62,7 @@ export default function ResetPasswordPage() {
       });
 
       if (err) {
-        setError(err.message);
+        setError(classifyAuthError(err).message);
         return;
       }
 
@@ -72,7 +73,7 @@ export default function ResetPasswordPage() {
         router.push("/dashboard");
       }, 2000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to reset password");
+      setError(classifyAuthError(error).message);
       console.error("[reset-password] Error:", error);
     } finally {
       setLoading(false);

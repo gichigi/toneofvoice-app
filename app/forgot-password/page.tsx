@@ -54,6 +54,7 @@ export default function ForgotPasswordPage() {
           </p>
           <p className="mb-6 text-center text-xs text-gray-500">
             Click the link in the email to reset your password. The link will expire in 1 hour.
+            If you don't receive an email within a few minutes, check you're using the email you signed up with.
           </p>
           <Link href="/sign-in">
             <Button variant="outline" className="w-full">

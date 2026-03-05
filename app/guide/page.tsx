@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { generateFile, FileFormat } from "@/lib/file-generator"
+import JSZip from "jszip"
 import type { GuideEditorRef } from "@/components/editor/GuideEditor"
 import { GuideLayout } from "@/components/GuideLayout"
 import { AutoSaveGuide } from "@/components/dashboard/AutoSaveGuide"
@@ -102,6 +103,8 @@ function GuideContent() {
   const [savedToAccount, setSavedToAccount] = useState(false)
   const [currentGuideId, setCurrentGuideId] = useState<string | null>(guideId)
   const [showPostExportPrompt, setShowPostExportPrompt] = useState(false)
+  // Track dismissal in a ref so it survives re-renders without causing loops
+  const exportPromptDismissedRef = useRef(false)
   // First-visit tip: points users to Edit guide + Download (dismissed via localStorage)
   const [guideCTADismissed, setGuideCTADismissed] = useState(false)
 
@@ -966,7 +969,7 @@ function GuideContent() {
         title: "Download started",
         description: `Your tone of voice guide is downloading in ${format.toUpperCase()} format.`,
       })
-      setShowPostExportPrompt(true)
+      if (!exportPromptDismissedRef.current) setShowPostExportPrompt(true)
     } catch (error) {
       console.error("Error generating file:", error)
       toast({
@@ -981,6 +984,97 @@ function GuideContent() {
     }
   }
   
+  // Download all formats (PDF + DOCX + MD) bundled into a zip
+  const handleDownloadAll = async () => {
+    if (!content || !brandDetails) return
+    setIsDownloading(true)
+    setDownloadFormat("zip")
+    try {
+      const processedContent = processFullAccessContent(content, brandDetails.name)
+      const slug = brandDetails.name.replace(/\s+/g, "-").toLowerCase()
+
+      // Generate DOCX and MD blobs in parallel
+      const [docxBlob, mdBlob] = await Promise.all([
+        generateFile("docx", processedContent, brandDetails.name, {
+          websiteUrl: brandDetails.websiteUrl,
+          subscriptionTier,
+        }),
+        generateFile("md", processedContent, brandDetails.name, {
+          websiteUrl: brandDetails.websiteUrl,
+          subscriptionTier,
+        }),
+      ])
+
+      // Get PDF blob by calling the export API directly (no auto-download)
+      let pdfBlob: Blob | null = null
+      try {
+        const element = document.getElementById("pdf-export-content")
+        if (element) {
+          const clone = element.cloneNode(true) as HTMLElement
+          clone.classList.add("pdf-rendering")
+          clone.querySelectorAll("[data-locked-section]").forEach((el) => el.remove())
+          clone.querySelectorAll(".pdf-only").forEach(el => ((el as HTMLElement).style.display = "block"))
+          clone.querySelectorAll(".pdf-exclude").forEach(el => ((el as HTMLElement).style.display = "none"))
+          const cssRes = await fetch("/pdf-styles")
+          if (cssRes.ok) {
+            const css = await cssRes.text()
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), PDF_EXPORT_TIMEOUT_MS)
+            try {
+              const res = await fetch("/api/export-pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ html: clone.outerHTML, css, filename: `${slug}-style-guide.pdf` }),
+                signal: controller.signal,
+              })
+              clearTimeout(timeoutId)
+              if (res.ok) pdfBlob = await res.blob()
+            } catch {
+              clearTimeout(timeoutId)
+              // PDF failed - zip will contain DOCX + MD only
+            }
+          }
+        }
+      } catch {
+        // PDF failed - zip will contain DOCX + MD only
+      }
+
+      // Bundle into zip
+      const zip = new JSZip()
+      zip.file(`${slug}-style-guide.docx`, docxBlob)
+      zip.file(`${slug}-style-guide.md`, mdBlob)
+      if (pdfBlob) zip.file(`${slug}-style-guide.pdf`, pdfBlob)
+      const zipBlob = await zip.generateAsync({ type: "blob" })
+      const url = window.URL.createObjectURL(zipBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${slug}-style-guide.zip`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast({
+        title: "Download started",
+        description: pdfBlob
+          ? "All formats (PDF, Word, Markdown) downloaded as a zip."
+          : "Word and Markdown downloaded as a zip. Download PDF separately.",
+      })
+      if (!exportPromptDismissedRef.current) setShowPostExportPrompt(true)
+    } catch (error) {
+      console.error("Error generating zip:", error)
+      toast({
+        title: "Download failed",
+        description: "Could not generate the zip file. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDownloading(false)
+      setDownloadFormat(null)
+      setShowDownloadOptions(false)
+    }
+  }
+
   // Filter out locked sections from content (for exports)
   const filterLockedSections = (content: string): string => {
     if (!content) return content
@@ -1076,7 +1170,7 @@ function GuideContent() {
           ? "Your style guide is downloading. Some styling may differ."
           : "Your style guide is downloading in PDF format.",
       })
-      setShowPostExportPrompt(true)
+      if (!exportPromptDismissedRef.current) setShowPostExportPrompt(true)
     } catch (err) {
       console.error("[Guide] PDF export failed:", err)
       toast({
@@ -1341,7 +1435,10 @@ function GuideContent() {
         {!isPreviewFlow && showPostExportPrompt && (
           <PostExportPrompt
             content={content ?? ""}
-            onDismiss={() => setShowPostExportPrompt(false)}
+            onDismiss={() => {
+              exportPromptDismissedRef.current = true
+              setShowPostExportPrompt(false)
+            }}
             className="mb-3 shrink-0"
           />
         )}
@@ -1391,6 +1488,7 @@ function GuideContent() {
             }
           }}
           brandName={brandDetails?.name || "Your Brand"}
+          onBrandNameChange={(name) => setBrandDetails({ ...brandDetails, name })}
           guideType={guideType as "core" | "complete" | "style_guide"}
           showPreviewBadge={isPreviewFlow && subscriptionTier === "starter"}
           isUnlocked={isUnlocked}
@@ -1593,6 +1691,28 @@ function GuideContent() {
             </DialogHeader>
             
             <div className="grid gap-3 py-4">
+              <Button
+                onClick={handleDownloadAll}
+                disabled={isDownloading}
+                className="w-full justify-start gap-3 h-14 bg-gray-950 border border-gray-950 text-white hover:bg-gray-800 shadow-none"
+              >
+                {downloadFormat === "zip" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <div className="text-left">
+                  <div className="font-medium">All formats</div>
+                  <div className="text-xs opacity-70">PDF + Word + Markdown in one zip</div>
+                </div>
+              </Button>
+
+              <div className="relative flex items-center gap-2 py-1">
+                <div className="flex-1 border-t border-gray-100" />
+                <span className="text-xs text-gray-400">or download individually</span>
+                <div className="flex-1 border-t border-gray-100" />
+              </div>
+
               <Button
                 onClick={exportPDF}
                 disabled={isDownloading}

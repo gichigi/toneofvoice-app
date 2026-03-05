@@ -22,6 +22,8 @@ export interface GuideViewProps {
   onModeSwitch: (mode: "preview" | "edit") => void
   content: string
   onContentChange: (markdown: string) => void
+  /** Called when the user edits the H1 brand name on the cover */
+  onBrandNameChange?: (name: string) => void
   brandName: string
   guideType?: "core" | "complete" | "style_guide"
   showPreviewBadge?: boolean
@@ -65,6 +67,7 @@ export function GuideView({
   onModeSwitch,
   content,
   onContentChange,
+  onBrandNameChange,
   brandName,
   guideType = "core",
   showPreviewBadge = false,
@@ -246,6 +249,10 @@ export function GuideView({
                     showAI={showAI}
                     subscriptionTier={subscriptionTier}
                     onChange={(md) => {
+                      // Extract H1 before stripping - fire if brand name changed
+                      const titleMatch = md.match(/^#\s+(.+)/)
+                      const newTitle = titleMatch?.[1]?.trim()
+                      if (newTitle && newTitle !== brandName) onBrandNameChange?.(newTitle)
                       const withoutTitle = md.replace(/^#\s+.+\n*/, "").trim()
                       const full = lockedMarkdown
                         ? withoutTitle + "\n\n" + lockedMarkdown

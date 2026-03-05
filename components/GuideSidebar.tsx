@@ -226,7 +226,7 @@ export function GuideSidebar({
                       canAddSection && !atLimit
                         ? "text-gray-500 hover:text-gray-900 hover:bg-gray-50/80 border border-dashed border-gray-200 hover:border-gray-300"
                         : "text-gray-400 opacity-60",
-                      showHint && "animate-pulse"
+                      /* showHint no longer animates - dashed border is sufficient visual cue */
                     )}
                   >
                     <div className="relative flex items-center justify-center">

@@ -4,6 +4,8 @@
  *
  * This is a static fixture — no runtime generation, no auth required.
  * Update the content here if the sample guide needs refreshing.
+ *
+ * Last reviewed: March 2026
  */
 
 import {

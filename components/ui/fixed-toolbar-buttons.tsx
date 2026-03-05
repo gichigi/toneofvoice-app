@@ -54,8 +54,9 @@ export function FixedToolbarButtons() {
           </ToolbarGroup>
 
           <ToolbarGroup>
-            <AIToolbarButton tooltip="AI commands">
+            <AIToolbarButton tooltip="AI writing commands (Cmd+J)">
               <WandSparklesIcon />
+              <span className="ml-1 text-xs font-medium">Ask AI</span>
             </AIToolbarButton>
           </ToolbarGroup>
 

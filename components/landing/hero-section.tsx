@@ -235,7 +235,7 @@ export default function HeroSection() {
                 ))}
               </div>
               <span className="text-sm text-muted-foreground font-medium">
-                Loved by 2,000+ brand teams
+                Trusted by brands worldwide
               </span>
             </div>
 

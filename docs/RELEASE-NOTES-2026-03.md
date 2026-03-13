@@ -1,32 +1,36 @@
 # Release Notes — March 2026
 
-## Observability: PostHog Error Tracking
+## Analytics: PostHog → Mixpanel Migration (13 Mar)
 
-- **Client-side exception autocapture** was already enabled via `capture_exceptions: true` in `PostHogProvider` - unhandled JS errors and promise rejections captured automatically
-- **`app/global-error.tsx`** added - catches React render crashes that escape all error boundaries, calls `posthog.captureException()` before showing a user-friendly fallback UI
-- **`captureServerError` helper** added to `lib/posthog.ts` - wraps `posthog-node`'s `captureException` for use in API routes
-- **Three key API routes** now report server-side errors to PostHog Error Tracking:
-  - `/api/generate-styleguide` - guide generation failures (AI timeout, template error)
-  - `/api/export-pdf` - Puppeteer/Chrome failures, serverless timeout
-  - `/api/save-style-guide` - Supabase write failures, auth expiry
+Replaced PostHog with Mixpanel free plan (20M events/mo, 10k session replays/mo).
 
-**Errors to expect in PostHog Error Tracking:**
-- Guide generation failures (AI API issues, template crashes)
-- PDF export failures (Chrome launch, timeout, memory)
-- Save failures (DB errors, auth expiry)
-- Client JS / React render crashes
+**What changed:**
+- Removed `posthog-js`, `posthog-node`; added `mixpanel-browser`
+- Created `MixpanelProvider` (client-only, skips dev) and `lib/mixpanel.ts` helper
+- EU data residency: `api_host: "https://api-eu.mixpanel.com"`
+- Autocapture, session replay (100%), and heatmaps enabled
+- Removed PostHog `/ingest` reverse proxy rewrites from `next.config.js`
+- Removed PostHog MCP server from Claude Code config
+- Dropped server-side error tracking (Vercel logs suffice)
 
-**Noise to ignore / suppress:**
-- `Script error.` with no stack - cross-origin browser extension noise
-- `DOMException: SecurityError` from `LazyLoadedSessionRecording` - PostHog internals
-- `Error invoking postMessage: Java object is gone` - Android WebView
+**Custom events tracked:**
+- `Signed Up` - email + Google OAuth flows
+- `Payment Completed` - after Stripe checkout
+- `Guide Generated` - preview and full access flows
+- `Guide Downloaded` - all formats (PDF, DOCX, MD, ZIP), both flows
 
-**PostHog setup:**
-- Exception autocapture: enabled in project settings
-- Alert: threshold alert on `$exception` count (configured in PostHog UI)
-- Project: Default project (id: 244556)
+**User identification:**
+- `AuthProvider` calls `mixpanel.identify(userId)` + `people.set({ $email })` on every session restore
+- 500ms delay to avoid race with MixpanelProvider init
+- Sign-up page also identifies immediately on account creation
 
-**Removed PostHog from fortress-content-audit-main** - it was forked from this repo and sharing the same API key, polluting this project's data. Packages uninstalled, all references removed.
+**Env vars:**
+- Removed: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`
+- Added: `NEXT_PUBLIC_MIXPANEL_TOKEN`
+
+**Files deleted:** `lib/posthog.ts`, `lib/posthog-properties.ts`, `components/PostHogProvider.tsx`
+
+---
 
 ## Guide Editor UX Fixes
 

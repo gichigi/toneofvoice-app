@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Loader2, PenLine, Download, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { callAPI, ErrorDetails } from "@/lib/api-utils"
+import { track as mpTrack } from "@/lib/mixpanel"
 import { ErrorMessage } from "@/components/ui/error-message"
 import { Progress } from "@/components/ui/progress"
 
@@ -151,6 +152,7 @@ function SuccessContent() {
       }
 
       updateProgress('complete')
+      mpTrack("Guide Generated", { plan: "style_guide", brand_name: parsedBrandDetails.name })
 
       // Save to localStorage for guide page
       localStorage.setItem("generatedStyleGuide", data.styleGuide)
@@ -270,6 +272,8 @@ Thanks!`)}`
     // Store payment status and guide type
     localStorage.setItem("styleGuidePaymentStatus", "completed")
     localStorage.setItem("styleGuidePlan", "style_guide")
+
+    mpTrack("Payment Completed", { plan: "style_guide" })
 
     // Start generation process
     generateStyleGuide()

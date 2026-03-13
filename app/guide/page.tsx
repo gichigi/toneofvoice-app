@@ -10,6 +10,7 @@ import { Loader2, Eye, PenLine, Check, RefreshCw, FileText, Download, Sparkles, 
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/AuthProvider"
 import { track } from "@vercel/analytics"
+import { track as mpTrack } from "@/lib/mixpanel"
 import {
   Dialog,
   DialogContent,
@@ -463,6 +464,7 @@ function GuideContent() {
         if (isMounted) {
           setContent(data.preview)
           localStorage.setItem("previewContent", data.preview)
+          mpTrack("Guide Generated", { plan: "preview" })
 
           const brandVoiceMatch = data.preview.match(/## Brand Voice([\s\S]*?)(?=##|$)/)
           if (brandVoiceMatch) {
@@ -904,6 +906,7 @@ function GuideContent() {
         clone.querySelectorAll(".pdf-exclude").forEach(el => ((el as HTMLElement).style.display = "none"))
         const filename = `${brandDetails.name.replace(/\s+/g, "-").toLowerCase()}-style-guide-preview.pdf`
         const { usedFallback } = await exportPdfWithFallback(clone, filename, { fullAccess: false })
+        mpTrack("Guide Downloaded", { format: "pdf", flow: "preview" })
         toast({
           title: "Download started",
           description: usedFallback
@@ -926,6 +929,7 @@ function GuideContent() {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
+        mpTrack("Guide Downloaded", { format, flow: "preview" })
         toast({
           title: "Download started",
           description: `Your tone of voice guide preview is downloading in ${format.toUpperCase()} format.`,
@@ -965,6 +969,7 @@ function GuideContent() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
       
+      mpTrack("Guide Downloaded", { format, flow: "full_access" })
       toast({
         title: "Download started",
         description: `Your tone of voice guide is downloading in ${format.toUpperCase()} format.`,

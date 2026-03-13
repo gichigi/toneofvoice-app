@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock, Mail, User } from "lucide-react";
 import { createClient } from "@/lib/supabase-browser";
+import { track as mpTrack, identify as mpIdentify } from "@/lib/mixpanel";
 import { Button } from "@/components/ui/button";
 import { AuthError } from "@/components/ui/auth-error";
 import { classifyAuthError } from "@/lib/auth-errors";
@@ -59,6 +60,8 @@ function SignUpContent() {
       }
       if (data.user && !data.session) {
         // Email confirmation required - user created but not yet signed in
+        mpIdentify(data.user.id, { $email: email, $name: name, signup_method: "email" })
+        mpTrack("Signed Up", { method: "email" })
         MetaPixel.completeRegistration();
         MetaPixel.lead();
         setSuccess(true);
@@ -66,6 +69,8 @@ function SignUpContent() {
       }
       if (data.session) {
         // Instant sign-in (email confirmation disabled)
+        mpIdentify(data.user!.id, { $email: email, $name: name, signup_method: "email" })
+        mpTrack("Signed Up", { method: "email" })
         MetaPixel.completeRegistration();
         MetaPixel.lead();
         router.push(redirectTo);

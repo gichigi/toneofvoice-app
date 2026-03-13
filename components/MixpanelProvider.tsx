@@ -25,6 +25,7 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
     }
 
     mixpanel.init(token, {
+      autocapture: true,
       track_pageview: "full-url",
       persistence: "localStorage",
       // EU data residency - project hosted on eu.mixpanel.com

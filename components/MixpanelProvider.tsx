@@ -27,6 +27,8 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
     mixpanel.init(token, {
       track_pageview: "full-url",
       persistence: "localStorage",
+      // EU data residency - project hosted on eu.mixpanel.com
+      api_host: "https://api-eu.mixpanel.com",
       // Session replay: capture 100% of sessions (free plan allows 10k/mo)
       record_sessions_percent: 100,
     })

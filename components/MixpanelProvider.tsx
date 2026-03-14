@@ -35,6 +35,10 @@ export function MixpanelProvider({ children }: MixpanelProviderProps) {
       record_heatmap_data: true,
       // Discard replays shorter than 8s - removes low-signal bounces at SDK level
       record_min_ms: 8000,
+      // Show all text and inputs in replays - mask only password/email/tel fields
+      // (those are always masked by Mixpanel regardless of this setting)
+      record_mask_all_text: false,
+      record_mask_all_inputs: false,
     })
 
     // If this browser was previously flagged as an internal user, suppress all tracking.
